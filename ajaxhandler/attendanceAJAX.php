@@ -296,10 +296,26 @@ function createPDFReport($list, $filename) {
             $coordinator_id = $_SESSION['current_user'] ?? null;
             $session_id = $_POST['sessionId'] ?? null;
 
+            // Handle logo upload
+            $logo_filename = null;
+            if (isset($_FILES['LOGO']) && $_FILES['LOGO']['error'] === UPLOAD_ERR_OK) {
+                $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/Attendance Tracker - Copy - NP/uploads/hte_logos/';
+                if (!is_dir($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+                $ext = pathinfo($_FILES['LOGO']['name'], PATHINFO_EXTENSION);
+                $safe_name = uniqid('hte_logo_') . '.' . $ext;
+                $target_path = $upload_dir . $safe_name;
+                if (move_uploaded_file($_FILES['LOGO']['tmp_name'], $target_path)) {
+                    $logo_filename = $safe_name;
+                }
+            }
+
             // Add these lines for debugging
             error_log("Received POST data: " . print_r($_POST, true));
             error_log("Coordinator ID: " . $coordinator_id);
             error_log("Session ID: " . $session_id);
+            error_log("Logo filename: " . $logo_filename);
 
             // Check for required fields
             if (!$name || !$industry || !$address || !$contact_email || !$contact_person || !$contact_number || !$coordinator_id || !$session_id) {
@@ -307,26 +323,11 @@ function createPDFReport($list, $filename) {
                 return; // Stop execution if validation fails
             }
 
-            // Debugging: Log all parameters to check their values
-            error_log("Adding HTE with: name=$name, industry=$industry, address=$address, contact_email=$contact_email, contact_person=$contact_person, contact_number=$contact_number, coordinator_id=$coordinator_id, session_id=$session_id");
-
-            $dbo = new Database(); // Create a Database instance
-            $hdo = new attendanceDetails(); // Create an instance of hteDetails
-
-            // Add this new logging block right before calling addHTE
-            error_log("About to call addHTE with the following parameters:");
-            error_log("name: " . $name);
-            error_log("industry: " . $industry);
-            error_log("address: " . $address);
-            error_log("contact_email: " . $contact_email);
-            error_log("contact_person: " . $contact_person);
-            error_log("contact_number: " . $contact_number);
-            error_log("coordinator_id: " . $coordinator_id);
-            error_log("session_id: " . $session_id);
+            $dbo = new Database();
+            $hdo = new attendanceDetails();
 
             try {
-                // Call addHTE with the database instance
-                $new_hte_id = $hdo->addHTE($dbo, $name, $industry, $address, $contact_email, $contact_person, $contact_number, $coordinator_id, $session_id);
+                $new_hte_id = $hdo->addHTE($dbo, $name, $industry, $address, $contact_email, $contact_person, $contact_number, $coordinator_id, $session_id, $logo_filename);
                 echo json_encode(['success' => true, 'message' => 'HTE added successfully', 'new_hte_id' => $new_hte_id]);
             } catch (Exception $e) {
                 error_log("Exception caught: " . $e->getMessage());
@@ -345,41 +346,81 @@ function createPDFReport($list, $filename) {
             $coordinator_id = $_SESSION['current_user'] ?? null;
             $session_id = $_POST['sessionId'] ?? null;
 
-            // Add these lines for debugging
+            // Handle logo upload
+            $logo_filename = null;
+            if (isset($_FILES['LOGO']) && $_FILES['LOGO']['error'] === UPLOAD_ERR_OK) {
+                $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/Attendance Tracker - Copy - NP/uploads/hte_logos/';
+                if (!is_dir($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+                $ext = pathinfo($_FILES['LOGO']['name'], PATHINFO_EXTENSION);
+                $safe_name = uniqid('hte_logo_') . '.' . $ext;
+                $target_path = $upload_dir . $safe_name;
+                if (move_uploaded_file($_FILES['LOGO']['tmp_name'], $target_path)) {
+                    $logo_filename = 'uploads/hte_logos/' . $safe_name;
+                }
+            }
+
             error_log("Received POST data for addHTEControl: " . print_r($_POST, true));
             error_log("Coordinator ID: " . $coordinator_id);
             error_log("Session ID: " . $session_id);
+            error_log("Logo filename: " . $logo_filename);
 
-            // Check for required fields
             if (!$name || !$industry || !$address || !$contact_email || !$contact_person || !$contact_number || !$coordinator_id || !$session_id) {
                 echo json_encode(['success' => false, 'message' => 'Error: All fields are required.']);
-                return; // Stop execution if validation fails
+                return;
             }
 
-            // Debugging: Log all parameters to check their values
-            error_log("Adding HTE via Control with: name=$name, industry=$industry, address=$address, contact_email=$contact_email, contact_person=$contact_person, contact_number=$contact_number, coordinator_id=$coordinator_id, session_id=$session_id");
-
-            $dbo = new Database(); // Create a Database instance
-            $hdo = new attendanceDetails(); // Create an instance of hteDetails
-
-            // Add this new logging block right before calling addHTE
-            error_log("About to call addHTE for Control with the following parameters:");
-            error_log("name: " . $name);
-            error_log("industry: " . $industry);
-            error_log("address: " . $address);
-            error_log("contact_email: " . $contact_email);
-            error_log("contact_person: " . $contact_person);
-            error_log("contact_number: " . $contact_number);
-            error_log("coordinator_id: " . $coordinator_id);
-            error_log("session_id: " . $session_id);
+            $dbo = new Database();
+            $hdo = new attendanceDetails();
 
             try {
-                // Call addHTE with the database instance
-                $new_hte_id = $hdo->addHTE($dbo, $name, $industry, $address, $contact_email, $contact_person, $contact_number, $coordinator_id, $session_id);
+                $new_hte_id = $hdo->addHTE($dbo, $name, $industry, $address, $contact_email, $contact_person, $contact_number, $coordinator_id, $session_id, $logo_filename);
                 echo json_encode(['success' => true, 'message' => 'HTE added successfully via Control', 'new_hte_id' => $new_hte_id]);
             } catch (Exception $e) {
                 error_log("Exception caught in addHTEControl: " . $e->getMessage());
                 echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+            }
+
+            // --- Update HTE Logo ---
+            if ($action == "updateHTELogo") {
+                $hteId = $_POST['hteId'] ?? null;
+                if (!$hteId) {
+                    echo json_encode(['success' => false, 'message' => 'HTE ID is required.']);
+                    return;
+                }
+                $logo_filename = null;
+                if (isset($_FILES['LOGO']) && $_FILES['LOGO']['error'] === UPLOAD_ERR_OK) {
+                    $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/Attendance Tracker - Copy - NP/uploads/hte_logos/';
+                    if (!is_dir($upload_dir)) {
+                        mkdir($upload_dir, 0777, true);
+                    }
+                    $ext = pathinfo($_FILES['LOGO']['name'], PATHINFO_EXTENSION);
+                    $safe_name = uniqid('hte_logo_') . '.' . $ext;
+                    $target_path = $upload_dir . $safe_name;
+                    if (move_uploaded_file($_FILES['LOGO']['tmp_name'], $target_path)) {
+                        $logo_filename = $safe_name;
+                    }
+                }
+                if (!$logo_filename) {
+                    echo json_encode(['success' => false, 'message' => 'Logo upload failed.']);
+                    return;
+                }
+                $dbo = new Database();
+                $hdo = new attendanceDetails();
+                try {
+                    // Update the HTE record with the new logo filename
+                    $result = $hdo->updateHTELogo($dbo, $hteId, $logo_filename);
+                    if ($result) {
+                        echo json_encode(['success' => true, 'message' => 'Company logo updated successfully.']);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Failed to update company logo in database.']);
+                    }
+                } catch (Exception $e) {
+                    error_log('Exception in updateHTELogo: ' . $e->getMessage());
+                    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+                }
             }
         }
     }
@@ -479,8 +520,8 @@ if ($action == "deleteStudents") {
         $ado = new attendanceDetails();
 
         try {
-            // Get all HTEs for the dropdown
-            $c = "SELECT hte.HTE_ID, hte.NAME, hte.INDUSTRY
+            // Get all HTEs with all relevant columns for the companies table
+            $c = "SELECT hte.HTE_ID, hte.NAME, hte.INDUSTRY, hte.ADDRESS, hte.CONTACT_PERSON, hte.CONTACT_NUMBER
                   FROM host_training_establishment hte
                   ORDER BY hte.NAME";
             $s = $dbo->conn->prepare($c);
@@ -875,6 +916,5 @@ if (isset($_POST['action']) && $_POST['action'] == 'updateCoordinatorPassword') 
     }
     exit;
 }
-
-  }
+    // Removed unmatched closing brace
 ?>

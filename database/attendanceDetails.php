@@ -14,6 +14,17 @@ require_once $path."/Attendance Tracker - Copy - NP/database/database.php";
 
 class attendanceDetails
 {
+    // Update HTE logo by HTE_ID
+    public function updateHTELogo($dbo, $hteId, $logo_filename) {
+        try {
+            $stmt = $dbo->conn->prepare("UPDATE host_training_establishment SET LOGO = :logo WHERE HTE_ID = :hteId");
+            $stmt->execute([':logo' => $logo_filename, ':hteId' => $hteId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log('Error updating HTE logo: ' . $e->getMessage());
+            return false;
+        }
+    }
 
     public function getStudentsByHteId($dbo, $hteId) {
         try {
@@ -473,10 +484,9 @@ class attendanceDetails
     }
     
 
-    public function addHTE($dbo, $name, $industry, $address, $contact_email, $contact_person, $contact_number, $coordinator_id, $session_id) {
+    public function addHTE($dbo, $name, $industry, $address, $contact_email, $contact_person, $contact_number, $coordinator_id, $session_id, $logo_filename = null) {
         try {
             $dbo->conn->beginTransaction();
-            
             // Check if the HTE already exists
             $stmt = $dbo->conn->prepare("SELECT HTE_ID FROM host_training_establishment WHERE NAME = ? AND CONTACT_EMAIL = ?");
             $stmt->execute([$name, $contact_email]);
@@ -484,14 +494,18 @@ class attendanceDetails
 
             if ($existing_hte) {
                 $hte_id = $existing_hte['HTE_ID'];
-                
-                // Update existing HTE
-                $stmt = $dbo->conn->prepare("UPDATE host_training_establishment SET INDUSTRY = ?, ADDRESS = ?, CONTACT_PERSON = ?, CONTACT_NUMBER = ? WHERE HTE_ID = ?");
-                $stmt->execute([$industry, $address, $contact_person, $contact_number, $hte_id]);
+                // Update existing HTE, including logo if provided
+                if ($logo_filename) {
+                    $stmt = $dbo->conn->prepare("UPDATE host_training_establishment SET INDUSTRY = ?, ADDRESS = ?, CONTACT_PERSON = ?, CONTACT_NUMBER = ?, LOGO = ? WHERE HTE_ID = ?");
+                    $stmt->execute([$industry, $address, $contact_person, $contact_number, $logo_filename, $hte_id]);
+                } else {
+                    $stmt = $dbo->conn->prepare("UPDATE host_training_establishment SET INDUSTRY = ?, ADDRESS = ?, CONTACT_PERSON = ?, CONTACT_NUMBER = ? WHERE HTE_ID = ?");
+                    $stmt->execute([$industry, $address, $contact_person, $contact_number, $hte_id]);
+                }
             } else {
-                // Insert new HTE
-                $stmt = $dbo->conn->prepare("INSERT INTO host_training_establishment (NAME, INDUSTRY, ADDRESS, CONTACT_EMAIL, CONTACT_PERSON, CONTACT_NUMBER) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$name, $industry, $address, $contact_email, $contact_person, $contact_number]);
+                // Insert new HTE, including logo
+                $stmt = $dbo->conn->prepare("INSERT INTO host_training_establishment (NAME, INDUSTRY, ADDRESS, CONTACT_EMAIL, CONTACT_PERSON, CONTACT_NUMBER, LOGO) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$name, $industry, $address, $contact_email, $contact_person, $contact_number, $logo_filename]);
                 $hte_id = $dbo->conn->lastInsertId();
             }
 

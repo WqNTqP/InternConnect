@@ -93,11 +93,11 @@ class coordinator
     public function getHTEInASession($dbo, $sessionid, $cdrid)
     {
         $rv = [];
-        $c = "SELECT hte.HTE_ID, hte.NAME, hte.INDUSTRY
-              FROM internship_needs AS itn
-              JOIN host_training_establishment AS hte
-              ON itn.HTE_ID = hte.HTE_ID
-              WHERE itn.COORDINATOR_ID = :cdrid AND itn.SESSION_ID = :sessionid";
+      $c = "SELECT hte.HTE_ID, hte.NAME, hte.INDUSTRY, hte.LOGO
+          FROM internship_needs AS itn
+          JOIN host_training_establishment AS hte
+          ON itn.HTE_ID = hte.HTE_ID
+          WHERE itn.COORDINATOR_ID = :cdrid AND itn.SESSION_ID = :sessionid";
         $s = $dbo->conn->prepare($c);
         try {
             $s->execute([":cdrid" => $cdrid, ":sessionid" => $sessionid]);

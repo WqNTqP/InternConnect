@@ -1,5 +1,289 @@
+
+// Fetch and render all companies (HTEs) in the companies table
+function loadAllCompaniesData() {
+    $.ajax({
+        url: 'ajaxhandler/attendanceAJAX.php',
+        type: 'POST',
+        dataType: 'json',
+        data: { action: 'getHTEList' },
+        success: function(response) {
+            if (response.success && response.htes && Array.isArray(response.htes)) {
+                renderCompaniesList(response.htes);
+            } else {
+                $('#allCompaniesTableBody').html('<tr><td colspan="6" class="text-center text-gray-500 py-6">No companies found.</td></tr>');
+            }
+        },
+        error: function() {
+            $('#allCompaniesTableBody').html('<tr><td colspan="6" class="text-center text-red-500 py-6">Error loading companies.</td></tr>');
+        }
+    });
+}
+
+// Render companies in the companies table
+function renderCompaniesList(companies) {
+    let html = '';
+    companies.forEach(function(company) {
+        let logoHtml = company.LOGO ? `<img src='uploads/hte_logos/${company.LOGO}' alt='Logo' class='h-8 w-8 rounded-full object-cover border' />` : '-';
+        logoHtml += ` <button class='update-logo-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs ml-2' data-hteid='${company.HTE_ID}'>Update Logo</button>`;
+        html += `<tr>
+            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-900\">${company.NAME || '-'}<\/td>
+            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.INDUSTRY || '-'}<\/td>
+            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.ADDRESS || '-'}<\/td>
+            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.CONTACT_PERSON || '-'}<\/td>
+            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.CONTACT_NUMBER || '-'}<\/td>
+            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${logoHtml}<\/td>
+        <\/tr>`;
+    });
+    $('#allCompaniesTableBody').html(html);
+}
+
+// Handle MOA view button click (show modal or download)
+$(document).on('click', '.view-moa-btn', function() {
+    const moaPath = $(this).data('moa');
+    if (moaPath) {
+        window.open(moaPath, '_blank');
+    }
+});
+// Show All Companies container and hide others
+$(document).on('click', '#btnViewAllCompanies', function(e) {
+    e.preventDefault();
+    // Hide all other form containers
+    $('#studentFormContainer').hide();
+    $('#addHTEFormContainer').hide();
+    $('#allStudentsContainer').hide();
+    $('#deleteHTEFormContainer').hide();
+    $('#deleteSessionFormContainer').hide();
+    $('#deleteStudentFormContainer').hide();
+    $('#sessionFormContainer').hide();
+    // Show companies container
+    $('#allCompaniesContainer').fadeIn();
+    // Optionally, load companies data here
+    if (typeof loadAllCompaniesData === 'function') {
+        loadAllCompaniesData();
+    }
+});
+// Show Add Session form and hide other forms
+$(document).on('click', '#btnAddSession', function(e) {
+    e.preventDefault();
+    $('#studentFormContainer').hide();
+    $('#addHTEFormContainer').hide();
+    $('#allStudentsContainer').hide();
+    $('#deleteHTEFormContainer').hide();
+    $('#deleteSessionFormContainer').hide();
+    $('#deleteStudentFormContainer').hide();
+    $('#sessionFormContainer').fadeIn();
+});
+// Handle single student form submission
+$(document).on('submit', '#singleStudentForm', function(e) {
+    e.preventDefault();
+    var $form = $(this);
+    if ($form.data('submitted')) return;
+    $form.data('submitted', true);
+    var formData = $form.serialize() + '&action=addStudent';
+    // You may want to add session and HTE selection here if needed
+    $.ajax({
+        url: 'ajaxhandler/attendanceAJAX.php',
+        type: 'POST',
+        data: formData,
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                alert('Student added successfully!');
+                $form[0].reset();
+                $('#singleStudentFormWrapper').slideUp();
+            } else {
+                alert(response.message || 'Error adding student.');
+            }
+            $form.data('submitted', false);
+        },
+        error: function(xhr, status, error) {
+            alert('An error occurred while adding the student.');
+            $form.data('submitted', false);
+        }
+    });
+});
+// Toggle single student entry form
+$(document).on('click', '#toggleSingleEntry', function() {
+        $('#singleStudentFormWrapper').slideToggle();
+        // Populate session dropdown
+        $.ajax({
+            url: "ajaxhandler/attendanceAJAX.php",
+            type: "POST",
+            dataType: "json",
+            data: {action: "getSession" },
+            success: function(rv) {
+                let x = '<option value="">Select Session</option>';
+                for(let i=0; i<rv.length; i++) {
+                    let cs = rv[i];
+                    x += `<option value="${cs.ID}">${cs.YEAR} ${cs.TERM}</option>`;
+                }
+                $('#singleSessionSelectStudent').html(x);
+                // Auto-select most recent session
+                if(rv && rv.length > 0) {
+                    $('#singleSessionSelectStudent').val(rv[rv.length-1].ID).trigger('change');
+                }
+            }
+        });
+        // Populate HTE dropdown based on selected session and coordinator
+        function updateSingleHTEDropdown() {
+            var cdrid = $('#hiddencdrid').val();
+            var sessionid = $('#singleSessionSelectStudent').val();
+            $.ajax({
+                url: "ajaxhandler/attendanceAJAX.php",
+                type: "POST",
+                dataType: "json",
+                data: {cdrid: cdrid, sessionid: sessionid, action: "getHTE"},
+                success: function(rv) {
+                    let x = '<option value="">Select HTE</option>';
+                    for(let i=0; i<rv.length; i++) {
+                        let cc = rv[i];
+                        x += `<option value="${cc.HTE_ID}">${cc.NAME}</option>`;
+                    }
+                    $('#singleHteSelectStudent').html(x);
+                }
+            });
+        }
+        // Initial HTE population after session loads
+        setTimeout(updateSingleHTEDropdown, 300);
+        // Update HTE dropdown when session changes
+        $('#singleSessionSelectStudent').off('change').on('change', updateSingleHTEDropdown);
+});
+
+// Optional: Close single student form
+$(document).on('click', '#closeSingleStudentForm', function() {
+    $('#singleStudentFormWrapper').slideUp();
+});
 let currentHteId;
 let currentSessionId;
+
+// Student Dashboard Modal Functions
+$(document).on('click', '#btnStudentStats', function() {
+    $('#studentDashboardModal').removeClass('hidden');
+    loadStudentStats();
+});
+
+$(document).on('click', '#closeStudentDashboardModal, #studentDashboardModal', function(e) {
+    if (e.target.id === 'studentDashboardModal' || e.target.id === 'closeStudentDashboardModal') {
+        $('#studentDashboardModal').addClass('hidden');
+    }
+});
+
+function loadStudentStats() {
+    $.ajax({
+        url: 'ajaxhandler/studentDashboardAjax.php',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            action: 'getStudentStats'
+        },
+        success: function(response) {
+            if (response.success) {
+                $('#weeklyPresentCount').text(response.data.weeklyPresent || '0');
+                $('#totalHours').text(response.data.totalHours ? response.data.totalHours + 'h' : '0h');
+                $('#attendancePercentage').text(response.data.attendancePercentage ? response.data.attendancePercentage + '%' : '0%');
+                
+                // Update recent activity
+                if (response.data.recentActivity && response.data.recentActivity.length > 0) {
+                    let activityHtml = '<div class="space-y-4">';
+                    response.data.recentActivity.forEach(activity => {
+                        activityHtml += `
+                            <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <i class="fas fa-file-alt text-blue-500"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-900">${activity.title}</p>
+                                    <p class="text-xs text-gray-500">${activity.date}</p>
+                                </div>
+                            </div>`;
+                    });
+                    activityHtml += '</div>';
+                    $('#dashboardRecentActivityTable').html(activityHtml);
+                } else {
+                    $('#dashboardRecentActivityTable').html('<p class="text-gray-500 text-center py-4">No recent weekly report submissions found.</p>');
+                }
+            }
+        },
+        error: function() {
+            console.error('Failed to load student stats');
+        }
+    });
+}
+
+// --- Student Profile Logic ---
+$(document).on('click', '.btnProfileStudent', function() {
+    const studentId = $(this).data('studentid');
+    
+    // Show modal and loading state
+    $('#studentProfileModal').removeClass('hidden');
+    $('#profileLoading').show();
+    $('#studentProfileContent').addClass('hidden');
+    
+    // Fetch student details from studentDashboardAjax.php
+    $.ajax({
+        url: 'ajaxhandler/studentDashboardAjax.php',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            action: 'getStudentProfile',
+            studentId: studentId
+        },
+        success: function(response) {
+            console.log('Profile response:', response); // Debug log
+            if ((response.status === 'success' || response.success) && response.data) {
+                const student = response.data;
+                
+                console.log('Student data:', student); // Debug log
+                
+                // Update profile fields
+                $('#profileFirstName').val(student.NAME || '-');
+                $('#profileLastName').val(student.SURNAME || '-');
+                $('#profileStudentId').val(student.STUDENT_ID || student.INTERNS_ID || '-');
+                $('#profileEmail').val(student.EMAIL || '-');
+                $('#profileContact').val(student.CONTACT_NUMBER || '-');
+                $('#profileGender').val(student.GENDER || '-');
+                $('#profileAge').val(student.AGE || '-');
+                $('#profileCompany').val(student.HTE_NAME || '-');
+                
+                // Handle profile picture
+                if (student.profile_picture) {
+                    const imgPath = 'uploads/' + student.profile_picture;
+                    $('#profilePicture img').attr('src', imgPath).show();
+                    $('#profilePicture div').hide();
+                } else {
+                    $('#profilePicture img').hide();
+                    $('#profilePicture div').show();
+                }
+                
+                // Update modal title with student name
+                $('#studentProfileName').text('Profile: ' + student.NAME + ' ' + student.SURNAME);
+                
+                // Hide loading and show content
+                $('#profileLoading').hide();
+                $('#studentProfileContent').removeClass('hidden');
+            } else {
+                $('#profileLoading').hide();
+                $('#studentProfileContent').removeClass('hidden').html('<div class="text-center py-4 text-red-500">Error loading student profile</div>');
+            }
+        },
+        error: function() {
+            $('#profileLoading').hide();
+            $('#studentProfileContent').removeClass('hidden').html('<div class="text-center py-4 text-red-500">Failed to load student profile</div>');
+        }
+    });
+});
+
+// Close student profile modal
+$(document).on('click', '#closeStudentProfile', function() {
+    $('#studentProfileModal').addClass('hidden');
+});
+
+// Close modal when clicking outside
+$(document).on('click', '#studentProfileModal', function(e) {
+    if (e.target.id === 'studentProfileModal') {
+        $('#studentProfileModal').addClass('hidden');
+    }
+});
 
 // --- Post-Analysis Student List Logic ---
 let allPostAnalysisStudents = [];
@@ -17,119 +301,93 @@ $(document).on('click', '.postanalysis-student-item', function() {
     // Show loading message
     $('#postAnalysisContentArea').html('<div class="loading">Loading post-analysis...</div>');
 
-    // Fetch post-analysis data from Flask API
-    const postAnalysisUrl = 'http://localhost:5000/post_analysis';
-    // Add conlog for table and student id
-    const tableName = 'pre_assessment';
-    console.log(`[Post-Analysis] Table selected: ${tableName}, student_id:`, studentId);
-    console.log('Requesting post-analysis from:', postAnalysisUrl, 'with student_id:', studentId);
+    // Fetch post-analysis summary from PHP endpoint
     $.ajax({
-        url: postAnalysisUrl,
-        type: 'GET',
+        url: 'ajaxhandler/postAssessmentAveragesAjax.php',
+        type: 'POST',
         data: { student_id: studentId },
         dataType: 'json',
-        success: function(data) {
-            // Build HTML for post-analysis (modern card layout)
-            let html = '';
-            html += `<div class="postanalysis-summary-card modern-card">`;
-            html += `<div class="postanalysis-section-header"><span class="postanalysis-icon">🔮</span> Predicted Placement</div>`;
-            html += `<div class="predicted-placement-badge">${data.placement || '-'}</div>`;
-            html += `<div class="prediction-reasoning"><b>Reasoning:</b> ${data.reasoning ? data.reasoning.replace(/\n/g, '<br>') : '-'}</div>`;
-            html += `</div>`;
-
-
-            // Post-Assessment Averages Table
-
-            // Post-Assessment Averages Table
-            if (data.post_assessment_averages && data.post_assessment_averages.length) {
-                html += `<div class="postanalysis-averages-table modern-card">`;
-                html += `<div class="postanalysis-section-header"><span class="postanalysis-icon">📊</span> Post-Assessment Averages</div>`;
-                html += `<table><thead><tr><th>Category</th><th>Supervisor Avg</th><th>Self Avg</th></tr></thead><tbody>`;
-                data.post_assessment_averages.forEach(function(row) {
-                    html += `<tr><td>${row.category}</td><td>${row.supervisor_avg !== null ? row.supervisor_avg : '-'}<\/td><td>${row.self_avg !== null ? row.self_avg : '-'}<\/td><\/tr>`;
-                });
-                html += `</tbody></table></div>`;
-            }
-
-            // Supervisor Comment (Comment/Recommendation) - now after averages
-            if (data.supervisor_comment) {
-                html += `<div class="postanalysis-supervisor-comment modern-card">
-                    <div class="postanalysis-section-header"><span class="postanalysis-icon">🗨️</span> Comment/Recommendation</div>
-                    <div class="postanalysis-section-body supervisor-comment-body">${data.supervisor_comment.replace(/\n/g, '<br>')}</div>
-                </div>`;
-            }
-
-            // Comparative Analysis
-            if (data.comparative_analysis) {
-                html += `<div class="postanalysis-comparative modern-card">
-                    <div class="postanalysis-section-header"><span class="postanalysis-icon">⚖️</span> Comparative Analysis</div>
-                    <div class="postanalysis-section-body">${data.comparative_analysis.replace(/\n/g, '<br>')}</div>
-                </div>`;
-            }
-            // Strengths Identified in Post-Assessment (now after Comparative Analysis)
-            if (data.strengths_post_assessment) {
-                html += `<div class="postanalysis-strengths modern-card">
-                    <div class="postanalysis-section-header"><span class="postanalysis-icon">🏅</span> Strengths Identified in Post-Assessment</div>
-                    <div class="postanalysis-section-body">${data.strengths_post_assessment}</div>
-                </div>`;
-            }
-
-            // Correlation Analysis
-
-            if (data.correlation_analysis) {
-                html += `<div class="postanalysis-correlation modern-card">
-                    <div class="postanalysis-section-header"><span class="postanalysis-icon">🔗</span> Correlation Analysis</div>
-                    <div class="postanalysis-section-body">${data.correlation_analysis.replace(/\n/g, '<br>')}</div>
-                </div>`;
-            }
-
-            // Conclusion & Recommendation
-            if (data.conclusion_recommendation) {
-                // Enhanced layout for job recommendations
-                let recHtml = data.conclusion_recommendation.replace(/\n/g, '<br>');
-                // Try to extract job recommendations and highlight them
-                const jobMatch = recHtml.match(/jobs? like <b>(.*?)<\/b>|jobs? in <b>(.*?)<\/b>|jobs? like <b>(.*?)<\/b> or <b>(.*?)<\/b>/i);
-                if (jobMatch) {
-                    // Find all job lists in the match
-                    let jobs = [];
-                    if (jobMatch[1]) jobs = jobMatch[1].split(',').map(j => j.trim());
-                    if (jobMatch[2]) jobs = jobMatch[2].split(',').map(j => j.trim());
-                    if (jobMatch[3] && jobMatch[4]) jobs = [...jobMatch[3].split(','), ...jobMatch[4].split(',')].map(j => j.trim());
-                    // Remove duplicates
-                    jobs = [...new Set(jobs)];
-                    // Remove empty
-                    jobs = jobs.filter(j => j.length > 0);
-                    // Remove the jobs text from the summary
-                    recHtml = recHtml.replace(/(jobs? like <b>.*?<\/b> (would likely be a great fit\.|are both good options\.)|jobs? in <b>.*?<\/b> (would likely be a great fit\.|are both good options\.))/gi, '').replace(/\s+/g, ' ').trim();
-                    // Build job badges
-                    let jobsHtml = jobs.length ? `<div class="job-recommendation-label">Recommended Jobs:</div><div class="job-badges">${jobs.map(j => `<span class="job-badge">${j}</span>`).join('')}</div>` : '';
-                    recHtml += jobsHtml;
+        success: function(response) {
+            if (response.success && response.summary) {
+                const summary = response.summary;
+                let html = '';
+                html += `<div class="postanalysis-summary-card" style="max-width:1100px;margin:0 auto;background:#fff;border-radius:2rem;box-shadow:0 8px 32px rgba(0,0,0,0.10);padding:2.5rem 2.5rem 2rem 2.5rem;">`;
+                html += `<div class="text-3xl font-extrabold text-blue-700 mb-6 text-center">Post-Analysis Summary</div>`;
+                // Placement
+                if (summary.placement) {
+                    html += `<div class="flex flex-col items-center mb-8">
+                        <div class="text-xl font-bold text-gray-700 mb-2">Predicted Placement</div>
+                        <span class="inline-block px-6 py-3 rounded-full font-extrabold text-2xl bg-yellow-100 text-yellow-800 shadow">${summary.placement}</span>
+                    </div>`;
                 }
-                html += `<div class="postanalysis-insights modern-card"><div class="postanalysis-section-header"><span class="postanalysis-icon">💡</span> Conclusion &amp; Recommendation</div><div class="postanalysis-section-body">${recHtml}</div></div>`;
+                // Reasoning
+                if (summary.reasoning) {
+                    html += `<div class="mb-8 p-5 rounded-xl border-2 border-blue-200 bg-blue-50 shadow-sm">
+                        <div class="font-bold text-blue-700 mb-2 text-lg">Reasoning</div>
+                        <div class="text-gray-800 text-base">${summary.reasoning.replace(/\n/g, '<br>')}</div>
+                    </div>`;
+                }
+                // Post-Assessment Averages Table
+                if (summary.averages && summary.averages.length) {
+                    const supervisorTotal = summary.averages.reduce((sum, row) => sum + (parseFloat(row.supervisor_avg) || 0), 0);
+                    const selfTotal = summary.averages.reduce((sum, row) => sum + (parseFloat(row.self_avg) || 0), 0);
+                    const count = summary.averages.length;
+                    const supervisorAvg = count ? (supervisorTotal / count).toFixed(2) : '-';
+                    const selfAvg = count ? (selfTotal / count).toFixed(2) : '-';
+                    html += `<div class="mb-8 p-5 rounded-xl border-2 border-purple-200 bg-purple-50 shadow-sm">
+                        <div class="font-bold text-purple-700 mb-2 text-lg">Post-Assessment Averages</div>
+                        <table class="w-full text-left rounded-lg overflow-hidden">
+                            <thead><tr class="bg-purple-100 text-purple-800"><th class="px-4 py-2">Category</th><th class="px-4 py-2">Supervisor Avg</th><th class="px-4 py-2">Self Avg</th></tr></thead>
+                            <tbody>
+                            ${summary.averages.map(row => `<tr><td class="px-4 py-2">${row.category}</td><td class="px-4 py-2">${row.supervisor_avg !== null ? row.supervisor_avg : '-'}</td><td class="px-4 py-2">${row.self_avg !== null ? row.self_avg : '-'}</td></tr>`).join('')}
+                            <tr class="bg-purple-200 font-bold"><td class="px-4 py-2">Total Average</td><td class="px-4 py-2">${supervisorAvg}</td><td class="px-4 py-2">${selfAvg}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>`;
+                }
+                // Supervisor Comment
+                if (summary.supervisor_comment) {
+                    html += `<div class="mb-8 p-5 rounded-xl border-2 border-green-200 bg-green-50 shadow-sm">
+                        <div class="font-bold text-green-700 mb-2 text-lg">Supervisor Comment</div>
+                        <div class="text-gray-800 text-base">${summary.supervisor_comment.replace(/\n/g, '<br>')}</div>
+                    </div>`;
+                }
+                // Comparative Analysis
+                if (summary.comparative_analysis) {
+                    html += `<div class="mb-8 p-5 rounded-xl border-2 border-indigo-200 bg-indigo-50 shadow-sm">
+                        <div class="font-bold text-indigo-700 mb-2 text-lg">Comparative Analysis</div>
+                        <div class="text-gray-800 text-base">${summary.comparative_analysis.replace(/\n/g, '<br>')}</div>
+                    </div>`;
+                }
+                // Strengths Identified in Post-Assessment
+                if (summary.strengths_post_assessment) {
+                    html += `<div class="mb-8 p-5 rounded-xl border-2 border-yellow-200 bg-yellow-50 shadow-sm">
+                        <div class="font-bold text-yellow-700 mb-2 text-lg">Strengths Identified in Post-Assessment</div>
+                        <div class="text-gray-800 text-base">${summary.strengths_post_assessment}</div>
+                    </div>`;
+                }
+                // Correlation Analysis
+                if (summary.correlation_analysis) {
+                    html += `<div class="mb-8 p-5 rounded-xl border-2 border-pink-200 bg-pink-50 shadow-sm">
+                        <div class="font-bold text-pink-700 mb-2 text-lg">Correlation Analysis</div>
+                        <div class="text-gray-800 text-base">${summary.correlation_analysis.replace(/\n/g, '<br>')}</div>
+                    </div>`;
+                }
+                // Conclusion & Recommendation
+                if (summary.conclusion_recommendation) {
+                    html += `<div class="mb-8 p-5 rounded-xl border-2 border-blue-200 bg-blue-50 shadow-sm">
+                        <div class="font-bold text-blue-700 mb-2 text-lg">Conclusion & Recommendation</div>
+                        <div class="text-gray-800 text-base">${summary.conclusion_recommendation.replace(/\n/g, '<br>')}</div>
+                    </div>`;
+                }
+                html += `</div>`;
+                $('#postAnalysisContentArea').html(html);
+            } else {
+                $('#postAnalysisContentArea').html('<div class="error">No post-analysis data found for this student.</div>');
             }
-
-            // View Details Button
-            html += `<div style="margin-top:1.5em;text-align:right;"><button class="btn-view-details" onclick="document.getElementById('postAssessmentTabBtn').click();">View Full Post-Assessment Details</button></div>`;
-
-            $('#postAnalysisContentArea').html(html);
         },
         error: function(xhr, status, error) {
-            let backendMsg = '';
-            try {
-                backendMsg = xhr.responseText ? JSON.parse(xhr.responseText).error : '';
-            } catch (e) {
-                backendMsg = xhr.responseText;
-            }
-            console.error('Post-analysis AJAX error:', {
-                status: xhr.status,
-                error: error,
-                backendMsg: backendMsg
-            });
-            if (xhr.status === 404) {
-                $('#postAnalysisContentArea').html('<div class="postanalysis-message">No post-analysis data found for this student.</div>');
-            } else {
-                $('#postAnalysisContentArea').html('<div class="postanalysis-message">Unable to load post-analysis data.</div>');
-            }
+            $('#postAnalysisContentArea').html('<div class="error">Failed to load post-analysis data.</div>');
         }
     });
 });
@@ -180,6 +438,70 @@ $(document).ready(function() {
     if ($('#postAnalysisContent').is(':visible')) {
         loadPostAnalysisStudents();
     }
+});
+
+// --- Update Company Logo Modal Logic ---
+$(document).on('click', '.update-logo-btn', function() {
+    const hteId = $(this).data('hteid');
+    $('#updateLogoHteId').val(hteId);
+    $('#updateLogoFile').val('');
+    $('#updateLogoPreview').attr('src', '#').addClass('hidden');
+    $('#updateCompanyLogoModal').removeClass('hidden');
+});
+
+$(document).on('change', '#updateLogoFile', function(e) {
+    const file = this.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            $('#updateLogoPreview').attr('src', e.target.result).removeClass('hidden');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        $('#updateLogoPreview').attr('src', '#').addClass('hidden');
+    }
+});
+
+$(document).on('click', '#closeUpdateLogoModal, #cancelUpdateLogo', function() {
+    $('#updateCompanyLogoModal').addClass('hidden');
+    $('#updateLogoFile').val('');
+    $('#updateLogoPreview').attr('src', '#').addClass('hidden');
+});
+
+// Handle update company logo form submit
+$(document).on('submit', '#updateCompanyLogoForm', function(e) {
+    e.preventDefault();
+    const hteId = $('#updateLogoHteId').val();
+    const fileInput = $('#updateLogoFile')[0];
+    if (!hteId || !fileInput.files || !fileInput.files[0]) {
+        alert('Please select a logo image to upload.');
+        return;
+    }
+    const formData = new FormData();
+    formData.append('action', 'updateHTELogo');
+    formData.append('hteId', hteId);
+    formData.append('LOGO', fileInput.files[0]);
+    $.ajax({
+        url: 'ajaxhandler/attendanceAJAX.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success) {
+                alert('Company logo updated successfully!');
+                $('#updateCompanyLogoModal').addClass('hidden');
+                $('#updateLogoFile').val('');
+                $('#updateLogoPreview').attr('src', '#').addClass('hidden');
+                loadAllCompaniesData();
+            } else {
+                alert(response.message || 'Failed to update company logo.');
+            }
+        },
+        error: function() {
+            alert('An error occurred while uploading the logo.');
+        }
+    });
 });
 
 // Function to format contact number to Philippine format: +63 951 3762 404
@@ -423,12 +745,52 @@ $(function() {
 
     function renderPostStudentList(students) {
         let sorted = students.slice().sort((a, b) => (a.NAME + ' ' + a.SURNAME).localeCompare(b.NAME + ' ' + b.SURNAME));
-        let html = '';
+        let studentListHtml = '';
         sorted.forEach(function(student) {
             const displayName = student.NAME + ' ' + student.SURNAME;
-            html += `<div class="postassessment-student-item${student.INTERNS_ID === selectedPostStudentId ? ' selected' : ''}" data-studentid="${student.INTERNS_ID}">${displayName}</div>`;
+            studentListHtml += `
+                <div class="postassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${student.INTERNS_ID === selectedPostStudentId ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.INTERNS_ID}">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
+                    </span>
+                    <span class="truncate">${displayName}</span>
+                </div>
+            `;
         });
-        $('#postStudentListPanel').html(html);
+        // 20/80 layout for Post-Assessment tab
+    let html = `<div class='flex w-full'>`;
+    html += `<div class='left-col w-1/5 max-w-xs pr-4'>`;
+    const searchValue = window.postStudentSearchValue || '';
+    html += `<div class='mb-4'><input type='text' id='postStudentSearch' value='${searchValue.replace(/'/g, "&#39;").replace(/"/g, '&quot;')}' placeholder='Search student name' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
+    html += `<div id='postStudentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'>${studentListHtml}</div>`;
+        html += `</div>`;
+        html += `<div class='right-col w-4/5 pl-4'>`;
+        if (!selectedPostStudentId) {
+            html += `
+            <div class="flex flex-col items-center justify-center h-full">
+                <div class="bg-blue-50 rounded-full p-6 mb-4">
+                    <svg xmlns='http://www.w3.org/2000/svg' class='h-12 w-12 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
+                </div>
+                <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
+                <div class="text-gray-500 text-base">Select a student from the list to view their post-assessment details.</div>
+            </div>
+            `;
+        } else {
+            html += `<div id='postEvalList' class='space-y-4 max-h-[700px] overflow-y-auto pr-2'></div>`;
+        }
+        html += `</div>`;
+        html += `</div>`;
+        $('#postAssessmentTabContent').html(html);
+        // Restore focus and cursor position if search bar was focused
+        if (window.shouldRefocusPostSearch) {
+            const input = document.getElementById('postStudentSearch');
+            if (input) {
+                input.focus();
+                const val = input.value;
+                input.setSelectionRange(val.length, val.length);
+            }
+            window.shouldRefocusPostSearch = false;
+        }
     }
 
     // Populate post-assessment student list when tab is activated
@@ -455,7 +817,8 @@ $(function() {
     }
 
     $(document).on('click', '#postAssessmentTabBtn', function() {
-        loadPostAssessmentStudents();
+    selectedPostStudentId = null;
+    loadPostAssessmentStudents();
     });
 
     // Also populate on page load if tab is visible
@@ -467,19 +830,21 @@ $(function() {
 
     // Search filter for post-assessment student list
     $(document).on('input', '#postStudentSearch', function() {
-        const query = $(this).val().trim().toLowerCase();
+        const query = $(this).val();
+        window.postStudentSearchValue = query;
+        window.shouldRefocusPostSearch = true;
         let filtered = allPostStudents.filter(s => {
             const displayName = (s.NAME + ' ' + s.SURNAME).toLowerCase();
-            return displayName.includes(query);
+            return displayName.includes(query.trim().toLowerCase());
         });
         renderPostStudentList(filtered);
     });
 
     // Handle student selection in Post-Assessment tab
     $(document).on('click', '.postassessment-student-item', function() {
-    $('.postassessment-student-item').removeClass('selected');
-    $(this).addClass('selected');
     selectedPostStudentId = $(this).data('studentid');
+    // Re-render student list to update highlight, preserving search value
+    renderPostStudentList(allPostStudents);
     loadPostAssessmentEvaluation(selectedPostStudentId);
 // Load and display post-assessment evaluation for selected student
 function loadPostAssessmentEvaluation(studentId) {
@@ -502,23 +867,44 @@ function loadPostAssessmentEvaluation(studentId) {
                         if (!grouped[rec.category]) grouped[rec.category] = [];
                         grouped[rec.category].push(rec);
                     });
-                    let html = '<h3>Post-Evaluation</h3>';
+                    let html = `<div class="post-eval-container max-h-[700px] overflow-y-auto pr-2">
+                        <h3 class="text-2xl font-bold text-blue-700 mb-6">Post-Evaluation</h3>`;
                     Object.keys(grouped).forEach(function(category) {
-                        html += `<h4 class="post-eval-category-header">${category}</h4>`;
-                        // Ratings table
-                        html += '<table class="table post-eval-table"><thead><tr><th>Disciplines/Task</th><th>Self Rating</th><th>Supervisor Rating</th></tr></thead><tbody>';
-                        grouped[category].forEach(function(rec) {
-                            html += `<tr><td>${rec.question_text ?? rec.question_id}</td><td>${rec.self_rating ?? ''}</td><td>${rec.supervisor_rating ?? ''}</td></tr>`;
-                        });
-                        html += '</tbody></table>';
+                        html += `<div class="mb-8">
+                            <h4 class="post-eval-category-header text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-1">${category}</h4>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white rounded-lg shadow border border-gray-200">
+                                    <thead class="bg-blue-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-sm font-bold text-blue-700">Disciplines/Task</th>
+                                            <th class="px-4 py-2 text-center text-sm font-bold text-blue-700 w-32">Self Rating</th>
+                                            <th class="px-4 py-2 text-center text-sm font-bold text-blue-700 w-32">Supervisor Rating</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${grouped[category].map(rec => `
+                                            <tr class="hover:bg-blue-50">
+                                                <td class="px-4 py-2 text-gray-700">${rec.question_text ?? rec.question_id}</td>
+                                                <td class="px-4 py-2 text-center text-blue-600 font-semibold w-32">${rec.self_rating ?? ''}</td>
+                                                <td class="px-4 py-2 text-center text-green-600 font-semibold w-32">${rec.supervisor_rating ?? ''}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>`;
                     });
                     // Show the comment only once below all tables
                     const firstComment = response.records.find(rec => rec.comment && rec.comment.trim() !== '');
                     if (firstComment) {
-                        html += '<table class="table post-eval-comments-table" style="margin-top:10px"><thead><tr><th>Comment/Recommendation</th></tr></thead><tbody>';
-                        html += `<tr><td>${firstComment.comment}</td></tr>`;
-                        html += '</tbody></table>';
+                        html += `<div class="mt-6">
+                            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow">
+                                <div class="font-bold text-yellow-700 mb-2">Comment/Recommendation</div>
+                                <div class="text-gray-800 text-base">${firstComment.comment}</div>
+                            </div>
+                        </div>`;
                     }
+                    html += `</div>`;
                     $('#postEvalList').html(html);
                 } else {
                     $('#postEvalList').html('<div class="no-eval">Not rated yet by supervisor.</div>');
@@ -534,13 +920,17 @@ function loadPostAssessmentEvaluation(studentId) {
 }
     });
     // Evaluation tab bar navigation
-    $('.evaluation-tab-img').click(function() {
-        // Remove active class from all tab buttons
-        $('.evaluation-tab-img').removeClass('active');
-        $(this).addClass('active');
+    $('#evalQuestionsTabBtn, #rateTabBtn, #postAssessmentTabBtn, #reviewTabBtn').click(function() {
+        // Update button styles
+        $(this).removeClass('text-gray-500 hover:text-gray-700 hover:bg-gray-50')
+               .addClass('text-gray-900 bg-gray-100');
+        
+        // Update other buttons
+        $(this).siblings('button').removeClass('text-gray-900 bg-gray-100')
+               .addClass('text-gray-500 hover:text-gray-700 hover:bg-gray-50');
 
-        // Hide all evaluation tab contents
-        $('.evaluation-inner-content').hide();
+        // Hide all tab contents first
+    $('#evalQuestionsTabContent, #rateTabContent, #postAssessmentTabContent, #reviewTabContent').hide();
 
         // Show the selected tab content
         if (this.id === 'evalQuestionsTabBtn') {
@@ -551,14 +941,13 @@ function loadPostAssessmentEvaluation(studentId) {
             $('#postAssessmentTabContent').show();
         } else if (this.id === 'reviewTabBtn') {
             $('#reviewTabContent').show();
-        } else if (this.id === 'statsTabBtn') {
-            $('#statsTabContent').show();
+        // Removed stats tab logic
         }
     });
 
     // Show default tab on page load
     $('#evalQuestionsTabContent').show();
-    $('#rateTabContent, #postAssessmentTabContent, #reviewTabContent, #statsTabContent').hide();
+    $('#rateTabContent, #postAssessmentTabContent, #reviewTabContent').hide();
     // --- Prediction Tab Logic ---
     // Load students for prediction tab on tab switch or page load
     function loadPredictionStudents() {
@@ -576,26 +965,34 @@ function loadPostAssessmentEvaluation(studentId) {
                 let students = response.students;
                 let tbody = '';
                 students.forEach(function(student, idx) {
-                    let statusIcon = student.valid ? '<span style="color:green;">✔️</span>' : '<span style="color:red;" title="Missing: ' + student.missing.join(', ') + '">❌</span>';
-                    let statusText = student.STATUS + ' ' + statusIcon;
-                    let hasPrediction = student.pre_assessment && student.pre_assessment.ojt_placement;
-                    let placementText = hasPrediction ? student.pre_assessment.ojt_placement : (student.valid ? '<span style="color:gray;">Ready</span>' : '<span style="color:gray;">Incomplete Data</span>');
-                    let analysisData = {};
-                    if (hasPrediction) {
-                        analysisData = {
-                            placement: student.pre_assessment.ojt_placement,
-                            reasoning: student.pre_assessment.prediction_reasoning,
-                            probabilities: student.pre_assessment.prediction_probabilities ? JSON.parse(student.pre_assessment.prediction_probabilities) : {},
-                            confidence: student.pre_assessment.prediction_confidence
-                        };
-                    }
-                    tbody += '<tr data-row="' + idx + '">' +
-                        '<td>' + student.NAME + '</td>' +
-                        '<td>' + student.HTE_ASSIGNED + '</td>' +
-                        '<td>' + statusText + '</td>' +
-                        '<td class="predicted-placement">' + placementText + '</td>' +
-                        '<td><button class="analysis-btn" style="background-color:' + (hasPrediction ? 'green' : 'gray') + ';color:white;" data-analysis="' + encodeURIComponent(JSON.stringify(analysisData)) + '">Analysis</button></td>' +
-                    '</tr>';
+                        let statusIcon = student.valid ? '<span class="ml-1">✔️</span>' : '<span class="ml-1" style="color:red;" title="Missing: ' + student.missing.join(', ') + '">❌</span>';
+                            let statusText = student.STATUS;
+                        let hasPrediction = student.pre_assessment && student.pre_assessment.ojt_placement;
+                        let placementText = hasPrediction
+                            ? `<span class="inline-block bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full">${student.pre_assessment.ojt_placement}</span>`
+                            : (student.valid
+                                ? '<span class="inline-block bg-gray-100 text-gray-500 font-bold px-3 py-1 rounded-full">Ready</span>'
+                                : '<span class="inline-block bg-gray-100 text-gray-500 font-bold px-3 py-1 rounded-full">Incomplete Data</span>');
+                        let analysisData = {};
+                        if (hasPrediction) {
+                            analysisData = {
+                                placement: student.pre_assessment.ojt_placement,
+                                reasoning: student.pre_assessment.prediction_reasoning,
+                                probabilities: student.pre_assessment.prediction_probabilities ? JSON.parse(student.pre_assessment.prediction_probabilities) : {},
+                                confidence: student.pre_assessment.prediction_confidence
+                            };
+                        }
+                        let statusClass = student.valid ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold';
+                        let analysisBtnClass = hasPrediction ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 hover:bg-gray-500';
+                        tbody += `<tr data-row="${idx}" class="hover:bg-blue-50 transition">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${student.NAME}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${student.HTE_ASSIGNED}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusText}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">${placementText}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <button class="analysis-btn ${analysisBtnClass} text-white px-4 py-2 rounded-lg shadow transition" data-analysis="${encodeURIComponent(JSON.stringify(analysisData))}">Analysis</button>
+                            </td>
+                        </tr>`;
                 });
                 $('#predictionTable tbody').html(tbody);
                 // Store students for later prediction
@@ -749,49 +1146,69 @@ function loadPostAssessmentEvaluation(studentId) {
         }
         let html = '';
         if (!analysis || analysis.error) {
-                html = '<p>' + (analysis && analysis.error ? analysis.error : 'No analysis available.') + '</p>';
+            html = `<div class="text-center py-6 text-red-500 text-lg font-semibold">${(analysis && analysis.error ? analysis.error : 'No analysis available.')}</div>`;
         } else {
-                // Highlight grades in reasoning text
-                function highlightGrades(text) {
-                    return text.replace(/([A-Z]{2,} \d{3}: \d{1,3}\.\d+)/g, '<span class="subject-list">$1</span>');
-                }
-                // Only show the first reasoning line if subjects is not empty
-                let reasoningLine = '';
-                if (analysis.subjects && analysis.subjects.trim() !== '') {
-                    reasoningLine = `<p>Recommended for <span class="highlight">${analysis.placement}</span> due to strong performance in: <span class="subject-list">${analysis.subjects}</span>.</p>`;
-                }
-                html = `<div class="prediction-card">
-                    <h3 class="prediction-title">
-                        Predicted OJT Placement:
-                        <span class="prediction-badge">${analysis.placement}</span>
-                    </h3>
-                    <div class="prediction-reasoning">
-                        <b>Reasoning:</b>
-                        ${reasoningLine}
-                        <p>
-                            ${highlightGrades(analysis.reasoning || '')}
-                        </p>
+            // Highlight grades in reasoning text (more prominent)
+            function highlightGrades(text) {
+                // Match grades with or without decimals (e.g., SP 101: 94 or SP 101: 94.5)
+                // Use a glowing effect to make grades stand out
+                return text.replace(
+                    /([A-Z]{2,} \d{3}: \d{1,3}(?:\.\d+)?)/g,
+                    '<span style="background: #fffbe6; color: #222; font-weight: bold; padding: 2px 8px; border-radius: 6px; box-shadow: 0 0 8px 2px #ffe066, 0 0 2px 1px #ffd700; text-shadow: 0 0 6px #ffe066;">$1</span>'
+                );
+            }
+            // Placement badge color
+            const placementColors = {
+                'Business Operations': 'bg-yellow-100 text-yellow-800',
+                'Technical Support': 'bg-green-100 text-green-800',
+                'Systems Development': 'bg-blue-100 text-blue-800',
+                'Research': 'bg-purple-100 text-purple-800',
+            };
+            // Reasoning section - visually emphasized
+            let reasoningHtml = '';
+            if (analysis.reasoning) {
+                // Always process reasoning text with highlightGrades
+                reasoningHtml = `<div class="mb-4 p-4 rounded-xl border-2 border-blue-200 bg-blue-50 shadow-sm"><div class="font-bold text-blue-700 mb-2 text-lg">Reasoning</div><div class="text-gray-800 text-base">${highlightGrades(analysis.reasoning)}</div></div>`;
+            }
+            // Probability section - smaller badges, more spacing
+            let probabilityHtml = '';
+            if (analysis.probabilities && Object.keys(analysis.probabilities).length > 0) {
+                probabilityHtml = `<div class="mb-4"><div class="font-bold text-gray-700 mb-1">Probability Breakdown</div><div class="grid grid-cols-2 gap-3">${Object.entries(analysis.probabilities).map(([k, v]) => {
+                    let color = 'bg-gray-200 text-gray-800';
+                    if (k === 'Business Operations') color = 'bg-yellow-100 text-yellow-800';
+                    else if (k === 'Technical Support') color = 'bg-green-100 text-green-800';
+                    else if (k === 'Systems Development') color = 'bg-blue-100 text-blue-800';
+                    else if (k === 'Research') color = 'bg-purple-100 text-purple-800';
+                    return `<div class="flex items-center justify-between px-2 py-1 rounded text-sm font-semibold ${color}"><span>${k}</span><span>${v}%</span></div>`;
+                }).join('')}</div></div>`;
+            }
+            // Probability explanation
+            let probExpHtml = '';
+            if (analysis.prob_explanation && analysis.prob_explanation !== 'undefined') {
+                probExpHtml = `<div class="mb-2"><div class="font-bold text-gray-700 mb-1">Probability Explanation</div><div class="text-gray-800 text-base">${analysis.prob_explanation}</div></div>`;
+            }
+            html = `
+                <div class="space-y-8">
+                    <div class="flex flex-col items-center mb-4">
+                        <div class="text-2xl font-bold text-gray-700 mb-2">Predicted OJT Placement</div>
+                        ${analysis.placement ? `<span class="inline-block px-6 py-3 rounded-full font-extrabold text-2xl ${placementColors[analysis.placement] || 'bg-gray-100 text-gray-800'}">${analysis.placement}</span>` : ''}
                     </div>
-                    <div class="prediction-probability">
-                        <b>Probability Explanation:</b>
-                        <p>
-                            ${analysis.prob_explanation}
-                        </p>
-                    </div>
-                    <div class="probability-bars">
-                        ${Object.entries(analysis.probabilities).map(([k, v]) => {
-                                let color = '#3867d6';
-                                if (k === 'Systems Development') color = '#20bf6b';
-                                else if (k === 'Business Operations') color = '#f7b731';
-                                else if (k === 'OJT Placement') color = '#eb3b5a';
-                                else if (k === 'Research') color = '#3867d6';
-                                return `<div class="probability-row"><span>${k}</span><div class="bar" style="width:${v}%;background:${color};"></div><span>${v}%</span></div>`;
-                        }).join('')}
-                    </div>
-                </div>`;
+                    ${reasoningHtml}
+                    ${probExpHtml}
+                    ${probabilityHtml}
+                </div>
+            `;
         }
     if ($('#analysisModal').length === 0) {
-        $('body').append('<div id="analysisModal" class="main-dashboard-modal-bg" style="display:none;"><div class="main-dashboard-modal-content"><div class="main-dashboard-modal-header"><h2 class="main-dashboard-modal-title">Prediction Analysis</h2><button class="main-dashboard-modal-close" id="closeAnalysisModal"><i class="fas fa-times"></i></button></div><div class="main-dashboard-modal-body" id="analysisModalContent"></div></div></div>');
+        $('body').append(`
+            <div id="analysisModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" style="display:none;">
+                <div class="bg-white rounded-3xl shadow-2xl p-16 max-w-6xl w-full relative" style="min-width:900px; overflow-x:auto;">
+                    <button class="absolute top-6 right-6 text-gray-500 hover:text-gray-700 text-2xl font-bold" id="closeAnalysisModal">&times;</button>
+                    <h2 class="text-4xl font-extrabold text-blue-700 mb-8 text-center">Prediction Analysis</h2>
+                    <div class="main-dashboard-modal-body" id="analysisModalContent"></div>
+                </div>
+            </div>
+        `);
     }
     $('#analysisModalContent').html(html);
     $('#analysisModal').fadeIn();
@@ -827,7 +1244,104 @@ $(document).on('click', '#closeAnalysisModal', function() {
         });
     }
 
-    function loadApprovedReportsWithFilters() {
+    // Close coordinator profile modal
+$(document).on('click', '#closeCoordinatorProfile', function(e) {
+    $('#coordinatorProfileModal').addClass('hidden');
+});
+
+$(document).on('click', '#coordinatorProfileModal', function(e) {
+    if (e.target.id === 'coordinatorProfileModal') {
+        $('#coordinatorProfileModal').addClass('hidden');
+    }
+});
+
+// Profile Picture Upload Handlers
+$(document).on('click', '#editProfilePicture', function(e) {
+    e.preventDefault();
+    $('#profilePictureUploadDialog').removeClass('hidden');
+});
+
+// Choose Picture button inside modal triggers file input
+$(document).on('click', '#choosePictureBtn', function(e) {
+    e.preventDefault();
+    $('#uploadPictureInput').click();
+});
+
+$(document).on('click', '#closeUploadDialog, #cancelUpload', function() {
+    $('#profilePictureUploadDialog').addClass('hidden');
+    $('#picturePreview').addClass('hidden').attr('src', '');
+    $('#uploadPictureInput').val('');
+    $('#uploadProgress').addClass('hidden').find('div').css('width', '0%');
+});
+
+$(document).on('change', '#uploadPictureInput', function(e) {
+    if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            $('#picturePreview').attr('src', e.target.result).removeClass('hidden');
+        };
+        reader.readAsDataURL(this.files[0]);
+    }
+});
+
+$(document).on('click', '#saveProfilePicture', function() {
+    const fileInput = $('#uploadPictureInput')[0];
+    if (!fileInput.files || !fileInput.files[0]) {
+        alert('Please select a profile picture to upload.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('profilePicture', fileInput.files[0]);
+    formData.append('action', 'updateAdminProfilePicture');
+    formData.append('adminId', $('#hiddencdrid').val());
+
+    $('#uploadProgress').removeClass('hidden');
+
+    $.ajax({
+        url: 'ajaxhandler/adminDashboardAjax.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        xhr: function() {
+            const xhr = new window.XMLHttpRequest();
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    $('#uploadProgress div').css('width', percent + '%');
+                }
+            });
+            return xhr;
+        },
+        success: function(response) {
+            if (response.status === 'success' && response.data && response.data.filename) {
+                // Use backend filename for image src
+                const imgPath = 'uploads/' + response.data.filename + '?t=' + new Date().getTime();
+                // Update modal image
+                $('#coordinatorProfilePicture img').attr('src', imgPath).show();
+                $('#coordinatorProfilePicture div').hide();
+                // Update main profile image in the background (replace with your actual selector)
+                $(".main-profile-picture, #profilePicture img").attr('src', imgPath).show();
+                // Always reset modal and progress bar
+                $('#profilePictureUploadDialog').addClass('hidden');
+                $('#picturePreview').addClass('hidden');
+                $('#uploadPictureInput').val('');
+                $('#uploadProgress').addClass('hidden').find('div').css('width', '0%');
+            } else {
+                // Also reset modal and progress bar on error
+                $('#uploadProgress').addClass('hidden').find('div').css('width', '0%');
+                alert(response.message || 'Failed to update profile picture.');
+            }
+        },
+        error: function() {
+            alert('An error occurred while uploading the profile picture.');
+            $('#uploadProgress').addClass('hidden').find('div').css('width', '0%');
+        }
+    });
+});
+
+function loadApprovedReportsWithFilters() {
         let studentId = $("#filterStudent").val() || "all";
         let date = $("#filterDate").val();
         let weekStart = date || null;
@@ -843,48 +1357,113 @@ $(document).on('click', '#closeAnalysisModal', function() {
                 weekEnd: weekEnd
             },
             beforeSend: function() {
-                $("#approvedReportsList").html("<p>Loading approved weekly reports...</p>");
+                $("#approvedReportsList").html(`
+                    <div class="flex justify-center items-center py-12">
+                        <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500 border-b-4 border-gray-200"></div>
+                        <span class="ml-4 text-blue-600 text-lg font-semibold">Loading reports...</span>
+                    </div>
+                `);
             },
             success: function(rv) {
                 // Render reports from rv.reports if status is success
                 if (rv && rv.status === "success" && Array.isArray(rv.reports) && rv.reports.length > 0) {
                     let html = "";
-                    rv.reports.forEach(function(report) {
-                        html += `<div class='report-card admin-report-preview'>`;
-                        html += `<div class='report-header'>`;
-                        html += `<h3>${report.student_name} - Week ${getWeekNumber(report.week_start)}</h3>`;
-                        html += `<div class='report-meta'>`;
-                        html += `<span class='report-period'>Period: ${report.week_start} to ${report.week_end}</span>`;
-                        html += `<span class='approval-status ${report.approval_status}'>${report.approval_status.charAt(0).toUpperCase() + report.approval_status.slice(1)}</span>`;
-                        html += `</div></div>`;
-
-                        html += `<div class='report-grid'>`;
-                        ['monday','tuesday','wednesday','thursday','friday'].forEach(function(day) {
-                            html += `<div class='day-section ${day}'>`;
-                            html += `<h4>${capitalize(day)}</h4>`;
-                            html += `<div class='day-images'>`;
-                            if (report.imagesPerDay && report.imagesPerDay[day] && report.imagesPerDay[day].length > 0) {
-                                report.imagesPerDay[day].forEach(function(img) {
-                                    html += `<img src='http://localhost/Attendance Tracker - Copy - NP/uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='activity-image'>`;
-                                });
-                            }
-                            html += `</div>`;
-                            html += `<div class='day-description'><p>${report[day+'_description'] || report[day+'Description'] || ''}</p></div>`;
-                            html += `</div>`;
-                        });
-                        html += `</div>`;
-
-                        html += `<div class='report-footer'>`;
-                        html += `<div class='footer-left'><span class='updated-date'>Last Updated: ${report.updated_at}</span></div>`;
-                        html += `</div>`;
-                        html += `</div>`;
+                    rv.reports.forEach(function(report, reportIdx) {
+                        html += `<div class="bg-white rounded-2xl shadow-lg p-6 mb-8 transition hover:shadow-2xl relative">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xl font-bold">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-900">${report.student_name}</h3>
+                                        <span class="text-xs text-gray-500">Week ${getWeekNumber(report.week_start)}</span>
+                                    </div>
+                                </div>
+                                <span class="inline-block px-3 py-1 rounded-full text-xs font-medium ${report.approval_status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
+                                    ${report.approval_status.charAt(0).toUpperCase() + report.approval_status.slice(1)}
+                                </span>
+                            </div>
+                            <div class="flex flex-wrap gap-4 mb-4">
+                                <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">Period: ${report.week_start} to ${report.week_end}</span>
+                                <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs"><i class="fas fa-clock mr-1"></i>Last Updated: ${report.updated_at}</span>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                                ${['monday','tuesday','wednesday','thursday','friday'].map(function(day, dayIdx) {
+                                    let imagesHtml = "";
+                                    if (report.imagesPerDay && report.imagesPerDay[day] && report.imagesPerDay[day].length > 0) {
+                                        report.imagesPerDay[day].forEach(function(img) {
+                                            imagesHtml += `<img src='http://localhost/Attendance Tracker - Copy - NP/uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow-sm w-full h-24 object-cover mb-2 hover:scale-105 transition'>`;
+                                        });
+                                    } else {
+                                        imagesHtml = `<div class='flex items-center justify-center h-24 bg-gray-50 text-gray-400 rounded-lg border border-dashed border-gray-200'><i class='fas fa-image'></i></div>`;
+                                    }
+                                    return `
+                                        <div class='flex flex-col items-stretch bg-gray-50 rounded-xl p-4 shadow-sm hover:bg-blue-50 transition min-h-[260px]'>
+                                            <h4 class='text-sm font-bold text-blue-700 mb-3 text-center'>${capitalize(day)}</h4>
+                                            <div class='w-full flex justify-center mb-3'>
+                                                <div class='w-full max-w-[180px] aspect-[16/9] bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center border border-gray-300'>
+                                                    ${imagesHtml}
+                                                </div>
+                                            </div>
+                                            <div class='border-t border-gray-200 pt-3 mt-auto'>
+                                                <div class='day-description text-xs text-gray-600 text-center max-w-[220px] mx-auto overflow-y-auto' style='max-height:80px;'>
+                                                    <p class='whitespace-pre-line'>${report[day+'_description'] || report[day+'Description'] || '<span class="italic text-gray-400">No description</span>'}</p>
+                                                </div>
+                                            </div>
+                                            <button class='mt-3 bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 transition flex items-center justify-center gap-1' onclick='showZoomModal(${reportIdx}, "${day}")'>
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>`;
                     });
+                    // Modal HTML (only one, reused)
+                    html += `
+                        <div id="zoomDayModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+                            <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full relative">
+                                <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold" onclick="hideZoomModal()">&times;</button>
+                                <div id="zoomDayModalContent"></div>
+                            </div>
+                        </div>
+                    `;
                     $("#approvedReportsList").html(html);
+                    $("#approvedReportsList").removeClass("hidden");
+                    // Modal JS
+                    window.showZoomModal = function(reportIdx, day) {
+                        const report = rv.reports[reportIdx];
+                        let imagesHtml = "";
+                        if (report.imagesPerDay && report.imagesPerDay[day] && report.imagesPerDay[day].length > 0) {
+                            report.imagesPerDay[day].forEach(function(img) {
+                                imagesHtml += `<img src='http://localhost/Attendance Tracker - Copy - NP/uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow w-full h-56 object-cover mb-4'>`;
+                            });
+                        } else {
+                            imagesHtml = `<div class='flex items-center justify-center h-56 bg-gray-50 text-gray-400 rounded-lg border border-dashed border-gray-200'><i class='fas fa-image text-4xl'></i></div>`;
+                        }
+                        const desc = report[day+'_description'] || report[day+'Description'] || '<span class="italic text-gray-400">No description</span>';
+                        const modalHtml = `
+                            <h3 class='text-2xl font-extrabold text-blue-700 mb-6 text-center tracking-wide'>${capitalize(day)}</h3>
+                            <div class='flex justify-center mb-6'>
+                                <div class='rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-gray-100 p-2 flex items-center justify-center' style='min-width:320px; min-height:180px;'>
+                                    ${imagesHtml}
+                                </div>
+                            </div>
+                            <div class='bg-gray-50 rounded-xl p-4 shadow-inner text-base text-gray-700 text-center max-w-[420px] mx-auto whitespace-pre-line' style='max-height:220px; overflow-y:auto;'>${desc}</div>
+                        `;
+                        $("#zoomDayModalContent").html(modalHtml);
+                        $("#zoomDayModal").removeClass("hidden");
+                    };
+                    window.hideZoomModal = function() {
+                        $("#zoomDayModal").addClass("hidden");
+                    };
 
                     // Helper to capitalize day names
                     function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
                 } else {
                     $("#approvedReportsList").html("<p>No approved reports found.</p>");
+                    $("#approvedReportsList").removeClass("hidden");
                 }
 
                 // Helper to get week number from date
@@ -924,27 +1503,68 @@ $(document).on('click', '#closeAnalysisModal', function() {
 
     // Profile button click handler
     $(document).on('click', '#btnProfile', function() {
+        // Show coordinator profile modal
+        $('#coordinatorProfileModal').removeClass('hidden');
+        $('#coordinatorProfileLoading').show();
+        $('#coordinatorProfileContent').addClass('hidden');
+        
         let cdrid = $("#hiddencdrid").val();
 
         if (!cdrid) {
-            alert("Coordinator ID not found.");
+            $('#coordinatorProfileContent').html('<div class="text-center py-4 text-red-500">Error: Coordinator ID not found</div>');
             return;
         }
 
+        // Fetch coordinator profile details
         $.ajax({
             url: "ajaxhandler/attendanceAJAX.php",
             type: "POST",
             dataType: "json",
-            data: {cdrid: cdrid, action: "getCoordinatorDetails"},
+            data: {
+                cdrid: cdrid,
+                action: "getCoordinatorDetails"
+            },
             success: function(response) {
-                if (response.success) {
-                    displayCoordinatorDetails(response.data);
+                if (response.success && response.data) {
+                    const coordinator = response.data;
+                    
+                    // Split name into first and last name
+                    const nameParts = (coordinator.NAME || '').split(' ');
+                    const firstName = nameParts[0] || '';
+                    const lastName = nameParts.slice(1).join(' ') || '';
+                    
+                    // Update form fields
+                    $('#coordinatorFirstName').val(firstName);
+                    $('#coordinatorLastName').val(lastName);
+                    $('#coordinatorEmail').val(coordinator.EMAIL || '');
+                    $('#coordinatorContact').val(coordinator.CONTACT_NUMBER || '');
+                    $('#coordinatorDepartment').val(coordinator.DEPARTMENT || '');
+                    $('#coordinatorPosition').val('Coordinator');
+                    
+                    // Handle profile picture
+                    if (coordinator.PROFILE) {
+                        const imgPath = 'uploads/' + coordinator.PROFILE;
+                        $('#coordinatorProfilePicture img').attr('src', imgPath).show();
+                        $('#coordinatorProfilePicture div').hide();
+                    } else {
+                        $('#coordinatorProfilePicture img').hide();
+                        $('#coordinatorProfilePicture div').show();
+                    }
+                    
+                    // Hide loading, show content
+                    $('#coordinatorProfileLoading').hide();
+                    $('#coordinatorProfileContent').removeClass('hidden');
                 } else {
-                    alert("Error: " + (response.message || "Unknown error occurred."));
+                    $('#coordinatorProfileLoading').hide();
+                    $('#coordinatorProfileContent').removeClass('hidden')
+                        .html('<div class="text-center py-4 text-red-500">Error loading coordinator profile</div>');
                 }
             },
             error: function(xhr, status, error) {
                 console.error("AJAX error:", status, error);
+                $('#coordinatorProfileLoading').hide();
+                $('#coordinatorProfileContent').removeClass('hidden')
+                    .html('<div class="text-center py-4 text-red-500">Failed to load coordinator profile</div>');
                 alert("Error fetching coordinator details. Please check the console for more information.");
             }
         });
@@ -1534,7 +2154,7 @@ $(document).on('click', '#closeAnalysisModal', function() {
             $('#studentForm input, #studentForm select').prop('disabled', false);
         });
         $('#addHTEFormContainer').hide();
-        $('#sessionFormContainer').hide();
+    $('#sessionFormContainer').fadeOut();
         $('#deleteHTEFormContainer').hide();
         $('#deleteSessionFormContainer').hide();
         $('#deleteStudentFormContainer').hide();
@@ -1577,32 +2197,66 @@ $(document).on('click', '#closeAnalysisModal', function() {
     // Function to display all students under coordinator
     function displayAllStudents(students) {
         console.log('displayAllStudents called with data:', students);
-        let tbodyHtml = '';
+        // Get unique sessions and sort (most recent first)
+        const sessions = [...new Set((students || []).map(s => s.SESSION_NAME).filter(Boolean))];
+        sessions.sort((a, b) => b.localeCompare(a));
+        // Build dropdown
+        let filterHtml = `<div class='flex items-center mb-4'><label for='sessionFilter' class='mr-2 font-semibold text-gray-700'>Filter by Session:</label><select id='sessionFilter' class='rounded-md border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500'>`;
+        filterHtml += `<option value='all'>All Sessions</option>`;
+        sessions.forEach(session => { filterHtml += `<option value='${session}'>${session}</option>`; });
+        filterHtml += `</select></div>`;
 
-        if (students && students.length > 0) {
-            students.forEach(student => {
-                tbodyHtml += `
-                    <tr>
-                        <td>${student.STUDENT_ID || ''}</td>
-                        <td>${student.NAME || ''}</td>
-                        <td>${student.SURNAME || ''}</td>
-                        <td>${student.AGE || ''}</td>
-                        <td>${student.GENDER || ''}</td>
-                        <td>${student.EMAIL || ''}</td>
-                        <td>${student.CONTACT_NUMBER || ''}</td>
-                        <td>${student.HTE_NAME || 'Not Assigned'}</td>
-                        <td>${student.SESSION_NAME || 'Not Assigned'}</td>
-                    </tr>
-                `;
-            });
-        } else {
-            tbodyHtml = `<tr><td colspan="9">No students found under this coordinator.</td></tr>`;
+        // Insert filter above table
+        $('#allStudentsFilterContainer').remove();
+        $('#allStudentsContainer').prepend(`<div id='allStudentsFilterContainer'>${filterHtml}</div>`);
+
+        // Default to most recent session
+        setTimeout(() => {
+            $('#sessionFilter').val(sessions[0] || 'all').trigger('change');
+        }, 0);
+
+        // Filtering logic
+        function renderTable(filteredStudents) {
+            let tbodyHtml = '';
+            if (filteredStudents && filteredStudents.length > 0) {
+                filteredStudents.forEach((student, idx) => {
+                    const rowClass = idx % 2 === 0 ? 'bg-white hover:bg-blue-50 transition' : 'bg-gray-50 hover:bg-blue-50 transition';
+                    tbodyHtml += `
+                        <tr class="${rowClass}">
+                            <td class="px-6 py-4 text-sm text-gray-700 font-medium">${student.STUDENT_ID || ''}</td>
+                            <td class="px-6 py-4 text-sm text-gray-700">${student.NAME || ''}</td>
+                            <td class="px-6 py-4 text-sm text-gray-700">${student.SURNAME || ''}</td>
+                            <td class="px-6 py-4 text-sm text-gray-700">${student.AGE || ''}</td>
+                            <td class="px-6 py-4 text-sm text-gray-700">${student.GENDER || ''}</td>
+                            <td class="px-6 py-4 text-sm text-blue-600 underline">${student.EMAIL || ''}</td>
+                            <td class="px-6 py-4 text-sm text-gray-700">${student.CONTACT_NUMBER || ''}</td>
+                            <td class="px-6 py-4 text-sm text-gray-700">${student.HTE_NAME || 'Not Assigned'}</td>
+                            <td class="px-6 py-4 text-sm text-gray-700">${student.SESSION_NAME || 'Not Assigned'}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbodyHtml = `<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">No students found under this coordinator.</td></tr>`;
+            }
+            $('#allStudentsTableBody').html(tbodyHtml);
         }
 
-    // Store all students globally for autocomplete
-    window.allStudentsList = students || [];
-    $('#allStudentsTableBody').html(tbodyHtml);
-    $('#allStudentsContainer').fadeIn();
+        // Initial render
+        renderTable(students);
+
+        // Store all students globally for autocomplete
+        window.allStudentsList = students || [];
+        $('#allStudentsContainer').fadeIn();
+
+        // On filter change
+        $('#sessionFilter').off('change').on('change', function() {
+            const selectedSession = $(this).val();
+            if (selectedSession === 'all') {
+                renderTable(students);
+            } else {
+                renderTable(students.filter(s => s.SESSION_NAME === selectedSession));
+            }
+        });
     }
 
     // Close all students container
@@ -1659,14 +2313,17 @@ function loadSeassions()
 
 function getHTEHTML(classlist)
 {
-    let x = ``;
-    x=``;
-    let i=0;
-    for(i=0;i<classlist.length;i++)
-        {
-            let cc = classlist[i];
-            x=x+`<div class="classcard" data-building='${JSON.stringify(cc)}'>${cc['NAME']}</div>`;
-        }         
+    let x = `<div class="flex flex-col">
+        <label class="text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
+        <select id="company-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <option value="">Select Company</option>`;
+    
+    for(let i = 0; i < classlist.length; i++) {
+        let cc = classlist[i];
+        x += `<option value="${cc.HTE_ID}" data-building='${JSON.stringify(cc)}'>${cc.NAME}</option>`;
+    }
+    
+    x += `</select></div>`;
     return x;
 }
 
@@ -1716,153 +2373,103 @@ function fetchTHE(cdrid,sessionid)
         }
     ondate=year+"-"+month+"-"+day;
     // alert(ondate);
-    let x = `<div class="classdetails">
-                <div class="code-area">${building['INDUSTRY']}</div>
-                <div class="title-area">${building['NAME']}</div>
-                <div class="ondate-area">
-                    <input type="date" value='${ondate}' id='dtpondate'>
+    let logoHtml = '';
+    if (building['LOGO']) {
+        logoHtml = `<img src='uploads/hte_logos/${building['LOGO']}' alt='Company Logo' class='w-20 h-20 object-cover rounded-full border-2 border-blue-300 shadow mb-2 bg-white' />`;
+    } else {
+        logoHtml = `<div class='w-20 h-20 flex items-center justify-center bg-gray-100 rounded-full border-2 border-gray-300 text-gray-400 mb-2'>No Logo</div>`;
+    }
+    let x = `<div class="company-card flex flex-col items-center p-4 bg-white rounded-xl shadow-md border border-gray-200">
+                ${logoHtml}
+                <div class="font-semibold text-lg text-gray-800 mb-1">${building['NAME']}</div>
+                <div class="text-sm text-gray-500 mb-2">${building['INDUSTRY']}</div>
+                <div class="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                    <input type="date" value='${ondate}' id='dtpondate' class='border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300' />
+                    <span class="icon-calendar"></span>
                 </div>
             </div>`;
     return x;
 }
 ///////
 
-
-function getStudentListHTML(studentList) {
-    let x = `<div class="studentlist"><label>STUDENT LIST</label></div>`;
-    if (studentList && studentList.length > 0) {
-        x += `<div class="studentdetails header-row">`;
-        // Removed checkbox column header
-        // x += `<div class="select-area"><input type="checkbox" id="selectAll"></div>`;
-        x += `<div class="rollno-area">Student ID</div>`;
-        x += `<div class="name-area">Name</div>`;
-        x += `<div class="delete-area"></div>`;
-        x += `<div class="timein-area">Time In</div>`;
-        x += `<div class="timeout-area">Time Out</div>`;
-        x += `</div>`; // close header-row div
-
-        studentList.forEach((cs, index) => {
-            x += `<div class="studentdetails">`;
-            x += `<div class="rollno-area">${cs['STUDENT_ID']}</div>`;
-            x += `<div class="name-area">${cs['SURNAME']}, ${cs['NAME']}</div>`;
-
-            // Delete button in separate column
-            x += `<div class="delete-area">`;
-            x += `<button class="btnProfileStudent student-action-btn" data-studentid="${cs['INTERNS_ID']}">Profile</button>`;
-            x += `<button class="btnDashboardStudent student-action-btn" data-studentid="${cs['INTERNS_ID']}">Stats</button>`;
-            x += `</div>`;
-// Student Profile Modal (view-only)
-if ($("#studentProfileModal").length === 0) {
-    $("body").append(`
-        <div id="studentProfileModal" class="modal" style="display:none;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Student Profile</h2>
-                    <button class="modal-close" id="closeStudentProfileModal">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div id="studentProfileModalContent">
-                        <!-- Student profile details will be loaded here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    `);
+function convertTo12Hour(time24) {
+    if (!time24 || time24 === '--:--') return '--:--';
+    
+    // Parse the time string
+    const [hours24, minutes] = time24.split(':');
+    let hours = parseInt(hours24, 10);
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    // Convert to 12-hour format
+    hours = hours % 12;
+    hours = hours ? hours : 12; // Convert 0 to 12
+    
+    // Format the time
+    return `${hours}:${minutes} ${ampm}`;
 }
 
-$(document).on("click", ".btnProfileStudent", function() {
-    let studentId = $(this).data('studentid');
-    if (!studentId) {
-        alert("Student ID not found.");
-        return;
+function getStudentListHTML(studentList) {
+    // Handle empty student list
+    if (!studentList || studentList.length === 0) {
+        return `<div class="text-gray-500 text-center py-8">No students found.</div>`;
     }
-    console.log('[Student Profile Modal] Fetching profile for STUDENT_ID:', studentId);
-    $.ajax({
-        url: "ajaxhandler/studentDashboardAjax.php",
-        type: "POST",
-        dataType: "json",
-        data: {
-            action: "getStudentProfile",
-            studentId: studentId // Now using STUDENT_ID
-        },
-        success: function(response) {
-            console.log('[Student Profile Modal] AJAX response:', response);
-            if (response.status === "success" && response.data) {
-                let profile = response.data;
-                let html = `<div class='profile-header'>`;
-                html += `<div class='profile-avatar'>`;
-                html += `<img src='${profile.profile_picture ? 'uploads/' + profile.profile_picture : 'icon/nobglogo.ico'}' alt='Profile Picture' class='avatar-placeholder'>`;
-                html += `</div>`;
-                html += `<h2>${profile.NAME} ${profile.SURNAME}</h2>`;
-                html += `<p class='profile-subtitle'>Student Profile</p>`;
-                html += `</div>`;
-                html += `<div class='profile-details'>`;
-                html += `<div class='detail-row'><span class='detail-label'>Student ID:</span><span class='detail-value'>${profile.STUDENT_ID || ''}</span></div>`;
-                html += `<div class='detail-row'><span class='detail-label'>Intern ID:</span><span class='detail-value'>${profile.INTERNS_ID || ''}</span></div>`;
-                html += `<div class='detail-row'><span class='detail-label'>Full Name:</span><span class='detail-value'>${profile.NAME} ${profile.SURNAME}</span></div>`;
-                html += `<div class='detail-row'><span class='detail-label'>Age:</span><span class='detail-value'>${profile.AGE || ''}</span></div>`;
-                html += `<div class='detail-row'><span class='detail-label'>Gender:</span><span class='detail-value'>${profile.GENDER || ''}</span></div>`;
-                html += `<div class='detail-row'><span class='detail-label'>Email:</span><span class='detail-value'>${profile.EMAIL || ''}</span></div>`;
-                html += `<div class='detail-row'><span class='detail-label'>Contact Number:</span><span class='detail-value'>${profile.CONTACT_NUMBER || ''}</span></div>`;
-                html += `<div class='detail-row'><span class='detail-label'>HTE Name:</span><span class='detail-value'>${profile.HTE_NAME || 'N/A'}</span></div>`;
-                html += `</div>`;
-                $("#studentProfileModalContent").html(html);
-                $("#studentProfileModal").fadeIn();
-                console.log('[Student Profile Modal] Profile loaded and modal shown.');
-            } else {
-                console.error('[Student Profile Modal] Student profile not found.', response);
-                alert("Student profile not found.");
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error('[Student Profile Modal] AJAX error:', error, xhr.responseText);
-            alert("Error loading student profile: " + error);
+
+    // Start table layout
+    let x = `
+    <div class="overflow-hidden rounded-lg border border-gray-200">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time In</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time Out</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">`;
+
+    // Helper: format time in AM/PM
+    const formatTime = (time) => {
+        if (!time) return '--:-- --';
+        let [hours, minutes] = time.split(':');
+        let suffix = 'AM';
+        hours = parseInt(hours);
+        if (hours >= 12) {
+            suffix = 'PM';
+            if (hours > 12) hours -= 12;
+        } else if (hours === 0) {
+            hours = 12;
         }
+        return `${hours}:${minutes} ${suffix}`;
+    };
+
+    // Generate student rows
+    studentList.forEach((cs, index) => {
+        x += `
+        <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${cs['STUDENT_ID']}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${cs['SURNAME']}, ${cs['NAME']}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <span class="cbtimein font-medium">${convertTo12Hour(cs['timeIn'] || cs['TIME_IN'] || cs['timein'])}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <span class="cbtimeout font-medium">${convertTo12Hour(cs['timeout'] || cs['TIME_OUT'] || cs['timeOut'])}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button class="btnProfileStudent inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-2"
+                        data-studentid="${cs['INTERNS_ID']}">Profile</button>
+                <button class="btnDashboardStudent inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        data-studentid="${cs['INTERNS_ID']}">Stats</button>
+            </td>
+        </tr>`;
     });
-});
 
-$(document).on("click", "#closeStudentProfileModal", function() {
-    $("#studentProfileModal").fadeOut();
-});
+    // Close table
+    x += `</tbody></table></div>`;
 
-            // Convert time to AM/PM format for timein and timeout, or display '--:-- --' if empty
-            const formatTime = (time) => {
-                if (!time) return '--:-- --'; // Return '--:-- --' if time is empty
-
-                let [hours, minutes] = time.split(':');
-                let suffix = 'AM';
-                hours = parseInt(hours);
-
-                if (hours >= 12) {
-                    suffix = 'PM';
-                    if (hours > 12) hours -= 12; // Convert to 12-hour format
-                } else if (hours === 0) {
-                    hours = 12; // Midnight case
-                }
-
-                return `${hours}:${minutes} ${suffix}`;
-            };
-
-            x += `<div class="timein-area" data-studentid='${cs['STUDENT_ID']}'>`;
-            x += `<span class="cbtimein">${formatTime(cs['timein'])}</span>`;
-            x += `</div>`;
-
-            x += `<div class="timeout-area" data-studentid='${cs['STUDENT_ID']}'>`;
-            x += `<span class="cbtimeout">${formatTime(cs['timeout'])}</span>`;
-            x += `</div>`;
-
-            x += `</div>`; // close studentdetails div
-        });
-
-    } else {
-        x += `<p>No students found.</p>`;
-    }
-        // Create the report button only, removed assign button
-        x += `<div class="reportsection">`;
-        // x += `<button id="btnAssign" class="common-button btnAssign">ASSIGN</button>`;
-        x += `</div>`; // close reportsection div
+    // Optional report section (you had this at the end)
+    x += `<div class="reportsection mt-4"></div>`;
 
     return x;
 }
@@ -1896,6 +2503,7 @@ function fetchStudentList(sessionid,classid,cdrid,ondate)
             // console.log("fetchStudentList success: " + JSON.stringify(rv));
             {
                 // alert(JSON.stringify(rv))
+                console.log('Student data:', rv);
                 let x = getStudentListHTML(rv);
                 $("#studentlistarea").html(x);
             }
@@ -2012,11 +2620,15 @@ $(function(e)
         }
     });
 
-    $(document).on("click", ".classcard", function(e ) {
+    $(document).on("change", "#company-select", function(e) {
         // Hide control panel forms when showing student list
         $('.form-container').slideUp();
-        let building = $(this).data('building');
-        currentHteId = building['HTE_ID'];
+        
+        let selectedOption = $(this).find("option:selected");
+        let building = selectedOption.data("building");
+        if (!building) return;
+
+        currentHteId = building.HTE_ID;
         $("#hiddenSelectedHteID").val(currentHteId);
         let x = getClassdetailsAreaHTML(building);
         $("#classdetailsarea").html(x);
@@ -2137,12 +2749,18 @@ $(function(e)
             dataType: 'json',
             success: function(data) {
                 // Summary as individual cards
-                $('#statsSummary').html(
-                    `<div class='stats-summary-cards'>`
-                        + `<div class='stat-card'><div class='stat-card-title'>Students Answered</div><div class='stat-card-value'>${data.answeredCount} / ${data.totalStudents}</div></div>`
-                        + `<div class='stat-card'><div class='stat-card-title'>Students Rated</div><div class='stat-card-value'>${data.ratedCount} / ${data.totalStudents}</div></div>`
-                    + `</div>`
-                );
+                $('#statsSummary').html(`
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-blue-50 rounded-lg p-6 flex flex-col items-center justify-center shadow">
+                            <div class="text-lg font-semibold text-blue-700 mb-2">Students Answered</div>
+                            <div class="text-3xl font-bold text-blue-900">${data.answeredCount} <span class="text-gray-500 text-xl">/ ${data.totalStudents}</span></div>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-6 flex flex-col items-center justify-center shadow">
+                            <div class="text-lg font-semibold text-green-700 mb-2">Students Rated</div>
+                            <div class="text-3xl font-bold text-green-900">${data.ratedCount} <span class="text-gray-500 text-xl">/ ${data.totalStudents}</span></div>
+                        </div>
+                    </div>
+                `);
 
                 // Prepare chart data
                 let labels = [];
@@ -2192,7 +2810,7 @@ $(function(e)
                     $('#chartContainer').after('<div id="tableContainer"></div>');
                 }
                 // Render chart in chartContainer
-                $('#chartContainer').html('<canvas id="questionRatingsChart" style="max-width:900px;"></canvas>');
+                $('#chartContainer').html('<div class="flex justify-center mb-8"><canvas id="questionRatingsChart" class="max-w-3xl w-full h-96"></canvas></div>');
                 let ctx = document.getElementById('questionRatingsChart').getContext('2d');
                 window.questionRatingsChart = new Chart(ctx, {
                     type: 'bar',
@@ -2215,20 +2833,28 @@ $(function(e)
 
                 // Render per-question stats table in tableContainer
                 $('.per-question-stats-table').remove();
-                let statsTableHtml = `<div class='per-question-stats-table' style='margin-top:2.5rem;'>
-                    <h4 style='margin-bottom:1rem;'>Per-Question Rating Stats</h4>
-                    <table style='width:100%;max-width:700px;border-collapse:collapse;background:#fff;'>
-                        <thead>
-                            <tr style='background:#f7fafc;'>
-                                <th style='padding:8px 6px;text-align:left;'>Question</th>
-                                <th>5</th><th>4</th><th>3</th><th>2</th><th>1</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${questionRows}
-                        </tbody>
-                    </table>
-                </div>`;
+                let statsTableHtml = `
+                    <div class="per-question-stats-table mt-10">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Per-Question Rating Stats</h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white rounded-lg shadow border border-gray-200">
+                                <thead class="bg-blue-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-sm font-bold text-blue-700">Question</th>
+                                        <th class="px-4 py-2 text-center text-sm font-bold text-blue-700 w-16">5</th>
+                                        <th class="px-4 py-2 text-center text-sm font-bold text-blue-700 w-16">4</th>
+                                        <th class="px-4 py-2 text-center text-sm font-bold text-blue-700 w-16">3</th>
+                                        <th class="px-4 py-2 text-center text-sm font-bold text-blue-700 w-16">2</th>
+                                        <th class="px-4 py-2 text-center text-sm font-bold text-blue-700 w-16">1</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${questionRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
                 $('#tableContainer').html(statsTableHtml);
             },
             error: function() {
@@ -2266,10 +2892,11 @@ $(function(e)
                 alert("Please Select HTE Before Adding Student");
                 return;
             }
-            // Close other forms
-            $('#allStudentsContainer').fadeOut();
-            $('#addHTEForm').fadeOut();
-            $("#addStudentForm").show();
+          // Close other forms
+          $('#allStudentsContainer').fadeOut();
+          $('#addHTEForm').fadeOut();
+          $('#sessionFormContainer').fadeOut();
+          $("#addStudentForm").show();
         });
     
 
@@ -2457,21 +3084,45 @@ $(function(e)
 
         $(document).on("click", ".btnAddHTE", function(e) {
             e.preventDefault();
-            $("#addHTEForm").css("display", "flex").hide().fadeIn();
+          $('#studentFormContainer').hide();
+          $('#sessionFormContainer').fadeOut();
+          $('#allStudentsContainer').hide();
+          $('#deleteHTEFormContainer').hide();
+          $('#deleteSessionFormContainer').hide();
+          $('#deleteStudentFormContainer').hide();
+          $('#addHTEFormContainer').fadeIn();
         });
     
 
         $(document).on("submit", "#hteForm", function(e) {
             e.preventDefault();
-            let formData = $(this).serialize();
-            formData += "&action=addHTE&sessionId=" + currentSessionId;
-        
-            console.log("Form data being sent:", formData);
-        
+            var form = this;
+            var formData = new FormData(form);
+            formData.append('action', 'addHTE');
+            formData.append('sessionId', currentSessionId);
+
+            // Debug: log FormData contents
+            if (formData.has('LOGO')) {
+                var file = formData.get('LOGO');
+                if (file && file.name) {
+                    console.log('LOGO file selected:', file.name, 'size:', file.size);
+                } else {
+                    console.warn('LOGO file not selected or empty');
+                }
+            } else {
+                console.warn('LOGO field not found in FormData');
+            }
+            // Log all FormData key/value pairs
+            for (var pair of formData.entries()) {
+                console.log(pair[0]+ ':', pair[1]);
+            }
+
             $.ajax({
                 url: "ajaxhandler/attendanceAJAX.php",
                 type: "POST",
                 data: formData,
+                processData: false,
+                contentType: false,
                 dataType: "json",
                 success: function(response) {
                     console.log("Server Response:", response); // Log the raw response
@@ -2755,71 +3406,77 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response.success && response.questions) {
-                    // Filter only active questions
                     const activeQuestions = response.questions.filter(q => q.status === 'active');
-                    let html = `<div class='all-questions-container' style='max-height:540px;overflow-y:auto;padding-right:8px;'>`;
-                    html += `<h2 class='all-questions-title'>All Evaluation Questions</h2>`;
-                    // Separate questions by category
-                    const softSkillQuestions = activeQuestions.filter(q => q.category && q.category.toLowerCase().includes('soft'));
-                    const commSkillQuestions = activeQuestions.filter(q => q.category && q.category.toLowerCase().includes('comm'));
-                    if (softSkillQuestions.length > 0) {
-                        html += `<div style='text-align:center;margin-top:18px;margin-bottom:8px;'>
-                            <span style='display:inline-block;background:#4f6ef7;color:#fff;padding:8px 32px;border-radius:8px;font-size:1.25rem;font-weight:700;box-shadow:0 2px 8px rgba(79,110,247,0.12);letter-spacing:1px;'>Soft Skill</span>
-                        </div>`;
-                        html += `<ul class='question-list'>`;
-                        softSkillQuestions.forEach(function(q) {
-                            html += `<li class='question-card'>
-                                <div class='question-body' contenteditable='true' data-questionid='${q.question_id}'>${q.question_text}</div>
-                            </li>`;
-                        });
-                        html += `</ul>`;
-                    }
-                    if (commSkillQuestions.length > 0) {
-                        html += `<div style='text-align:center;margin-top:18px;margin-bottom:8px;'>
-                            <span style='display:inline-block;background:#3182ce;color:#fff;padding:8px 32px;border-radius:8px;font-size:1.25rem;font-weight:700;box-shadow:0 2px 8px rgba(49,130,206,0.12);letter-spacing:1px;'>Comm Skill</span>
-                        </div>`;
-                        html += `<ul class='question-list'>`;
-                        commSkillQuestions.forEach(function(q) {
-                            html += `<li class='question-card'>
-                                <div class='question-body' contenteditable='true' data-questionid='${q.question_id}'>${q.question_text}</div>
-                            </li>`;
-                        });
-                        html += `</ul>`;
-                    }
-                    // If there are other categories, show them below
-                    const otherQuestions = activeQuestions.filter(q => {
-                        const cat = q.category ? q.category.toLowerCase() : '';
-                        return !cat.includes('soft') && !cat.includes('comm');
+                    // Collect unique categories
+                    const categories = [...new Set(activeQuestions.map(q => q.category ? q.category.trim() : 'Other'))];
+                    let html = `<div class='flex w-full'>`;
+                    // Left column (category selector)
+                    html += `<div class='left-col w-1/5 max-w-xs pr-4'>`;
+                    html += `<h2 class='text-xl font-bold text-gray-800 mb-4'>Categories</h2>`;
+                    html += `<div class='mb-4'><label for='questionCategoryDropdown' class='mr-2 text-gray-700 font-medium'>Category:</label><select id='questionCategoryDropdown' class='border border-gray-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 w-full'>`;
+                    categories.forEach(cat => {
+                        html += `<option value='${cat}'>${cat}</option>`;
                     });
-                    if (otherQuestions.length > 0) {
-                        html += `<div style='text-align:center;margin-top:18px;margin-bottom:8px;'>
-                            <span style='display:inline-block;background:#e53e3e;color:#fff;padding:8px 32px;border-radius:8px;font-size:1.25rem;font-weight:700;box-shadow:0 2px 8px rgba(229,62,62,0.12);letter-spacing:1px;'>Person and Inperpersonal Skills</span>
-                        </div>`;
-                        html += `<ul class='question-list'>`;
-                        otherQuestions.forEach(function(q) {
-                            html += `<li class='question-card'>
-                                <div class='question-body' contenteditable='true' data-questionid='${q.question_id}'>${q.question_text}</div>
-                            </li>`;
-                        });
-                        html += `</ul>`;
-                    }
-                    html += `</div>`;
-                    // Add Save All Changes button below all questions
-                    html += `<div style='text-align:center;margin-top:24px;'>
-                        <button id='btnSaveAllQuestions' style='padding:10px 32px;font-size:1.1rem;background:#4f6ef7;color:#fff;border:none;border-radius:6px;box-shadow:0 2px 8px rgba(79,110,247,0.08);font-weight:600;cursor:pointer;'>Save All Changes</button>
-                        <span id='saveAllStatus' style='margin-left:16px;'></span>
+                    html += `</select></div>`;
+                    html += `<div class='flex items-center mb-2'>
+                        <span class='inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full mr-2'>
+                            <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4 mr-1' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15.232 5.232l3.536 3.536M9 13h3l9-9a1.414 1.414 0 00-2-2l-9 9v3z' /></svg>
+                            Editable: Click question text to edit
+                        </span>
                     </div>`;
+                    html += `</div>`;
+                    // Right column (questions)
+                    html += `<div class='right-col w-4/5 pl-4'>`;
+                    html += `<h2 class='text-2xl font-bold text-gray-800 mb-4'>All Evaluation Questions</h2>`;
+                    html += `<div id='questionsByCategory' style='max-height:calc(100vh - 320px);overflow-y:auto;'></div>`;
+                    html += `<div class='flex flex-col items-center mt-6 mb-4'>
+                        <button id='btnSaveAllQuestions' class='px-8 py-2 text-lg font-semibold bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all duration-150'>
+                            <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 inline-block mr-2' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 13l4 4L19 7' /></svg>
+                            Save All Changes
+                        </button>
+                        <span id='saveAllStatus' class='mt-4 px-4 py-2 rounded-lg text-base font-medium hidden'></span>
+                    </div>`;
+                    html += `</div>`;
+                    html += `</div>`;
                     $('#evalQuestionsTabContent').html(html);
-                    // Save all edited questions via AJAX
+
+                    // Render questions by selected category
+                    function renderQuestions(selectedCategory) {
+                        let filtered = activeQuestions.filter(q => (q.category ? q.category.trim() : 'Other') === selectedCategory);
+                        let sectionHtml = '';
+                        if (filtered.length === 0) {
+                            sectionHtml = `<div class='text-center text-gray-500 py-6'>No questions found for this category.</div>`;
+                        } else {
+                            sectionHtml += `<ul class='space-y-3'>`;
+                            filtered.forEach(function(q) {
+                                sectionHtml += `<li class='bg-white rounded-lg shadow p-4'>
+                                  <div class='text-gray-700 text-base font-medium' contenteditable='true' data-questionid='${q.question_id}'>${q.question_text}</div>
+                                </li>`;
+                            });
+                            sectionHtml += `</ul>`;
+                        }
+                        $('#questionsByCategory').html(sectionHtml);
+                    }
+                    // Initial render (first category)
+                    if (categories.length > 0) {
+                        renderQuestions(categories[0]);
+                        $('#questionCategoryDropdown').val(categories[0]);
+                    }
+                    // Dropdown change event
+                    $('#questionCategoryDropdown').on('change', function() {
+                        renderQuestions($(this).val());
+                    });
+
                     $(document).off('click', '#btnSaveAllQuestions').on('click', '#btnSaveAllQuestions', function() {
                         var questions = [];
-                        $('.question-body[contenteditable="true"]').each(function() {
+                        $('.question-body[contenteditable="true"], .text-gray-700[contenteditable="true"]').each(function() {
                             var questionId = $(this).data('questionid');
                             var newText = $(this).text().trim();
                             questions.push({ question_id: questionId, question_text: newText });
                         });
                         var $status = $('#saveAllStatus');
-                        $status.text('Saving...').css('color', '#0077b6');
+                        $status.removeClass('hidden');
+                        $status.text('Saving...').removeClass('bg-green-100 text-green-700 bg-red-100 text-red-700').addClass('bg-blue-100 text-blue-700');
                         $.ajax({
                             url: 'ajaxhandler/coordinatorEvaluationQuestionsAjax.php',
                             type: 'PUT',
@@ -2828,22 +3485,22 @@ $(document).ready(function() {
                             dataType: 'json',
                             success: function(response) {
                                 if (response.success) {
-                                    $status.text('All changes saved!').css('color', 'green');
+                                    $status.text('All changes saved!').removeClass('bg-blue-100 text-blue-700 bg-red-100 text-red-700').addClass('bg-green-100 text-green-700');
                                 } else {
-                                    $status.text('Failed to save changes.').css('color', 'red');
+                                    $status.text('Failed to save changes.').removeClass('bg-blue-100 text-blue-700 bg-green-100 text-green-700').addClass('bg-red-100 text-red-700');
                                 }
                             },
                             error: function() {
-                                $status.text('Error saving changes.').css('color', 'red');
+                                $status.text('Error saving changes.').removeClass('bg-blue-100 text-blue-700 bg-green-100 text-green-700').addClass('bg-red-100 text-red-700');
                             }
                         });
                     });
                 } else {
-                    $('#evalQuestionsTabContent').html("<div class='all-questions-container'><h2 class='all-questions-title'>No active questions found.</h2></div>");
+                    $('#evalQuestionsTabContent').html("<div class='all-questions-container'><h2 class='text-2xl font-bold text-gray-800 mb-4'>No active questions found.</h2></div>");
                 }
             },
             error: function() {
-                $('#evalQuestionsTabContent').html("<div class='all-questions-container'><h2 class='all-questions-title'>Error loading questions.</h2></div>");
+                $('#evalQuestionsTabContent').html("<div class='all-questions-container'><h2 class='text-2xl font-bold text-gray-800 mb-4'>Error loading questions.</h2></div>");
             }
         });
     }
@@ -3284,27 +3941,139 @@ $(document).ready(function() {
     }
 
     function renderStudentList(students) {
-        let sorted = students.slice().sort((a, b) => a.name.localeCompare(b.name));
-        let html = '';
-        sorted.forEach(function(student) {
-            html += `<div class="preassessment-student-item${student.id === selectedStudentId ? ' selected' : ''}" data-studentid="${student.id}">${student.name}</div>`;
+        let sorted = students.slice().sort((a, b) => {
+            let aId = (a.STUDENT_ID || a.student_id || '').toString();
+            let bId = (b.STUDENT_ID || b.student_id || '').toString();
+            return aId.localeCompare(bId);
         });
-        $('#studentListPanel').html(html);
+        let studentListHtml = '';
+        sorted.forEach(function(student) {
+            let displayId = student.STUDENT_ID || student.student_id || 'Unknown ID';
+            studentListHtml += `
+                <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${student.id === selectedStudentId ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.id}">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
+                    </span>
+                    <span class="truncate">${displayId}</span>
+                </div>
+            `;
+        });
+        // Build the 20/80 column layout
+        let html = `<div class='flex w-full'>`;
+        html += `<div class='left-col w-1/5 max-w-xs pr-4'>`;
+    html += `<div class='mb-4'><input type='text' id='rateStudentSearch' placeholder='Search student' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
+    html += `<div id='studentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'>${studentListHtml}</div>`;
+        html += `</div>`;
+        html += `<div class='right-col w-4/5 pl-4'>`;
+        if (!selectedStudentId) {
+            html += `
+            <div class="flex flex-col items-center justify-center h-full">
+                <div class="bg-blue-50 rounded-full p-6 mb-4">
+                    <svg xmlns='http://www.w3.org/2000/svg' class='h-12 w-12 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
+                </div>
+                <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
+                <div class="text-gray-500 text-base">Select a student from the list to view their pre-assessment details.</div>
+            </div>
+            `;
+        } else {
+            html += `<div id='rateEvalList' class='space-y-4'></div>`;
+        }
+        html += `</div>`;
+        html += `</div>`;
+        $('#rateTabContent').html(html);
     }
 
     // Search filter for student list
     $(document).on('input', '#rateStudentSearch', function() {
-        const query = $(this).val().trim().toLowerCase();
-        let filtered = allStudents.filter(s => s.name.toLowerCase().includes(query));
-        renderStudentList(filtered);
+        const query = $(this).val().trim();
+        // Remove any previous invalid message
+        $('#studentSearchInvalidMsg').remove();
+        if (query.length > 0 && /[^0-9]/.test(query)) {
+            // Show invalid input message below the search bar
+            $(this).after('<div id="studentSearchInvalidMsg" class="text-red-600 text-sm mt-1">Invalid input: Only numbers allowed</div>');
+            return;
+        }
+        let filtered = allStudents.filter(s => {
+            let idStr = (s.STUDENT_ID || s.student_id || '').toString();
+            return idStr.includes(query);
+        });
+    renderStudentList(filtered);
+    // Restore the input value and focus after re-render
+    const $input = $('#rateStudentSearch');
+    $input.val(query);
+    $input.focus();
     });
 
     // Handle student selection
     $(document).on('click', '.preassessment-student-item', function() {
-        $('.preassessment-student-item').removeClass('selected');
-        $(this).addClass('selected');
-        selectedStudentId = $(this).data('studentid');
-        loadStudentEvaluation(selectedStudentId);
+    selectedStudentId = $(this).data('studentid');
+    // Map INTERNS_ID to STUDENT_ID with debug
+    let selectedStudent = allStudents.find(s => s.id == selectedStudentId);
+    let studentDbId = selectedStudent && selectedStudent.STUDENT_ID ? selectedStudent.STUDENT_ID : selectedStudentId;
+    console.log('[Pre-Assessment] Selected INTERNS_ID:', selectedStudentId, '| Mapped STUDENT_ID:', studentDbId, '| Student object:', selectedStudent);
+    console.log('[Pre-Assessment] allStudents array:', allStudents);
+    // Fetch and show grades modal using STUDENT_ID
+    $.ajax({
+        url: 'ajaxhandler/preAssessmentGradesAjax.php',
+        type: 'POST',
+        dataType: 'json',
+        data: { student_id: studentDbId },
+        success: function(response) {
+            if (response.success && response.grades) {
+                let grades = response.grades;
+                let gradeRows = '';
+                // Only show subject grades
+                const subjectKeys = [
+                    'CC 102','CC 103','PF 101','CC 104','IPT 101','IPT 102','CC 106','CC 105',
+                    'IM 101','IM 102','HCI 101','HCI 102','WS 101','NET 101','NET 102',
+                    'IAS 101','IAS 102','CAP 101','CAP 102','SP 101'
+                ];
+                subjectKeys.forEach(function(key) {
+                    if (grades.hasOwnProperty(key)) {
+                        gradeRows += `<tr><td class='px-3 py-2 font-semibold text-gray-700'>${key}</td><td class='px-3 py-2 text-blue-700'>${grades[key]}</td></tr>`;
+                    }
+                });
+                // Find the top and left position of the student list
+                let $studentList = $('.preassessment-student-list');
+                let offset = $studentList.length ? $studentList.offset() : { top: 95, left: 32 };
+                // Shift modal right by 32px to fully cover scrollbar
+                let modalLeft = offset.left + 55;
+                let modalHtml = `
+                <div id='gradesModal' style='position:absolute;top:${offset.top}px;left:${modalLeft}px;max-width:330px;max-height:80vh;z-index:10;' class='bg-gradient-to-br from-white via-blue-50 to-blue-100 shadow-lg flex flex-col rounded-2xl border border-blue-100 animate-slidein pointer-events-auto'>
+                    <div class='flex justify-between items-center px-6 py-4 border-b border-blue-100 rounded-t-2xl'>
+                        <div class='font-extrabold text-lg text-blue-700 tracking-wide'>Grades for Student ID: <span class='text-blue-900'>${grades.STUDENT_ID}</span></div>
+                        <button id='closeGradesModal' class='text-gray-400 hover:text-blue-700 text-2xl font-bold transition'>&times;</button>
+                    </div>
+                    <div class='overflow-y-auto p-6'>
+                        <table class='w-full text-left rounded-xl border border-blue-100 bg-white shadow-md'>
+                            <thead><tr class='bg-blue-50 text-blue-700'><th class='px-3 py-2 text-base font-semibold'>Subject</th><th class='px-3 py-2 text-base font-semibold'>Grade</th></tr></thead>
+                            <tbody>${gradeRows}</tbody>
+                        </table>
+                    </div>
+                </div>
+                <style>
+                @keyframes slidein { from { transform: translateX(-40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+                .animate-slidein { animation: slidein 0.2s cubic-bezier(.4,0,.2,1); }
+                </style>`;
+                // Remove any existing modal, then show new
+                $('#gradesModal').remove();
+                $('body').append(modalHtml);
+                // Remove any existing modal, then show new
+                $('#gradesModal').remove();
+                $('body').append(modalHtml);
+                // Remove any existing modal and show new
+                $('#gradesModal').remove();
+                $('body').append(modalHtml);
+            }
+        }
+    });
+    // Re-render student list to update highlight
+    renderStudentList(allStudents);
+    loadStudentEvaluation(selectedStudentId);
+    // Close grades modal handler
+    $(document).on('click', '#closeGradesModal', function() {
+    $('#gradesModal').remove();
+    });
     });
 
     function loadStudentEvaluation(studentId) {
@@ -3319,28 +4088,49 @@ $(document).ready(function() {
                     if (response.isRated) {
                         $('#rateEvalList').html('<div class="preassessment-message">This student has been rated. Check the Review tab.</div>');
                     } else if (response.evaluations && response.evaluations.length > 0) {
-                        // Render evaluation cards (reuse existing HTML if possible)
+                        // Modern card layout for rating UI
                         let evalHtml = '';
                         response.evaluations.forEach(function(ev) {
-                            evalHtml += `<div class='student-eval-block' data-evalid='${ev.student_evaluation_id}'>
-                                <div class='eval-question-box'>${ev.question_text}</div>
-                                <table class='eval-table'>
-                                    <tr>
-                                        <td class='eval-answer-cell' rowspan='2'>${ev.answer}</td>
-                                        <td class='eval-rating-header' colspan='5' style='text-align:center;'>Table Rating</td>
-                                    </tr>
-                                    <tr>
-                                        <td class='eval-rating-cell'><label>5<br><input type='radio' name='likert_${studentId}_${ev.id}' value='5'></label></td>
-                                        <td class='eval-rating-cell'><label>4<br><input type='radio' name='likert_${studentId}_${ev.id}' value='4'></label></td>
-                                        <td class='eval-rating-cell'><label>3<br><input type='radio' name='likert_${studentId}_${ev.id}' value='3'></label></td>
-                                        <td class='eval-rating-cell'><label>2<br><input type='radio' name='likert_${studentId}_${ev.id}' value='2'></label></td>
-                                        <td class='eval-rating-cell'><label>1<br><input type='radio' name='likert_${studentId}_${ev.id}' value='1'></label></td>
-                                    </tr>
-                                </table>
-                            </div>`;
+                            evalHtml += `
+                            <div class="student-eval-block bg-white rounded-xl shadow p-6 mb-8 border border-gray-200">
+                                <div class="flex flex-col md:flex-row gap-8 items-stretch mb-4">
+                                    <div class="w-full md:w-2/5 flex flex-col justify-center mb-4 md:mb-0">
+                                        <div class="eval-question-label text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Question</div>
+                                        <div class="eval-question-box text-base font-bold text-gray-900 bg-blue-50 rounded-lg p-3 border border-blue-200" style="max-height:120px;overflow-y:auto;">${ev.question_text}</div>
+                                    </div>
+                                    <div class="w-full md:w-3/5 flex flex-col justify-center">
+                                        <div class="eval-answer-label text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Student Answer</div>
+                                        <div class="eval-answer-box text-base text-gray-800 bg-green-50 rounded-lg p-3 border border-green-200">${ev.answer}</div>
+                                    </div>
+                                </div>
+                                <div class="eval-rating-section flex flex-col items-start gap-2 mt-6">
+                                    <label class="font-medium text-gray-700 mb-2">Rate this answer:</label>
+                                    <div class="flex gap-6">
+                                        ${[5,4,3,2,1].map(rating => `
+                                            <label class="flex flex-col items-center cursor-pointer">
+                                                <input type="radio" name="likert_${studentId}_${ev.id}" value="${rating}" class="hidden peer">
+                                                <span class="w-9 h-9 flex items-center justify-center rounded-full border-2 border-blue-400 peer-checked:bg-blue-600 peer-checked:text-white text-blue-600 font-bold text-lg mb-1 transition">${rating}</span>
+                                                <span class="text-xs text-gray-500">${rating}</span>
+                                            </label>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            `;
                         });
-                        evalHtml += `<div style='text-align:right; margin-top:18px;'><button class='btn-save-all-ratings' data-studentid='${studentId}'>Save All Ratings</button></div>`;
+                        evalHtml += `<div class="flex justify-center mt-10">
+                            <button class="btn-save-all-ratings px-8 py-2 text-lg font-semibold bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all duration-150" data-studentid="${studentId}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                Save All Ratings
+                            </button>
+                        </div>`;
                         $('#rateEvalList').html(evalHtml);
+                        // Make the right column scrollable
+                        $('#rateEvalList').css({
+                            'max-height': 'calc(100vh - 260px)', // leave more space for button
+                            'overflow-y': 'auto',
+                            'padding-right': '8px'
+                        });
                     } else {
                         $('#rateEvalList').html('<div class="preassessment-message">Student has not submitted an evaluation yet.</div>');
                     }
@@ -3393,26 +4183,62 @@ $(document).ready(function() {
     }
 
     function renderReviewStudentList(students) {
-        let sorted = students.slice().sort((a, b) => a.name.localeCompare(b.name));
-        let html = '';
-        sorted.forEach(function(student) {
-            html += `<div class="review-student-item${student.id === selectedReviewStudentId ? ' selected' : ''}" data-studentid="${student.id}">${student.name}</div>`;
+        let sorted = students.slice().sort((a, b) => {
+            let aId = (a.STUDENT_ID || a.student_id || a.id || '').toString();
+            let bId = (b.STUDENT_ID || b.student_id || b.id || '').toString();
+            return aId.localeCompare(bId);
         });
-        $('#reviewStudentListPanel').html(html);
+        let studentListHtml = '';
+        sorted.forEach(function(student) {
+            let displayName = student.name || student.NAME || student.full_name || 'Unknown Name';
+            studentListHtml += `
+                <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${student.id === selectedReviewStudentId ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.id}">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
+                    </span>
+                    <span class="truncate">${displayName}</span>
+                </div>
+            `;
+        });
+        // 20/80 layout for Review tab
+        let html = `<div class='flex w-full'>`;
+        html += `<div class='left-col w-1/5 max-w-xs pr-4'>`;
+        html += `<div class='mb-4'><input type='text' id='reviewStudentSearch' placeholder='Search student' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
+        html += `<div id='reviewStudentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'>${studentListHtml}</div>`;
+        html += `</div>`;
+        html += `<div class='right-col w-4/5 pl-4'>`;
+        if (!selectedReviewStudentId) {
+            html += `
+            <div class="flex flex-col items-center justify-center h-full">
+                <div class="bg-blue-50 rounded-full p-6 mb-4">
+                    <svg xmlns='http://www.w3.org/2000/svg' class='h-12 w-12 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
+                </div>
+                <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
+                <div class="text-gray-500 text-base">Select a student from the list to view their reviewed assessment details.</div>
+            </div>
+            `;
+        } else {
+            html += `<div id='reviewedEvalList' class='space-y-4 max-h-[700px] overflow-y-auto pr-2'></div>`;
+        }
+        html += `</div>`;
+        html += `</div>`;
+        $('#reviewTabContent').html(html);
     }
 
     // Search filter for review student list
     $(document).on('input', '#reviewStudentSearch', function() {
         const query = $(this).val().trim().toLowerCase();
-        let filtered = allReviewStudents.filter(s => s.name.toLowerCase().includes(query));
+        let filtered = allReviewStudents.filter(s => {
+            let displayId = (s.STUDENT_ID || s.student_id || s.id || '').toString().toLowerCase();
+            return displayId.includes(query);
+        });
         renderReviewStudentList(filtered);
     });
 
     // Handle student selection in Review tab
     $(document).on('click', '.review-student-item', function() {
-    $('.review-student-item').removeClass('selected');
-    $(this).addClass('selected');
-    selectedReviewStudentId = $(this).data('studentid'); // This is now STUDENT_ID
+    selectedReviewStudentId = $(this).data('studentid');
+    renderReviewStudentList(allReviewStudents);
     loadReviewedEvaluation(selectedReviewStudentId);
     });
 
@@ -3429,20 +4255,36 @@ $(document).ready(function() {
                     // Render reviewed evaluation cards
                     let evalHtml = '';
                     response.evaluations.forEach(function(ev) {
-                        evalHtml += `<div class='student-eval-block'>
-                            <div class='eval-question-box'>${ev.question_text}</div>
-                            <table class='eval-table'>
-                                <tr>
-                                    <td class='eval-answer-cell' rowspan='2'>${ev.answer}</td>
-                                    <td class='eval-rating-header' colspan='5' style='text-align:center;'>Table Rating</td>
-                                </tr>
-                                <tr>`;
-                        for (let i = 5; i >= 1; i--) {
-                            evalHtml += `<td class='eval-rating-cell'><span>${i}<br><span class='reviewed-rating' style='color:${ev.rating == i ? "#3182ce" : "#a0aec0"};font-size:1.3em;'>${ev.rating == i ? '&#9733;' : '&#9734;'}</span></span></td>`;
-                        }
-                        evalHtml += `</tr>
-                            </table>
-                        </div>`;
+                        evalHtml += `
+                        <div class="bg-white rounded-lg shadow border border-gray-200 p-6 mb-6">
+                            <div class="font-semibold text-blue-700 text-lg mb-2">${ev.question_text}</div>
+                            <div class="flex flex-col md:flex-row gap-4">
+                                <div class="bg-blue-50 rounded-md p-4 flex-1 mb-2 md:mb-0">
+                                    <div class="text-gray-700 text-base font-medium mb-1">Answer:</div>
+                                    <div class="text-gray-900 text-base">${ev.answer}</div>
+                                </div>
+                                <div class="flex-1">
+                                    <table class="min-w-full bg-white rounded-lg border border-gray-200">
+                                        <thead>
+                                            <tr>
+                                                <th colspan="5" class="bg-blue-50 text-blue-700 text-sm font-bold px-4 py-2 text-center rounded-t">Table Rating</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                ${[5,4,3,2,1].map(i => `
+                                                    <td class="px-4 py-2 text-center">
+                                                        <span class="block text-sm font-semibold text-gray-700">${i}</span>
+                                                        <span class="reviewed-rating text-2xl" style="color:${ev.rating == i ? '#3182ce' : '#a0aec0'};">${ev.rating == i ? '&#9733;' : '&#9734;'}</span>
+                                                    </td>
+                                                `).join('')}
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        `;
                     });
                     $('#reviewedEvalList').html(evalHtml);
                 } else {
@@ -3500,14 +4342,7 @@ $(document).ready(function() {
         }
     });
     // lastValidSearch already declared above, do not redeclare
-    $(document).on('input', '#rateStudentSearch', function() {
-        const query = $(this).val().trim().toLowerCase();
-        // Only filter the left panel student list, no autocomplete dropdown
-        let filtered = allStudents.filter(s => s.name.toLowerCase().includes(query));
-        renderStudentList(filtered);
-        // Remove any autocomplete dropdown if present
-        $('#rateStudentSearchAutocomplete').remove();
-    });
+    // Removed legacy name-based search filter for student list. Only numeric STUDENT_ID filtering remains.
 
     // Handle click on autocomplete suggestion
     $(document).on('mousedown', '.autocomplete-item', function(e) {
