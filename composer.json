@@ -1,5 +1,5 @@
 {
   "name": "internconnect/app",
-  "description": "InternConnect PHP app for Heroku deployment",
+  "description": "InternConnect PHP app for deployment",
   "require": {}
 }
