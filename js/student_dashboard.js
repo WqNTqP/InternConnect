@@ -1,3 +1,17 @@
+// Get dynamic base URL for images and other resources
+function getBaseUrl() {
+    const path = window.location.pathname;
+    const pathParts = path.split('/');
+    const internConnectIndex = pathParts.findIndex(part => part === 'InternConnect');
+    
+    if (internConnectIndex !== -1) {
+        const basePath = pathParts.slice(0, internConnectIndex + 1).join('/');
+        return window.location.protocol + '//' + window.location.host + basePath + '/';
+    } else {
+        return window.location.protocol + '//' + window.location.host + '/InternConnect/';
+    }
+}
+
 // Function to manage shown notifications using sessionStorage
 // Day navigation logic for report editor
 $(document).ready(function() {
@@ -1627,7 +1641,7 @@ function displayProfileDetails(data) {
         <div class="profile-card">
             <div class="profile-header">
                 <div class="profile-avatar">
-                    ${data.profile_picture ? `<img src="uploads/${data.profile_picture}" alt="Profile Picture" class="avatar-placeholder">` : `<div class="avatar-placeholder"><i class="fas fa-user"></i></div>`}
+                    ${data.profile_picture ? `<img src="${getBaseUrl()}uploads/${data.profile_picture}" alt="Profile Picture" class="avatar-placeholder">` : `<div class="avatar-placeholder"><i class="fas fa-user"></i></div>`}
                 </div>
                 <h2>${fullName}</h2>
                 <p class="profile-subtitle">Student Profile</p>
@@ -2321,7 +2335,7 @@ function displaySubmittedReports(reports) {
 ${report.images && report.images.length > 0 ? `
                 <div class="report-images-preview">
                     ${report.images.slice(0, 3).map(image => `
-                        <img src="uploads/${image.filename}" alt="Report image" class="report-image-thumb" onerror="this.onerror=null;this.src='icon/nobglogo.ico';">
+                        <img src="${getBaseUrl()}uploads/${image.filename}" alt="Report image" class="report-image-thumb" onerror="this.onerror=null;this.src='${getBaseUrl()}icon/nobglogo.ico';">
                     `).join('')}
                     ${report.images.length > 3 ? `<span>+${report.images.length - 3} more</span>` : ''}
                 </div>

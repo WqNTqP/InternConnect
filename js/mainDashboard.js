@@ -1,4 +1,22 @@
 
+// Dynamic base URL function to handle different environments
+function getBaseUrl() {
+    const protocol = window.location.protocol;
+    const host = window.location.host;
+    const pathname = window.location.pathname;
+    
+    // Extract the base path (e.g., "/InternConnect/")
+    const pathArray = pathname.split('/');
+    const basePath = pathArray.length > 1 && pathArray[1] ? '/' + pathArray[1] + '/' : '/';
+    
+    const fullUrl = protocol + '//' + host + basePath;
+    
+    // Debug logging to see what URL is being generated
+    console.log('getBaseUrl() returning:', fullUrl);
+    
+    return fullUrl;
+}
+
 // Fetch and render all companies (HTEs) in the companies table
 function loadAllCompaniesData() {
     $.ajax({
@@ -23,7 +41,7 @@ function loadAllCompaniesData() {
 function renderCompaniesList(companies) {
     let html = '';
     companies.forEach(function(company) {
-        let logoHtml = company.LOGO ? `<img src='uploads/hte_logos/${company.LOGO}' alt='Logo' class='h-8 w-8 rounded-full object-cover border' />` : '-';
+        let logoHtml = company.LOGO ? `<img src='${getBaseUrl()}uploads/hte_logos/${company.LOGO}' alt='Logo' class='h-8 w-8 rounded-full object-cover border' />` : '-';
         logoHtml += ` <button class='update-logo-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs ml-2' data-hteid='${company.HTE_ID}'>Update Logo</button>`;
         html += `<tr>
             <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-900\">${company.NAME || '-'}<\/td>
@@ -1614,7 +1632,7 @@ function loadApprovedReportsWithFilters() {
                                     let imagesHtml = "";
                                     if (report.imagesPerDay && report.imagesPerDay[day] && report.imagesPerDay[day].length > 0) {
                                         report.imagesPerDay[day].forEach(function(img) {
-                                            imagesHtml += `<img src='http://localhost/InternConnect/uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow-sm w-full h-24 object-cover mb-2 hover:scale-105 transition'>`;
+                                            imagesHtml += `<img src='${getBaseUrl()}uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow-sm w-full h-24 object-cover mb-2 hover:scale-105 transition'>`;
                                         });
                                     } else {
                                         imagesHtml = `<div class='flex items-center justify-center h-24 bg-gray-50 text-gray-400 rounded-lg border border-dashed border-gray-200'><i class='fas fa-image'></i></div>`;
@@ -1658,7 +1676,7 @@ function loadApprovedReportsWithFilters() {
                         let imagesHtml = "";
                         if (report.imagesPerDay && report.imagesPerDay[day] && report.imagesPerDay[day].length > 0) {
                             report.imagesPerDay[day].forEach(function(img) {
-                                imagesHtml += `<img src='http://localhost/InternConnect/uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow w-full h-56 object-cover mb-4'>`;
+                                imagesHtml += `<img src='${getBaseUrl()}uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow w-full h-56 object-cover mb-4'>`;
                             });
                         } else {
                             imagesHtml = `<div class='flex items-center justify-center h-56 bg-gray-50 text-gray-400 rounded-lg border border-dashed border-gray-200'><i class='fas fa-image text-4xl'></i></div>`;
@@ -1798,7 +1816,7 @@ function loadApprovedReportsWithFilters() {
                 <div class="profile-header">
                     <div class="profile-avatar">
                         ${coordinatorData.PROFILE 
-                            ? `<img src="uploads/${coordinatorData.PROFILE}" alt="Profile" class="profile-image">` 
+                            ? `<img src="${getBaseUrl()}uploads/${coordinatorData.PROFILE}" alt="Profile" class="profile-image">` 
                             : `<div class="avatar-placeholder">${coordinatorData.NAME.charAt(0)}</div>`
                         }
                     </div>
@@ -1902,7 +1920,7 @@ function loadApprovedReportsWithFilters() {
                             <div class="profile-picture-section">
                                 <div class="current-profile-picture">
                                     ${coordinatorData.PROFILE_PICTURE ? 
-                                        `<img src="uploads/${coordinatorData.PROFILE_PICTURE}" alt="Current Profile" class="current-image">` :
+                                        `<img src="${getBaseUrl()}uploads/${coordinatorData.PROFILE_PICTURE}" alt="Current Profile" class="current-image">` :
                                         `<div class="avatar-placeholder">
                                             <i class="fas fa-user"></i>
                                         </div>`
@@ -2599,7 +2617,7 @@ function fetchTHE(cdrid,sessionid)
     // alert(ondate);
     let logoHtml = '';
     if (building['LOGO']) {
-        logoHtml = `<img src='uploads/hte_logos/${building['LOGO']}' alt='Company Logo' class='w-20 h-20 object-cover rounded-full border-2 border-blue-300 shadow mb-2 bg-white' />`;
+        logoHtml = `<img src='${getBaseUrl()}uploads/hte_logos/${building['LOGO']}' alt='Company Logo' class='w-20 h-20 object-cover rounded-full border-2 border-blue-300 shadow mb-2 bg-white' />`;
     } else {
         logoHtml = `<div class='w-20 h-20 flex items-center justify-center bg-gray-100 rounded-full border-2 border-gray-300 text-gray-400 mb-2'>No Logo</div>`;
     }
