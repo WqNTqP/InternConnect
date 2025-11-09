@@ -1,9 +1,8 @@
 <?php
-
-
-
-
-
+// Start session at the very beginning to avoid header issues
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 $path=$_SERVER['DOCUMENT_ROOT'];
 require_once $path."/database/database.php";
@@ -25,8 +24,7 @@ if(!empty($action))
         $rv = $fdo->verifyUser($dbo, $un, $pw);
 
         if ($rv['status'] == "ALL OK") {
-            // Start session and store the user id
-            session_start();
+            // Session already started at top of file
             $_SESSION['current_user'] = $rv['id'];
             $_SESSION['current_user_role'] = $rv['role'];
             
