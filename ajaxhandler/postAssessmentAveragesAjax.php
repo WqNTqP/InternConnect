@@ -30,7 +30,7 @@ try {
     }
 
     // Call Flask API for full post-analysis
-    // Use live HTTPS API to ensure reliable connection
+    // Use live HTTPS API with proper SSL and timeout settings
     $flaskUrl = 'https://internconnect-kjzb.onrender.com/api/post_analysis.php';
     $isLocal = ($_SERVER['HTTP_HOST'] === 'localhost' || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false);
     
@@ -44,8 +44,11 @@ try {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $fullUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60);  // Longer timeout for live API
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);  // For HTTPS
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);   // Handle redirects
+    curl_setopt($ch, CURLOPT_USERAGENT, 'InternConnect-PostAnalysis/1.0');
     $flaskResponse = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);

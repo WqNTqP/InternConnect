@@ -34,11 +34,11 @@ echo "   DB_HOST: $DB_HOST"
 echo "   DB_USERNAME: $DB_USERNAME"
 echo "   DB_NAME: $DB_NAME"
 
-# Start Flask with explicit logging
-echo "🚀 Launching Flask application..."
-python3 app.py &
+# Start Flask with Gunicorn (production WSGI server)
+echo "🚀 Launching Flask application with Gunicorn..."
+gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 60 app:app &
 FLASK_PID=$!
-echo "✅ Flask API started with PID: $FLASK_PID"
+echo "✅ Flask API started with Gunicorn PID: $FLASK_PID"
 
 # Check if Flask process is still running
 sleep 2
@@ -57,7 +57,7 @@ PHP_PID=$!
 echo "✅ PHP server started with PID: $PHP_PID"
 
 echo "Both services started:"
-echo "- Flask API: Internal on port 5000"
+echo "- Flask API: Production Gunicorn server on port 5000"
 echo "- PHP App: http://localhost:${PORT:-10000}"
 
 # Function to handle shutdown
