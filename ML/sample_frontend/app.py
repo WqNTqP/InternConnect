@@ -29,20 +29,56 @@ host = os.getenv('DB_HOST', 'localhost:3306').split(':')[0]  # Remove port from 
 port = int(os.getenv('DB_HOST', 'localhost:3306').split(':')[1]) if ':' in os.getenv('DB_HOST', 'localhost:3306') else 3306
 database = os.getenv('DB_NAME', 'attendancetrackernp')
 
-print(f"Connecting to database: {user}@{host}:{port}/{database}")
+print(f"Attempting to connect to database: {user}@{host}:{port}/{database}")
 
-engine = create_engine(f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}")
-df_ref = pd.read_sql('SELECT * FROM past_data', con=engine)
-print('Loaded data from database:')
-print(df_ref.head())
-le = LabelEncoder()
-le.fit(df_ref['OJT Placement'])
+# Try to connect to database with error handling
+df_ref = None
+le = None
+database_connected = False
 
-# Get feature columns
-feature_cols = [col for col in df_ref.columns if col not in ['id_number','student_name','year_graduated','OJT Placement']]
+try:
+    engine = create_engine(f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}")
+    df_ref = pd.read_sql('SELECT * FROM past_data', con=engine)
+    print('✅ Successfully loaded data from database:')
+    print(df_ref.head())
+    le = LabelEncoder()
+    le.fit(df_ref['OJT Placement'])
+    database_connected = True
+    print(f"✅ Database connection successful. Loaded {len(df_ref)} records.")
+    # Get feature columns
+    feature_cols = [col for col in df_ref.columns if col not in ['id_number','student_name','year_graduated','OJT Placement']]
+except Exception as e:
+    print(f"❌ Database connection failed: {str(e)}")
+    print("⚠️ Flask API will start but with limited functionality")
+    database_connected = False
+    feature_cols = []
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint to verify Flask API is running"""
+    return jsonify({
+        "status": "healthy" if database_connected else "degraded",
+        "message": "Flask API is running successfully" if database_connected else "Flask API running with limited functionality",
+        "model_loaded": clf is not None,
+        "database_connected": database_connected,
+        "features_count": len(feature_cols) if feature_cols else 0,
+        "environment": {
+            "db_host": host,
+            "db_user": user,
+            "db_name": database,
+            "port": os.environ.get('PORT', '5000')
+        }
+    }), 200
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    if not database_connected or not feature_cols:
+        return jsonify({
+            "error": "Database not available - prediction service unavailable",
+            "status": "degraded",
+            "message": "Cannot make predictions without database connection"
+        }), 503
+    
     data = request.json
     # Ensure all features are present
     features = [data.get(col, 0) for col in feature_cols]

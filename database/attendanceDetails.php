@@ -8,9 +8,6 @@ header('Content-Type: application/json');
 // echo json_encode($response);
 // exit;
 
-$path=$_SERVER['DOCUMENT_ROOT'];
-require_once $path."/database/database.php";
-
 
 class attendanceDetails
 {

@@ -1,7 +1,10 @@
 <?php
 session_start();
 header('Content-Type: application/json');
-require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php";
+// Check if we're in a subdirectory (local development) or root (production)
+$path = $_SERVER['DOCUMENT_ROOT'];
+$basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+require_once $basePath . "/database/database.php";
 
 $student_id = isset($_POST['student_id']) ? intval($_POST['student_id']) : 0;
 if (!$student_id) {
@@ -29,18 +32,52 @@ try {
     // Call Flask API for full post-analysis
     // Use local Flask in development, proxy in production
     $isLocal = ($_SERVER['HTTP_HOST'] === 'localhost' || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false);
-    $flaskUrl = $isLocal ? 'http://localhost:5000/post_analysis' : 'http://localhost:5000/post_analysis';
+    // Configuration: Set your live Render URL here for testing
+    $LIVE_RENDER_URL = 'https://YOUR_RENDER_APP_NAME.onrender.com'; // UPDATE THIS WITH YOUR ACTUAL URL
+    
+    if ($isLocal) {
+        // Local development testing: call the LIVE API directly
+        $flaskUrl = $LIVE_RENDER_URL . '/api/post_analysis.php';
+    } else {
+        // Production: use PHP proxy
+        $flaskUrl = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . '/api/post_analysis.php';
+    }
     
     $flaskData = ["student_id" => $student_id];
+    $fullUrl = $flaskUrl . '?' . http_build_query($flaskData);
+    
+    // Log the request details
+    error_log("Flask API Debug - URL: " . $fullUrl);
+    error_log("Flask API Debug - Is Local: " . ($isLocal ? 'true' : 'false'));
+    
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $flaskUrl . '?' . http_build_query($flaskData));
+    curl_setopt($ch, CURLOPT_URL, $fullUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
     $flaskResponse = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
     curl_close($ch);
+    
+    // Log the response details
+    error_log("Flask API Debug - HTTP Code: " . $httpCode);
+    error_log("Flask API Debug - cURL Error: " . $curlError);
+    error_log("Flask API Debug - Response: " . substr($flaskResponse, 0, 500));
+    
     $flaskJson = json_decode($flaskResponse, true);
     if (!$flaskJson || !isset($flaskJson['post_assessment_averages'])) {
-        echo json_encode(["success" => false, "error" => "Flask API error or missing data."]);
+        echo json_encode([
+            "success" => false, 
+            "error" => "Flask API error or missing data.",
+            "debug" => [
+                "url" => $fullUrl,
+                "http_code" => $httpCode,
+                "curl_error" => $curlError,
+                "response" => substr($flaskResponse, 0, 200),
+                "is_local" => $isLocal
+            ]
+        ]);
         exit;
     }
 

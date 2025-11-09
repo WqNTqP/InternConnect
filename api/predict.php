@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Get the JSON input
     $input = file_get_contents('php://input');
     
-    // Flask API is running on localhost:5000 internally
+    // Flask API is running on localhost:5000 internally (on Render server)
     $flask_url = 'http://localhost:5000/predict';
     
     // Initialize cURL

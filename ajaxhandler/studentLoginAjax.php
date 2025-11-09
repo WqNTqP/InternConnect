@@ -1,7 +1,9 @@
 <?php
 $path=$_SERVER['DOCUMENT_ROOT'];
-require_once $path."/database/database.php";
-require_once $path."/database/student.php";
+// Check if we're in a subdirectory (local development) or root (production)
+$basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+require_once $basePath."/database/database.php";
+require_once $basePath."/database/student.php";
 
 if(isset($_POST["action"]) && $_POST["action"] == "verifyStudent")
 {

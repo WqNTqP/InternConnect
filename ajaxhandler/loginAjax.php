@@ -5,8 +5,10 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $path=$_SERVER['DOCUMENT_ROOT'];
-require_once $path."/database/database.php";
-require_once $path."/database/coordinator.php";
+// Check if we're in a subdirectory (local development) or root (production)
+$basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+require_once $basePath."/database/database.php";
+require_once $basePath."/database/coordinator.php";
 $action=$_REQUEST["action"];
 if(!empty($action))
 {

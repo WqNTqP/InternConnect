@@ -8,7 +8,10 @@ if (!isset($_SESSION["coordinator_user"])) {
 $coordinator_id = $_SESSION["coordinator_user"];
 
 header('Content-Type: application/json');
-require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php";
+// Check if we're in a subdirectory (local development) or root (production)
+$path = $_SERVER['DOCUMENT_ROOT'];
+$basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+require_once $basePath . "/database/database.php";
 
 if (isset($_POST['action']) && $_POST['action'] === 'getStudentPostAssessment' && isset($_POST['interns_id'])) {
     $interns_id = $_POST['interns_id'];
