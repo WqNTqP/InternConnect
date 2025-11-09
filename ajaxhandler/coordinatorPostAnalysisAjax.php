@@ -8,7 +8,7 @@ if (!isset($_SESSION["coordinator_user"])) {
 $coordinator_id = $_SESSION["coordinator_user"];
 
 header('Content-Type: application/json');
-require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php";
 
 try {
     $db = new Database();

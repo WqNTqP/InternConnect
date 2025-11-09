@@ -25,7 +25,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
     } elseif(isset($_SESSION["current_user"])) {
         // For backwards compatibility, fetch name from database
         $path=$_SERVER['DOCUMENT_ROOT'];
-        require_once $path."/InternConnect/database/database.php";
+        require_once $path."/database/database.php";
         try {
             $db = new Database();
             $stmt = $db->conn->prepare("SELECT NAME FROM coordinator WHERE COORDINATOR_ID = ?");
@@ -43,7 +43,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
     } elseif(isset($_SESSION["student_user"])) {
         // For student users, fetch name from database
         $path=$_SERVER['DOCUMENT_ROOT'];
-        require_once $path."/InternConnect/database/database.php";
+        require_once $path."/database/database.php";
         try {
             $db = new Database();
             $stmt = $db->conn->prepare("SELECT NAME FROM student WHERE STUDENT_ID = ?");

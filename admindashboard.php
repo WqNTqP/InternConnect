@@ -1,6 +1,6 @@
 <?php 
 // Include the database and session handling
-require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/admindashboarddb.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/database/admindashboarddb.php";
 
 // Fetch pending attendance records with student details
 $stmt = $dbo->conn->prepare("

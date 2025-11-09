@@ -1,11 +1,11 @@
 <?php
 session_start();
 $path=$_SERVER['DOCUMENT_ROOT'];
-require_once $path."/InternConnect/database/database.php";
-require_once $path."/InternConnect/database/sessionDetails.php";
-require_once $path."/InternConnect/database/coordinator.php";
-require_once $path."/InternConnect/database/buildingRegistrationDetails.php";
-require_once $path."/InternConnect/database/attendanceDetails.php";
+require_once $path."/database/database.php";
+require_once $path."/database/sessionDetails.php";
+require_once $path."/database/coordinator.php";
+require_once $path."/database/buildingRegistrationDetails.php";
+require_once $path."/database/attendanceDetails.php";
 require('C:/xampp/htdocs/InternConnect/fpdf/fpdf.php');
 // Prevent any direct output of errors
 ini_set('display_errors', 0);

@@ -8,7 +8,7 @@ if(!isset($_SESSION["student_user"]))
 $student_id = $_SESSION["student_user"];
 
 $path=$_SERVER['DOCUMENT_ROOT'];
-require_once $path."/InternConnect/database/database.php";
+require_once $path."/database/database.php";
 
 try {
     $db = new Database();

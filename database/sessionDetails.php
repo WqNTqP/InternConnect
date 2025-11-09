@@ -1,6 +1,6 @@
 <?php
 $path=$_SERVER['DOCUMENT_ROOT'];
-require_once $path."/InternConnect/database/database.php";
+require_once $path."/database/database.php";
 
 class SessionDetails
 {

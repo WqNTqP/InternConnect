@@ -6,7 +6,7 @@ if (!isset($_SESSION['current_user_role']) || $_SESSION['current_user_role'] !==
 }
 
 // Include necessary files for database connection and functions
-require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php";
 
 // Initialize database connection
 $dbo = new Database();

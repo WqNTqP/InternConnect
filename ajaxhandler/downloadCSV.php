@@ -1,8 +1,8 @@
 <?php
 session_start();
 $path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . "/InternConnect/database/database.php";
-require_once $path . "/InternConnect/database/attendanceDetails.php";
+require_once $path . "/database/database.php";
+require_once $path . "/database/attendanceDetails.php";
 header('Content-Type: text/csv');
 header('Content-Disposition: attachment; filename="students_with_grades.csv"');
 

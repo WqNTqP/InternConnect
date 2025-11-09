@@ -1,7 +1,7 @@
 <?php
 $path=$_SERVER['DOCUMENT_ROOT'];
-require_once $path."/InternConnect/database/database.php";
-require_once $path."/InternConnect/database/student.php";
+require_once $path."/database/database.php";
+require_once $path."/database/student.php";
 
 if(isset($_POST["action"]) && $_POST["action"] == "verifyStudent")
 {

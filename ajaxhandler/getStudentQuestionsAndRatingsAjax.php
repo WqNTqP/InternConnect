@@ -6,7 +6,7 @@ if (!$student_id) {
     echo json_encode(['error' => 'Missing student_id']);
     exit;
 }
-require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php";
 $dbo = new Database();
 
 // Translate STUDENT_ID to INTERN_ID

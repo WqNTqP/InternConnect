@@ -1,7 +1,7 @@
 <?php
 session_start();
-require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/sessionDetails.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/database/sessionDetails.php";
 
 header('Content-Type: application/json');
 
