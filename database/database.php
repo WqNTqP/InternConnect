@@ -13,10 +13,25 @@ public function __construct() {
     $this->loadEnvFile();
     
     // Use environment variables for production, fallback to local values for development
-    $this->servername = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'localhost:3306';
-    $this->username = $_ENV['DB_USERNAME'] ?? getenv('DB_USERNAME') ?: 'root';
-    $this->password = $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: '';
-    $this->dbname = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'attendancetrackernp';
+    // On Render, check if we're in production environment
+    $isProduction = isset($_SERVER['RENDER']) || !file_exists(__DIR__ . '/../.env');
+    
+    if ($isProduction) {
+        // Production: Use Render environment variables or hardcoded FreeSQLDatabase
+        $this->servername = getenv('DB_HOST') ?: 'sql3.freesqldatabase.com:3306';
+        $this->username = getenv('DB_USERNAME') ?: 'sql3806785';
+        $this->password = getenv('DB_PASSWORD') ?: 'DAl9FGjxvF';
+        $this->dbname = getenv('DB_NAME') ?: 'sql3806785';
+    } else {
+        // Local development: Use .env file or localhost
+        $this->servername = $_ENV['DB_HOST'] ?? 'localhost:3306';
+        $this->username = $_ENV['DB_USERNAME'] ?? 'root';
+        $this->password = $_ENV['DB_PASSWORD'] ?? '';
+        $this->dbname = $_ENV['DB_NAME'] ?? 'attendancetrackernp';
+    }
+    
+    // Debug: Log the connection details (remove in production)
+    error_log("DB Connection Debug - Host: " . $this->servername . ", User: " . $this->username . ", DB: " . $this->dbname);
     
     try {
         // Handle port separately if needed
