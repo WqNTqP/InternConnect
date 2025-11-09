@@ -233,30 +233,52 @@ def post_analysis():
     student_id = request.args.get('student_id')
     if not student_id:
         return jsonify({'error': 'student_id is required'}), 400
-    try:
-        student_id_int = int(student_id)
-    except Exception as e:
-        print('Invalid student_id:', student_id, e)
-        return jsonify({'error': 'student_id must be an integer'}), 400
 
+    # Attempt numeric lookup first, then fall back to string lookup.
+    from sqlalchemy import text
+    query_int = "SELECT * FROM pre_assessment WHERE STUDENT_ID = :student_id"
+    query_str = "SELECT * FROM pre_assessment WHERE STUDENT_ID = :student_id_str"
+
+    student_id_int = None
+    row = None
     debug_info = {
-        'student_id': student_id_int,
-        'student_id_type': str(type(student_id_int)),
-        'query': 'SELECT * FROM pre_assessment WHERE STUDENT_ID = :student_id',
+        'original_student_id': student_id,
+        'attempts': [] ,
+        'query': "SELECT * FROM pre_assessment WHERE STUDENT_ID = :student_id (int) or :student_id_str (str)",
         'table': 'pre_assessment'
     }
-    print('Looking up STUDENT_ID:', student_id_int, type(student_id_int))
-    print('Querying table: pre_assessment with SQL: SELECT * FROM pre_assessment WHERE STUDENT_ID = :student_id')
 
-    # Query pre_assessment table for the student
-    from sqlalchemy import text
-    query = "SELECT * FROM pre_assessment WHERE STUDENT_ID = :student_id"
     with engine.connect() as conn:
-        print('Looking up STUDENT_ID:', student_id_int)
-        all_rows = conn.execute(text("SELECT STUDENT_ID FROM pre_assessment")).fetchall()
-        print('All STUDENT_IDs in pre_assessment as seen by Flask:', [r[0] for r in all_rows])
-        result = conn.execute(text(query), {'student_id': student_id_int})
-        row = result.fetchone()
+        # helpful debug listing (may be large; keep for now)
+        try:
+            all_rows = conn.execute(text("SELECT STUDENT_ID FROM pre_assessment")).fetchall()
+            debug_info['attempts'].append({'all_student_ids_sample': [r[0] for r in all_rows[:10]]})
+        except Exception:
+            pass
+
+        # try integer lookup
+        try:
+            student_id_int = int(student_id)
+            debug_info['attempts'].append({'try_int': student_id_int})
+            result = conn.execute(text(query_int), {'student_id': student_id_int})
+            row = result.fetchone()
+        except ValueError:
+            debug_info['attempts'].append({'try_int': 'invalid_int'})
+            row = None
+        except Exception as e:
+            # Some DB drivers will error if types mismatch; note it and continue to string lookup
+            debug_info['attempts'].append({'try_int_error': str(e)})
+            row = None
+
+        # fallback: try string lookup (use original value)
+        if not row:
+            try:
+                debug_info['attempts'].append({'try_str': student_id})
+                result = conn.execute(text(query_str), {'student_id_str': student_id})
+                row = result.fetchone()
+            except Exception as e:
+                debug_info['attempts'].append({'try_str_error': str(e)})
+                row = None
 
     if not row:
         return jsonify({'error': 'Student not found', 'debug': debug_info}), 404
