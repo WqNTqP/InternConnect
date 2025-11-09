@@ -14,10 +14,22 @@ load_dotenv(env_path)
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Load model and label encoder
+# Load model and label encoder with error handling
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(BASE_DIR, '..', 'model', 'pre-assessment.joblib')
-clf = joblib.load(model_path)
+
+clf = None
+model_loaded = False
+
+try:
+    clf = joblib.load(model_path)
+    model_loaded = True
+    print(f"✅ Model loaded successfully from: {model_path}")
+except Exception as e:
+    print(f"❌ Failed to load model: {str(e)}")
+    print(f"Model path attempted: {model_path}")
+    print("⚠️ Flask API will start but predictions will be unavailable")
+    model_loaded = False
 
 # Use MySQL database table instead of CSV
 from sqlalchemy import create_engine
@@ -56,10 +68,11 @@ except Exception as e:
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint to verify Flask API is running"""
+    overall_status = "healthy" if (database_connected and model_loaded) else "degraded"
     return jsonify({
-        "status": "healthy" if database_connected else "degraded",
-        "message": "Flask API is running successfully" if database_connected else "Flask API running with limited functionality",
-        "model_loaded": clf is not None,
+        "status": overall_status,
+        "message": "Flask API is running successfully" if overall_status == "healthy" else "Flask API running with limited functionality",
+        "model_loaded": model_loaded,
         "database_connected": database_connected,
         "features_count": len(feature_cols) if feature_cols else 0,
         "environment": {
@@ -72,6 +85,13 @@ def health_check():
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    if not model_loaded:
+        return jsonify({
+            "error": "Model not loaded - prediction service unavailable",
+            "status": "degraded",
+            "message": "Cannot make predictions without trained model"
+        }), 503
+        
     if not database_connected or not feature_cols:
         return jsonify({
             "error": "Database not available - prediction service unavailable",
@@ -623,4 +643,15 @@ def post_analysis():
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    print(f"\n🚀 Starting Flask API on port {port}")
+    print(f"📊 Model loaded: {'✅' if model_loaded else '❌'}")
+    print(f"💾 Database connected: {'✅' if database_connected else '❌'}")
+    print(f"🔧 Features available: {len(feature_cols) if feature_cols else 0}")
+    print(f"📡 Health endpoint: http://localhost:{port}/health")
+    print("🎯 Flask API starting...\n")
+    
+    try:
+        app.run(host='0.0.0.0', port=port, debug=False)
+    except Exception as e:
+        print(f"❌ Flask failed to start: {str(e)}")
+        raise
