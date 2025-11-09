@@ -303,7 +303,9 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                                     <div class="mb-4">
                                         <input type="text" id="rateStudentSearch" placeholder="Search student" class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                                     </div>
-                                    <div id="studentListPanel" class="overflow-y-auto max-h-[calc(100vh-16rem)] divide-y divide-gray-200"><div class="preassessment-student-item" data-studentid="290">Christine  Serdan</div><div class="preassessment-student-item" data-studentid="289">James Harold Roble</div><div class="preassessment-student-item" data-studentid="292">Jane Smith</div><div class="preassessment-student-item" data-studentid="291">John Doe</div><div class="preassessment-student-item" data-studentid="190">Kim Charles Emping</div><div class="preassessment-student-item" data-studentid="288">Urien Adriane  Suico</div></div>
+                                    <div id="studentListPanel" class="overflow-y-auto max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
+                                        <!-- Students will be loaded dynamically -->
+                                    </div>
                                 </div>
                                 <div class="w-2/3 bg-white rounded-lg shadow-md p-4">
                                     <div id="rateEvalList" class="space-y-4">
@@ -335,7 +337,9 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                                     <div class="mb-4">
                                         <input type="text" id="reviewStudentSearch" placeholder="Search reviewed students..." class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                                     </div>
-                                    <div id="reviewStudentListPanel" class="overflow-y-auto max-h-[calc(100vh-16rem)] divide-y divide-gray-200"><div class="review-student-item" data-studentid="59829663">Christine  Serdan</div><div class="review-student-item" data-studentid="59829532">James Harold Roble</div><div class="review-student-item" data-studentid="67890">Jane Smith</div><div class="review-student-item" data-studentid="12345">John Doe</div><div class="review-student-item" data-studentid="59828881">Kim Charles Emping</div><div class="review-student-item" data-studentid="59829536">Urien Adriane  Suico</div></div>
+                                    <div id="reviewStudentListPanel" class="overflow-y-auto max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
+                                        <!-- Students will be loaded dynamically -->
+                                    </div>
                                 </div>
                                 <div class="w-2/3 bg-white rounded-lg shadow-md p-4">
                                     <div id="reviewedEvalList" class="space-y-4">

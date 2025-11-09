@@ -5,12 +5,15 @@ header('Content-Type: text/html; charset=UTF-8');
 echo "<h2>Testing Live Flask API Health</h2>\n";
 echo "<pre>\n";
 
-// Test live Flask API endpoints via existing API proxies
+// Test Flask API endpoints via internal proxies (updated for production)
 $urls = [
     'health' => 'https://internconnect-kjzb.onrender.com/api/health.php',
     'predict' => 'https://internconnect-kjzb.onrender.com/api/predict.php',
     'post_analysis' => 'https://internconnect-kjzb.onrender.com/api/post_analysis.php'
 ];
+
+// Note: These external URLs are for testing only. 
+// The actual application uses internal localhost calls for better performance.
 
 $results = [];
 

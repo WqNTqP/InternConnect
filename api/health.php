@@ -17,10 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // On Render, Flask runs on localhost:5000 internally
         $flask_url = 'http://localhost:5000/health';
     } else {
-        // For local testing, connect to live Render Flask API
-        $flask_url = 'https://internconnect-kjzb.onrender.com/api/health.php';
-        // Avoid infinite loop by making direct Flask call
-        $flask_url = 'http://localhost:5000/health'; // This will fail locally, showing mock data
+        // For local development, use local Flask
+        $flask_url = 'http://localhost:5000/health';
     }
     
     // Initialize cURL

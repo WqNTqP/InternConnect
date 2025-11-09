@@ -30,9 +30,9 @@ try {
     }
 
     // Call Flask API for full post-analysis
-    // Use live HTTPS API with proper SSL and timeout settings
-    $flaskUrl = 'https://internconnect-kjzb.onrender.com/api/post_analysis.php';
+    // Use internal Flask API (localhost:5000) for both local and production
     $isLocal = ($_SERVER['HTTP_HOST'] === 'localhost' || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false);
+    $flaskUrl = 'http://localhost:5000/post_analysis';  // Internal Flask API call
     
     $flaskData = ["student_id" => $student_id];
     $fullUrl = $flaskUrl . '?' . http_build_query($flaskData);
@@ -44,9 +44,8 @@ try {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $fullUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 60);  // Longer timeout for live API
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);  // For HTTPS
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);  // Reasonable timeout for internal API
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);   // Quick connection timeout for internal call
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);   // Handle redirects
     curl_setopt($ch, CURLOPT_USERAGENT, 'InternConnect-PostAnalysis/1.0');
     $flaskResponse = curl_exec($ch);
@@ -61,15 +60,20 @@ try {
     
     $flaskJson = json_decode($flaskResponse, true);
     if (!$flaskJson || !isset($flaskJson['post_assessment_averages'])) {
+        // Enhanced error logging
+        error_log("Flask API Error Details: HTTP Code: $httpCode, cURL Error: $curlError");
+        error_log("Flask Response Sample: " . substr($flaskResponse, 0, 500));
+        
         echo json_encode([
             "success" => false, 
-            "error" => "Flask API error or missing data.",
+            "error" => "Flask API error or missing data. Please check if the student has complete post-assessment data.",
             "debug" => [
                 "url" => $fullUrl,
                 "http_code" => $httpCode,
                 "curl_error" => $curlError,
                 "response" => substr($flaskResponse, 0, 200),
-                "is_local" => $isLocal
+                "is_local" => $isLocal,
+                "student_id" => $student_id
             ]
         ]);
         exit;
