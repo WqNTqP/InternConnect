@@ -30,8 +30,9 @@ try {
     }
 
     // Call Flask API for full post-analysis
-    // Always use HTTPS for live Render deployment
+    // Use live HTTPS API to ensure reliable connection
     $flaskUrl = 'https://internconnect-kjzb.onrender.com/api/post_analysis.php';
+    $isLocal = ($_SERVER['HTTP_HOST'] === 'localhost' || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false);
     
     $flaskData = ["student_id" => $student_id];
     $fullUrl = $flaskUrl . '?' . http_build_query($flaskData);
