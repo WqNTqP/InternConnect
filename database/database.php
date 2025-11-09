@@ -30,8 +30,7 @@ public function __construct() {
         $this->dbname = $_ENV['DB_NAME'] ?? 'attendancetrackernp';
     }
     
-    // Debug: Log the connection details (remove in production)
-    error_log("DB Connection Debug - Host: " . $this->servername . ", User: " . $this->username . ", DB: " . $this->dbname);
+    // Connection established using environment variables
     
     try {
         // Handle port separately if needed
@@ -53,12 +52,9 @@ public function __construct() {
         //echo "connected successfully";
       } catch(PDOException $e) {
         error_log("Database connection failed: " . $e->getMessage());
-        // For debugging - show more details
-        $errorMsg = "Connection failed: " . $e->getMessage();
-        $errorMsg .= "<br>Host: $hostname:$port";
-        $errorMsg .= "<br>Database: " . $this->dbname;
-        $errorMsg .= "<br>Username: " . $this->username;
-        echo $errorMsg;
+        error_log("Host: $hostname:$port, Database: " . $this->dbname . ", Username: " . $this->username);
+        // Don't echo here as it interferes with session_start()
+        $this->conn = null;
       }
 }
 
