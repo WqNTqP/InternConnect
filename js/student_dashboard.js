@@ -1,15 +1,23 @@
 // Get dynamic base URL for images and other resources
 function getBaseUrl() {
-    const path = window.location.pathname;
-    const pathParts = path.split('/');
-    const internConnectIndex = pathParts.findIndex(part => part === 'InternConnect');
+    const protocol = window.location.protocol;
+    const host = window.location.host;
+    const pathname = window.location.pathname;
     
-    if (internConnectIndex !== -1) {
-        const basePath = pathParts.slice(0, internConnectIndex + 1).join('/');
-        return window.location.protocol + '//' + window.location.host + basePath + '/';
+    // Determine if we're in local development or live deployment
+    const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+    
+    let basePath;
+    if (isLocal) {
+        // Local development: extract subdirectory (e.g., "/InternConnect/")
+        const pathArray = pathname.split('/');
+        basePath = pathArray.length > 1 && pathArray[1] ? '/' + pathArray[1] + '/' : '/';
     } else {
-        return window.location.protocol + '//' + window.location.host + '/InternConnect/';
+        // Live deployment: app is at root level
+        basePath = '/';
     }
+    
+    return protocol + '//' + host + basePath;
 }
 
 // Function to manage shown notifications using sessionStorage

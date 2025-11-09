@@ -5,9 +5,18 @@ function getBaseUrl() {
     const host = window.location.host;
     const pathname = window.location.pathname;
     
-    // Extract the base path (e.g., "/InternConnect/")
-    const pathArray = pathname.split('/');
-    const basePath = pathArray.length > 1 && pathArray[1] ? '/' + pathArray[1] + '/' : '/';
+    // Determine if we're in local development or live deployment
+    const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+    
+    let basePath;
+    if (isLocal) {
+        // Local development: extract subdirectory (e.g., "/InternConnect/")
+        const pathArray = pathname.split('/');
+        basePath = pathArray.length > 1 && pathArray[1] ? '/' + pathArray[1] + '/' : '/';
+    } else {
+        // Live deployment: app is at root level
+        basePath = '/';
+    }
     
     const fullUrl = protocol + '//' + host + basePath;
     
