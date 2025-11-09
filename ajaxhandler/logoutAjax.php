@@ -9,3 +9,4 @@ unset($_SESSION["user_id"]);
 echo json_encode(['status' => 'success', 'message' => 'Logged out successfully']);
 exit();
 ?>
+

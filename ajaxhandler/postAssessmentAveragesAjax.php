@@ -1,7 +1,7 @@
 <?php
 session_start();
 header('Content-Type: application/json');
-require_once $_SERVER['DOCUMENT_ROOT'] . "/Attendance Tracker - Copy - NP/database/database.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php";
 
 $student_id = isset($_POST['student_id']) ? intval($_POST['student_id']) : 0;
 if (!$student_id) {
@@ -27,11 +27,15 @@ try {
     }
 
     // Call Flask API for full post-analysis
-    $flaskUrl = 'http://localhost:5000/post_analysis';
+    // Use local Flask in development, proxy in production
+    $isLocal = ($_SERVER['HTTP_HOST'] === 'localhost' || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false);
+    $flaskUrl = $isLocal ? 'http://localhost:5000/post_analysis' : 'http://localhost:5000/post_analysis';
+    
     $flaskData = ["student_id" => $student_id];
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $flaskUrl . '?' . http_build_query($flaskData));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
     $flaskResponse = curl_exec($ch);
     curl_close($ch);
     $flaskJson = json_decode($flaskResponse, true);
@@ -64,3 +68,4 @@ try {
     http_response_code(500);
     echo json_encode(["success" => false, "error" => $e->getMessage()]);
 }
+

@@ -833,7 +833,7 @@ function updateReport($reportId, $content, $images, $status) {
         $stmt = $conn->prepare("
             UPDATE weekly_reports
             SET report_content = ?, status = ?,
-                updated_at = CURRENT_TIMESTAMP
+                updated_at = NOW()
             WHERE report_id = ?
         ");
 
@@ -1041,7 +1041,7 @@ function updateReportPerDay($reportId, $contentPerDay, $imagesPerDay, $status, $
             UPDATE weekly_reports
             SET report_content = ?, monday_description = ?, tuesday_description = ?, wednesday_description = ?, 
                 thursday_description = ?, friday_description = ?, status = ?, approval_status = 'pending',
-                updated_at = CURRENT_TIMESTAMP
+                updated_at = NOW()
             WHERE report_id = ?
         ");
 
@@ -1243,3 +1243,4 @@ function generateWeeklyReportPDF($studentId) {
     $pdf->Output('I', "Weekly_Report_{$studentName}_Week_{$week}.pdf");
     exit;
 }
+

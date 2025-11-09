@@ -1,6 +1,6 @@
 <?php 
 // Include the database and session handling
-require_once $_SERVER['DOCUMENT_ROOT'] . "/Attendance Tracker - Copy - NP/database/admindashboarddb.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/admindashboarddb.php";
 
 // Fetch pending attendance records with student details
 $stmt = $dbo->conn->prepare("
@@ -582,3 +582,4 @@ $adminName = $name ?? 'Admin';
     </div>
 </body>
 </html>
+

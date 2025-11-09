@@ -1,8 +1,8 @@
 <?php
 session_start();
 $path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . "/Attendance Tracker - Copy - NP/database/database.php";
-require_once $path . "/Attendance Tracker - Copy - NP/database/attendanceDetails.php";
+require_once $path . "/InternConnect/database/database.php";
+require_once $path . "/InternConnect/database/attendanceDetails.php";
 header('Content-Type: text/csv');
 header('Content-Disposition: attachment; filename="students_with_grades.csv"');
 
@@ -38,3 +38,4 @@ foreach ($rows as $row) {
 }
 fclose($output);
 exit;
+

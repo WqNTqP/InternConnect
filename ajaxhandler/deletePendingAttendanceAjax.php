@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once $_SERVER['DOCUMENT_ROOT'] . "/Attendance Tracker - Copy - NP/database/database.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php";
 
 header('Content-Type: application/json');
 

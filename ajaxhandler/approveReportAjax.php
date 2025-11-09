@@ -109,7 +109,7 @@ function returnReport($reportId, $returnReason) {
                 SET status = 'draft',
                     approval_status = 'returned',
                     return_reason = :reason,
-                    updated_at = CURRENT_TIMESTAMP
+                    updated_at = NOW()
                 WHERE report_id = :reportId";
         
         $stmt = $dbo->conn->prepare($sql);

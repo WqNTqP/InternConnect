@@ -60,3 +60,4 @@ if ($action === 'getAttendanceReports') {
 
 echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
 exit;
+

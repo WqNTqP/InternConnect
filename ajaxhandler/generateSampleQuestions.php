@@ -23,3 +23,4 @@ foreach ($questions as $q) {
 }
 
 echo json_encode(['success' => $success]);
+

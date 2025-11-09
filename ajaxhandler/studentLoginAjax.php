@@ -1,7 +1,7 @@
 <?php
 $path=$_SERVER['DOCUMENT_ROOT'];
-require_once $path."/Attendance Tracker - Copy - NP/database/database.php";
-require_once $path."/Attendance Tracker - Copy - NP/database/student.php";
+require_once $path."/InternConnect/database/database.php";
+require_once $path."/InternConnect/database/student.php";
 
 if(isset($_POST["action"]) && $_POST["action"] == "verifyStudent")
 {
@@ -29,3 +29,4 @@ if(isset($_POST["action"]) && $_POST["action"] == "verifyStudent")
     echo json_encode($rv);
 }
 ?>
+

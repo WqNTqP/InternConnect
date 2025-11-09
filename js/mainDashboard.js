@@ -73,6 +73,99 @@ $(document).on('click', '#btnAddSession', function(e) {
     $('#deleteStudentFormContainer').hide();
     $('#sessionFormContainer').fadeIn();
 });
+// Handle batch student deletion form submission
+$(document).on('submit', '#deleteStudentForm', function(e) {
+    e.preventDefault();
+    console.log('=== BATCH DELETE FORM SUBMITTED ===');
+    
+    // Get selected student IDs from checkboxes
+    var selectedIds = [];
+    $('.deleteStudentCheckbox:checked').each(function() {
+        selectedIds.push($(this).val());
+    });
+    
+    if (selectedIds.length === 0) {
+        alert('Please select at least one student to delete.');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to delete the selected students?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: 'ajaxhandler/attendanceAJAX.php',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            action: 'deleteStudents',
+            studentIds: selectedIds
+        },
+        success: function(response) {
+            if (response.success) {
+                alert(response.message);
+                location.reload(); // Refresh the page to update the list
+            } else {
+                alert('Error: ' + response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('An error occurred while deleting students.');
+        }
+    });
+});
+
+// More general handler for any button containing "Delete Selected"
+$(document).on('click', 'button:contains("Delete Selected"), input[value*="Delete Selected"], button[type="submit"]', function(e) {
+    // Check if this is the delete button by examining its context
+    var buttonText = $(this).text() || $(this).val() || '';
+    
+    if (buttonText.toLowerCase().includes('delete selected') || 
+        $(this).find('i.fa-user-minus').length > 0 ||
+        $(this).closest('#deleteStudentForm').length > 0) {
+        
+    e.preventDefault();
+    
+    // Get selected student IDs from checkboxes
+    var selectedIds = [];
+    $('.deleteStudentCheckbox:checked').each(function() {
+        selectedIds.push($(this).val());
+    });
+    
+    if (selectedIds.length === 0) {
+        alert('Please select at least one student to delete.');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to delete the selected students?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: 'ajaxhandler/attendanceAJAX.php',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            action: 'deleteStudents',
+            studentIds: selectedIds
+        },
+        success: function(response) {
+            if (response.success) {
+                alert(response.message);
+                location.reload(); // Refresh the page to update the list
+            } else {
+                alert('Error: ' + response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('An error occurred while deleting students.');
+        }
+    });
+    } else {
+        return true; // Allow normal button behavior
+    }
+});
+
 // Handle single student form submission
 $(document).on('submit', '#singleStudentForm', function(e) {
     e.preventDefault();
@@ -229,11 +322,8 @@ $(document).on('click', '.btnProfileStudent', function() {
             studentId: studentId
         },
         success: function(response) {
-            console.log('Profile response:', response); // Debug log
             if ((response.status === 'success' || response.success) && response.data) {
                 const student = response.data;
-                
-                console.log('Student data:', student); // Debug log
                 
                 // Update profile fields
                 $('#profileFirstName').val(student.NAME || '-');
@@ -1028,8 +1118,13 @@ function loadPostAssessmentEvaluation(studentId) {
                 // Get grades and skills from pre_assessment
                 const grades = student.pre_assessment;
                 
+                // Use PHP proxy for Flask API (works in both local and production)
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:5000/predict'  // Direct to Flask in development
+                    : 'api/predict.php';               // Use PHP proxy in production
+                
                 $.ajax({
-                    url: 'http://localhost:5000/predict',
+                    url: apiUrl,
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify(grades),
@@ -1393,7 +1488,7 @@ function loadApprovedReportsWithFilters() {
                                     let imagesHtml = "";
                                     if (report.imagesPerDay && report.imagesPerDay[day] && report.imagesPerDay[day].length > 0) {
                                         report.imagesPerDay[day].forEach(function(img) {
-                                            imagesHtml += `<img src='http://localhost/Attendance Tracker - Copy - NP/uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow-sm w-full h-24 object-cover mb-2 hover:scale-105 transition'>`;
+                                            imagesHtml += `<img src='http://localhost/InternConnect/uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow-sm w-full h-24 object-cover mb-2 hover:scale-105 transition'>`;
                                         });
                                     } else {
                                         imagesHtml = `<div class='flex items-center justify-center h-24 bg-gray-50 text-gray-400 rounded-lg border border-dashed border-gray-200'><i class='fas fa-image'></i></div>`;
@@ -1437,7 +1532,7 @@ function loadApprovedReportsWithFilters() {
                         let imagesHtml = "";
                         if (report.imagesPerDay && report.imagesPerDay[day] && report.imagesPerDay[day].length > 0) {
                             report.imagesPerDay[day].forEach(function(img) {
-                                imagesHtml += `<img src='http://localhost/Attendance Tracker - Copy - NP/uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow w-full h-56 object-cover mb-4'>`;
+                                imagesHtml += `<img src='http://localhost/InternConnect/uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow w-full h-56 object-cover mb-4'>`;
                             });
                         } else {
                             imagesHtml = `<div class='flex items-center justify-center h-56 bg-gray-50 text-gray-400 rounded-lg border border-dashed border-gray-200'><i class='fas fa-image text-4xl'></i></div>`;
@@ -2146,8 +2241,6 @@ function loadApprovedReportsWithFilters() {
         }
     });
     function loadAllStudentsData() {
-        console.log('loadAllStudentsData function called');
-        console.log('Coordinator ID:', $("#hiddencdrid").val()); // Log the coordinator ID
         // Close other forms
         $('#studentFormContainer').fadeOut(function() {
             $('#studentForm')[0].reset();
@@ -3164,6 +3257,9 @@ $(function(e)
                 action: "deleteStudent" // Specify the action to be performed
             },
             success: function(response) {
+                if (response.logResults) {
+                    console.log('Batch Deletion Log Results:', response.logResults);
+                }
                 if (response.success) {
                     alert("Student deleted successfully!");
                     // Automatically refresh the list after successful deletion

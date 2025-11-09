@@ -75,3 +75,4 @@ if ($action === 'getEvaluationReports') {
 
 echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
 exit;
+

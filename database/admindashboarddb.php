@@ -14,7 +14,7 @@ if(isset($_SESSION["admin_user"])) {
     $cdrid = $_SESSION["admin_user"];
     
     // Assuming you have a Database class to handle connections
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/Attendance Tracker - Copy - NP/database/database.php"; // Adjust the path as necessary
+    require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php"; // Adjust the path as necessary
 
     $dbo = new Database();
     
@@ -166,3 +166,4 @@ if(isset($_SESSION["admin_user"])) {
     die();
 }
 ?>
+

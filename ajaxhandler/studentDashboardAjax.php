@@ -532,7 +532,7 @@ switch ($action) {
                     } elseif ($type == 'timeout') {
                         if ($existingRecord && $existingRecord['TIMEIN']) {
                             // Update existing record with timeout
-                            $stmt = $dbo->conn->prepare("UPDATE pending_attendance SET TIMEOUT = ? WHERE INTERNS_ID = ? AND ON_DATE = ?");
+                            $stmt = $dbo->conn->prepare("UPDATE pending_attendance SET TIMEOUT = ?, updated_at = NOW() WHERE INTERNS_ID = ? AND ON_DATE = ?");
                             $stmt->execute([$currentTime, $studentId, $currentDate]);
                             error_log("Updated timeout for existing record");
                         } else {
@@ -725,3 +725,4 @@ switch ($action) {
         break;
 }
 ?>
+

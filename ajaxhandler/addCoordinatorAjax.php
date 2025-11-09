@@ -3,7 +3,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json');
 
-require_once $_SERVER['DOCUMENT_ROOT'] . "/Attendance Tracker - Copy - NP/database/database.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php";
 
 $response = [];  // Initialize response array
 
@@ -103,3 +103,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
 }
 ?>
+

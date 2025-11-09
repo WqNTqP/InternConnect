@@ -30,3 +30,4 @@ try {
 } catch (Exception $e) {
     sendResponse('error', 'Database error: ' . $e->getMessage());
 }
+

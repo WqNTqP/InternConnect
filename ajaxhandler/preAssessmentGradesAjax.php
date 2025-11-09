@@ -1,7 +1,7 @@
 <?php
 session_start();
 header('Content-Type: application/json');
-require_once $_SERVER['DOCUMENT_ROOT'] . "/Attendance Tracker - Copy - NP/database/database.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php";
 
 $student_id = isset($_POST['student_id']) ? intval($_POST['student_id']) : 0;
 if (!$student_id) {
@@ -24,3 +24,4 @@ try {
     http_response_code(500);
     echo json_encode(["success" => false, "error" => $e->getMessage()]);
 }
+

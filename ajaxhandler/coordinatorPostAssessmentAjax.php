@@ -8,7 +8,7 @@ if (!isset($_SESSION["coordinator_user"])) {
 $coordinator_id = $_SESSION["coordinator_user"];
 
 header('Content-Type: application/json');
-require_once $_SERVER['DOCUMENT_ROOT'] . "/Attendance Tracker - Copy - NP/database/database.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php";
 
 if (isset($_POST['action']) && $_POST['action'] === 'getStudentPostAssessment' && isset($_POST['interns_id'])) {
     $interns_id = $_POST['interns_id'];
@@ -56,3 +56,4 @@ try {
     echo json_encode(["error" => $e->getMessage()]);
 }
 ?>
+

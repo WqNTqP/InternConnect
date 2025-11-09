@@ -1,0 +1,10 @@
+# Alternative Procfile options:
+
+# Option 1: Run both PHP and Flask together (current setup)
+web: bash start.sh
+
+# Option 2: Run only Flask API (if you want separate deployment)
+# web: python flask_app.py
+
+# Option 3: Run Flask directly from its directory
+# web: cd ML/sample_frontend && python app.py

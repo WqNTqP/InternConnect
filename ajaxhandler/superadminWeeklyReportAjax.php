@@ -58,3 +58,4 @@ if ($action === 'getWeeklyReports') {
 // Default error
 echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
 exit;
+

@@ -4,8 +4,8 @@ ini_set('display_errors', 1);
 header('Content-Type: application/json'); // Ensure the response is in JSON format
 
 $path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . "/Attendance Tracker - Copy - NP/database/database.php"; // Include your database connection
-require_once $path . "/Attendance Tracker - Copy - NP/database/attendanceDetails.php"; // Include attendanceDetails.php
+require_once $path . "/InternConnect/database/database.php"; // Include your database connection
+require_once $path . "/InternConnect/database/attendanceDetails.php"; // Include attendanceDetails.php
 
 // Log the request method and request URI
 error_log("Request Method: " . $_SERVER['REQUEST_METHOD']);

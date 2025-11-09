@@ -1,12 +1,12 @@
 <?php
 session_start();
 $path=$_SERVER['DOCUMENT_ROOT'];
-require_once $path."/Attendance Tracker - Copy - NP/database/database.php";
-require_once $path."/Attendance Tracker - Copy - NP/database/sessionDetails.php";
-require_once $path."/Attendance Tracker - Copy - NP/database/coordinator.php";
-require_once $path."/Attendance Tracker - Copy - NP/database/buildingRegistrationDetails.php";
-require_once $path."/Attendance Tracker - Copy - NP/database/attendanceDetails.php";
-require('C:/xampp/htdocs/Attendance Tracker - Copy - NP/fpdf/fpdf.php');
+require_once $path."/InternConnect/database/database.php";
+require_once $path."/InternConnect/database/sessionDetails.php";
+require_once $path."/InternConnect/database/coordinator.php";
+require_once $path."/InternConnect/database/buildingRegistrationDetails.php";
+require_once $path."/InternConnect/database/attendanceDetails.php";
+require('C:/xampp/htdocs/InternConnect/fpdf/fpdf.php');
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json');
@@ -83,7 +83,7 @@ function approveAttendance($id) {
                 $stmt->execute([$coordinatorId, $hteId, $sessionId, $internId, $onDate, $timeIn, $timeOut]);
 
                 // Update status in pending_attendance to approved
-                $stmt = $dbo->conn->prepare("UPDATE pending_attendance SET STATUS = 'approved' WHERE ID = ?");
+                $stmt = $dbo->conn->prepare("UPDATE pending_attendance SET STATUS = 'approved', updated_at = NOW() WHERE ID = ?");
                 $stmt->execute([$id]);
 
                 echo json_encode(['status' => 'success', 'message' => 'Attendance approved successfully']);

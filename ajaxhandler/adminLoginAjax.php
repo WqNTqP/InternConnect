@@ -5,8 +5,8 @@
 
 
 $path=$_SERVER['DOCUMENT_ROOT'];
-require_once $path."/Attendance Tracker - Copy - NP/database/database.php";
-require_once $path."/Attendance Tracker - Copy - NP/database/admin.php";
+require_once $path."/InternConnect/database/database.php";
+require_once $path."/InternConnect/database/admin.php";
 $action=$_REQUEST["action"];
 if(!empty($action))
 {
@@ -90,3 +90,4 @@ if(!empty($action))
 //     sendResponse('error', null, 'Invalid action');
 // }
 ?>
+

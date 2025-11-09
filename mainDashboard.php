@@ -25,7 +25,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
     } elseif(isset($_SESSION["current_user"])) {
         // For backwards compatibility, fetch name from database
         $path=$_SERVER['DOCUMENT_ROOT'];
-        require_once $path."/Attendance Tracker - Copy - NP/database/database.php";
+        require_once $path."/InternConnect/database/database.php";
         try {
             $db = new Database();
             $stmt = $db->conn->prepare("SELECT NAME FROM coordinator WHERE COORDINATOR_ID = ?");
@@ -43,7 +43,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
     } elseif(isset($_SESSION["student_user"])) {
         // For student users, fetch name from database
         $path=$_SERVER['DOCUMENT_ROOT'];
-        require_once $path."/Attendance Tracker - Copy - NP/database/database.php";
+        require_once $path."/InternConnect/database/database.php";
         try {
             $db = new Database();
             $stmt = $db->conn->prepare("SELECT NAME FROM student WHERE STUDENT_ID = ?");
@@ -1250,8 +1250,6 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
 
                 if (hasCsvFile) {
                     // Handle CSV upload
-                    console.log('[StudentForm] Sending CSV upload request to ajaxhandler/uploadCSV.php');
-                    console.log('[StudentForm] FormData:', logFormData(formData));
                     $.ajax({
                         url: "ajaxhandler/uploadCSV.php",
                         type: "POST",
@@ -1261,7 +1259,6 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                         dataType: 'json',
                         success: function(response) {
                             isSubmittingStudentForm = false;
-                            console.log('[StudentForm] Response from uploadCSV.php:', response);
                             if (response.success) {
                                 alert(response.message || "Students added successfully from CSV!");
                                 $('#studentFormContainer').slideUp();
@@ -1287,8 +1284,6 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                     if (sessionId) formData.append('sessionId', sessionId);
                     if (hteId) formData.append('hteId', hteId);
 
-                    console.log('[StudentForm] Sending single student request to ajaxhandler/attendanceAJAX.php');
-                    console.log('[StudentForm] FormData:', logFormData(formData));
                     $.ajax({
                         url: "ajaxhandler/attendanceAJAX.php",
                         type: "POST",
@@ -1298,7 +1293,6 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                         dataType: 'json',
                         success: function(response) {
                             isSubmittingStudentForm = false;
-                            console.log('[StudentForm] Response from attendanceAJAX.php:', response);
                             if (response.success) {
                                 alert("Student added successfully!");
                                 $('#studentFormContainer').slideUp();
@@ -1309,8 +1303,6 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                         },
                         error: function(xhr, status, error) {
                             isSubmittingStudentForm = false;
-                            console.error("Add student error:", error);
-                            console.error('[StudentForm] Rejected by attendanceAJAX.php:', xhr.responseText);
                             alert("Error adding student. Please check your input and try again.");
                         }
                     });
@@ -2089,3 +2081,4 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
     </div>
 </body>
 </html>
+

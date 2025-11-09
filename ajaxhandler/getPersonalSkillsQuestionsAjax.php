@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require_once $_SERVER['DOCUMENT_ROOT'] . "/Attendance Tracker - Copy - NP/database/database.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php";
 
 try {
     $db = new Database();
@@ -14,3 +14,4 @@ try {
     echo json_encode(["error" => $e->getMessage()]);
 }
 ?>
+

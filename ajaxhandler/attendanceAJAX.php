@@ -1,12 +1,12 @@
 <?php
 session_start();
 $path=$_SERVER['DOCUMENT_ROOT'];
-require_once $path."/Attendance Tracker - Copy - NP/database/database.php";
-require_once $path."/Attendance Tracker - Copy - NP/database/sessionDetails.php";
-require_once $path."/Attendance Tracker - Copy - NP/database/coordinator.php";
-require_once $path."/Attendance Tracker - Copy - NP/database/buildingRegistrationDetails.php";
-require_once $path."/Attendance Tracker - Copy - NP/database/attendanceDetails.php";
-require('C:/xampp/htdocs/Attendance Tracker - Copy - NP/fpdf/fpdf.php');
+require_once $path."/InternConnect/database/database.php";
+require_once $path."/InternConnect/database/sessionDetails.php";
+require_once $path."/InternConnect/database/coordinator.php";
+require_once $path."/InternConnect/database/buildingRegistrationDetails.php";
+require_once $path."/InternConnect/database/attendanceDetails.php";
+require('C:/xampp/htdocs/InternConnect/fpdf/fpdf.php');
 // Prevent any direct output of errors
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
@@ -250,22 +250,8 @@ function createPDFReport($list, $filename) {
                 return; // Stop execution if validation fails
             }
     
-            // Debugging: Log all parameters to check their values
-            error_log("Adding student with: internId=$intern_id, studentId=$student_id, name=$name, surname=$surname, age=$age, gender=$gender, email=$email, contact_number=$contact_number, coordinator_id=$coordinator_id, hte_id=$hte_id, session_id=$session_id");
-    
             $dbo = new Database(); // Create a Database instance
             $ado = new attendanceDetails(); // Create an instance of attendanceDetails
-    
-            // Add this new logging block right before calling addStudent
-            error_log("About to call addStudent with the following parameters:");
-            error_log("student_id: " . $student_id);
-            error_log("name: " . $name);
-            error_log("surname: " . $surname);
-            error_log("age: " . $age);
-            error_log("gender: " . $gender);
-            error_log("email: " . $email);
-            error_log("contact_number: " . $contact_number);
-            error_log("coordinator_id: " . $coordinator_id);
             error_log("hte_id: " . $hte_id);
             error_log("session_id: " . $session_id);
     
@@ -299,7 +285,7 @@ function createPDFReport($list, $filename) {
             // Handle logo upload
             $logo_filename = null;
             if (isset($_FILES['LOGO']) && $_FILES['LOGO']['error'] === UPLOAD_ERR_OK) {
-                $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/Attendance Tracker - Copy - NP/uploads/hte_logos/';
+                $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/InternConnect/uploads/hte_logos/';
                 if (!is_dir($upload_dir)) {
                     mkdir($upload_dir, 0777, true);
                 }
@@ -349,7 +335,7 @@ function createPDFReport($list, $filename) {
             // Handle logo upload
             $logo_filename = null;
             if (isset($_FILES['LOGO']) && $_FILES['LOGO']['error'] === UPLOAD_ERR_OK) {
-                $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/Attendance Tracker - Copy - NP/uploads/hte_logos/';
+                $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/InternConnect/uploads/hte_logos/';
                 if (!is_dir($upload_dir)) {
                     mkdir($upload_dir, 0777, true);
                 }
@@ -392,7 +378,7 @@ function createPDFReport($list, $filename) {
                 }
                 $logo_filename = null;
                 if (isset($_FILES['LOGO']) && $_FILES['LOGO']['error'] === UPLOAD_ERR_OK) {
-                    $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/Attendance Tracker - Copy - NP/uploads/hte_logos/';
+                    $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/InternConnect/uploads/hte_logos/';
                     if (!is_dir($upload_dir)) {
                         mkdir($upload_dir, 0777, true);
                     }
@@ -469,6 +455,16 @@ if ($action == "deleteStudent") {
         exit;
     }
     $dbo = new Database();
+    // Fetch intern details before deletion (PDO)
+    $fetch_stmt = $dbo->conn->prepare("SELECT INTERNS_ID, STUDENT_ID, NAME FROM interns_details WHERE STUDENT_ID = ? LIMIT 1");
+    $fetch_stmt->execute([$studentId]);
+    $intern = $fetch_stmt->fetch(PDO::FETCH_ASSOC);
+    if ($intern) {
+        // Log the deletion (PDO)
+        $log_stmt = $dbo->conn->prepare("INSERT INTO student_deletion_log (intern_id, student_id, name, deleted_at) VALUES (?, ?, ?, NOW())");
+        $log_stmt->execute([$intern['INTERNS_ID'], $intern['STUDENT_ID'], $intern['NAME']]);
+    }
+    // Now delete the intern
     $ado = new attendanceDetails();
     $response = $ado->deleteStudent($dbo, $studentId);
     echo json_encode($response);
@@ -499,6 +495,7 @@ if ($action=="getStudentsBySessionAndHTE") {
 
 if ($action == "deleteStudents") {
     $studentIds = $_POST['studentIds'] ?? [];
+    
     if (empty($studentIds)) {
         echo json_encode(['success' => false, 'message' => 'No students selected for deletion.']);
         exit;
@@ -508,8 +505,49 @@ if ($action == "deleteStudents") {
     $ado = new attendanceDetails();
 
     try {
+        $logResults = [];
+        // Log each student before deletion
+        foreach ($studentIds as $studentId) {
+            $fetch_stmt = $dbo->conn->prepare("SELECT INTERNS_ID, STUDENT_ID, NAME FROM interns_details WHERE STUDENT_ID = ? LIMIT 1");
+            $fetch_stmt->execute([$studentId]);
+            $intern = $fetch_stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($intern) {
+                try {
+                    $log_stmt = $dbo->conn->prepare("INSERT INTO student_deletion_log (intern_id, student_id, name, deleted_at) VALUES (?, ?, ?, NOW())");
+                    $success = $log_stmt->execute([$intern['INTERNS_ID'], $intern['STUDENT_ID'], $intern['NAME']]);
+                    
+                    $logResults[] = [
+                        'studentId' => $studentId,
+                        'logged' => $success,
+                        'intern' => $intern,
+                        'error' => $success ? null : $log_stmt->errorInfo()
+                    ];
+                } catch (Exception $logEx) {
+                    $logResults[] = [
+                        'studentId' => $studentId,
+                        'logged' => false,
+                        'intern' => $intern,
+                        'error' => $logEx->getMessage()
+                    ];
+                }
+            } else {
+                $logResults[] = [
+                    'studentId' => $studentId,
+                    'logged' => false,
+                    'intern' => null,
+                    'error' => 'Student not found'
+                ];
+            }
+        }
+        
         $result = $ado->deleteStudents($dbo, $studentIds);
-        echo json_encode(['success' => $result, 'message' => $result ? 'Students deleted successfully.' : 'Failed to delete students.']);
+        
+        echo json_encode([
+            'success' => $result,
+            'message' => $result ? 'Students deleted successfully.' : 'Failed to delete students.',
+            'logResults' => $logResults
+        ]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => 'Error deleting students: ' . $e->getMessage()]);
     }
@@ -918,3 +956,4 @@ if (isset($_POST['action']) && $_POST['action'] == 'updateCoordinatorPassword') 
 }
     // Removed unmatched closing brace
 ?>
+

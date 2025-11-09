@@ -8,7 +8,7 @@ if (!isset($_SESSION["student_user"])) {
 $student_id = $_SESSION["student_user"];
 
 header('Content-Type: application/json');
-require_once $_SERVER['DOCUMENT_ROOT'] . "/Attendance Tracker - Copy - NP/database/database.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php";
 
 try {
     $db = new Database();
@@ -108,3 +108,4 @@ try {
     http_response_code(500);
     echo json_encode(["error" => $e->getMessage(), "debug" => isset($debugInfo) ? $debugInfo : null]);
 }
+

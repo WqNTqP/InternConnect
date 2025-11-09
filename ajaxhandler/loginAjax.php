@@ -6,8 +6,8 @@
 
 
 $path=$_SERVER['DOCUMENT_ROOT'];
-require_once $path."/Attendance Tracker - Copy - NP/database/database.php";
-require_once $path."/Attendance Tracker - Copy - NP/database/coordinator.php";
+require_once $path."/InternConnect/database/database.php";
+require_once $path."/InternConnect/database/coordinator.php";
 $action=$_REQUEST["action"];
 if(!empty($action))
 {
@@ -66,8 +66,8 @@ if(!empty($action))
 
 
 // $path=$_SERVER['DOCUMENT_ROOT'];
-// require_once $path."/Attendance Tracker - Copy - NP/database/database.php";
-// require_once $path."/Attendance Tracker - Copy - NP/database/coordinator.php";
+// require_once $path."/InternConnect/database/database.php";
+// require_once $path."/InternConnect/database/coordinator.php";
 // $action=$_REQUEST["action"];
 // if(!empty($action))
 // {

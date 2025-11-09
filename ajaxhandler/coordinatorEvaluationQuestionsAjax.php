@@ -76,3 +76,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 }
 
 echo json_encode(['success' => false, 'message' => 'Invalid request']);
+

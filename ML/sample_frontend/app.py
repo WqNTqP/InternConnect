@@ -4,23 +4,33 @@ import joblib
 import pandas as pd
 import random
 from sklearn.preprocessing import LabelEncoder
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+env_path = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
+load_dotenv(env_path)
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Load model and label encoder
-import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(BASE_DIR, '..', 'model', 'pre-assessment.joblib')
 clf = joblib.load(model_path)
 
 # Use MySQL database table instead of CSV
 from sqlalchemy import create_engine
-user = 'root'
-password = ''  # Use your actual password if set
-host = 'localhost'
-port = 3306
-database = 'attendancetrackernp'  # Use your actual DB name
+
+# Get database credentials from environment variables
+user = os.getenv('DB_USERNAME', 'root')
+password = os.getenv('DB_PASSWORD', '')
+host = os.getenv('DB_HOST', 'localhost:3306').split(':')[0]  # Remove port from host
+port = int(os.getenv('DB_HOST', 'localhost:3306').split(':')[1]) if ':' in os.getenv('DB_HOST', 'localhost:3306') else 3306
+database = os.getenv('DB_NAME', 'attendancetrackernp')
+
+print(f"Connecting to database: {user}@{host}:{port}/{database}")
+
 engine = create_engine(f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}")
 df_ref = pd.read_sql('SELECT * FROM past_data', con=engine)
 print('Loaded data from database:')
@@ -576,4 +586,5 @@ def post_analysis():
     })
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)

@@ -3,7 +3,7 @@ session_start(); // Start the session
 
 // Include database connection
 $path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . "/Attendance Tracker - Copy - NP/database/database.php"; // Adjust path as necessary
+require_once $path . "/InternConnect/database/database.php"; // Adjust path as necessary
 
 header('Content-Type: application/json'); // Set content type to JSON
 
