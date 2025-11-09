@@ -1,18 +1,29 @@
 #!/bin/bash
+set -e  # Exit on any error
 
-echo "Installing Python dependencies..."
+echo "🚀 InternConnect Startup Script"
+echo "=============================="
+
+echo "📦 Installing Python dependencies..."
 pip install -r requirements.txt
+echo "✅ Python dependencies installed"
 
-echo "Starting Flask API on port 5000..."
+echo "🐍 Starting Flask API on port 5000..."
 cd ML/sample_frontend
 export FLASK_ENV=production
+export PYTHONUNBUFFERED=1
 python app.py &
 FLASK_PID=$!
+echo "✅ Flask API started with PID: $FLASK_PID"
 cd ../..
 
-echo "Starting PHP server on port $PORT..."
+# Give Flask a moment to start
+sleep 3
+
+echo "🌐 Starting PHP server on port $PORT..."
 php -S 0.0.0.0:${PORT:-10000} -t . &
 PHP_PID=$!
+echo "✅ PHP server started with PID: $PHP_PID"
 
 echo "Both services started:"
 echo "- Flask API: Internal on port 5000"
