@@ -34,7 +34,7 @@ foreach ($urls as $type => $url) {
         echo "Sending test data: $testData\n";
     } elseif ($type === 'post_analysis') {
         // post_analysis uses GET with query parameters
-        $queryParams = '?student_id=test123&responses=' . urlencode('[4,5,3,4,5]');
+        $queryParams = '?student_id=59829536&responses=' . urlencode('[4,5,3,4,5]');
         curl_setopt($ch, CURLOPT_URL, $url . $queryParams);
         echo "Using query parameters: $queryParams\n";
     }

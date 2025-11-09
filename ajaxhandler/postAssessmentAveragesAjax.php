@@ -30,20 +30,8 @@ try {
     }
 
     // Call Flask API for full post-analysis
-    // Use local Flask in development, proxy in production
-    $isLocal = ($_SERVER['HTTP_HOST'] === 'localhost' || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false);
-    // Configuration: Set your live Render URL here for testing
-    $LIVE_RENDER_URL = 'https://YOUR_RENDER_APP_NAME.onrender.com'; // UPDATE THIS WITH YOUR ACTUAL URL
-    
-    if ($isLocal) {
-        // Local development testing: call the LIVE API directly
-        $flaskUrl = $LIVE_RENDER_URL . '/api/post_analysis.php';
-    } else {
-        // Production: use PHP proxy
-        $scheme = isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 
-                 (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http');
-        $flaskUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . '/api/post_analysis.php';
-    }
+    // Always use HTTPS for live Render deployment
+    $flaskUrl = 'https://internconnect-kjzb.onrender.com/api/post_analysis.php';
     
     $flaskData = ["student_id" => $student_id];
     $fullUrl = $flaskUrl . '?' . http_build_query($flaskData);

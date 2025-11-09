@@ -10,14 +10,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    // Check if we're on Render (production) or local development
+    $isProduction = isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'onrender.com') !== false;
+    
     // Get query parameters
     $queryString = $_SERVER['QUERY_STRING'];
     
-    // Flask API is running on localhost:5000 internally
-    $flask_url = 'http://localhost:5000/post_analysis';
+    if ($isProduction) {
+        // On Render, Flask runs on localhost:5000 internally
+        $flask_url = 'http://localhost:5000/post_analysis';
+    } else {
+        // For local development, use local Flask
+        $flask_url = 'http://localhost:5000/post_analysis';
+    }
+    
     if ($queryString) {
         $flask_url .= '?' . $queryString;
     }
+    
+    // Debug the request URL being made
+    error_log("Flask API Debug - URL: " . $flask_url);
+    $is_local = strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false;
+    error_log("Flask API Debug - Is Local: " . ($is_local ? 'true' : 'false'));
     
     // Initialize cURL
     $ch = curl_init();
@@ -29,26 +43,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     
-    if (curl_error($ch)) {
-        // Fallback: Return mock data for local development when Flask isn't running
-        $mockData = [
-            'post_assessment_averages' => [
-                'technical_skills' => 4.2,
-                'problem_solving' => 4.0,
-                'communication' => 4.5,
-                'teamwork' => 4.3,
-                'adaptability' => 4.1
-            ],
-            'placement' => 'Technical Support',
-            'reasoning' => 'Mock analysis: Student shows strong technical and communication skills suitable for technical support role.',
-            'supervisor_comment' => 'Mock comment: Excellent performance in technical assessments.',
-            'comparative_analysis' => 'Mock analysis: Performance improved significantly from pre-assessment.',
-            'strengths_post_assessment' => 'Strong technical skills, good communication',
-            'correlation_analysis' => 'High correlation between technical skills and job performance',
-            'conclusion' => 'Mock conclusion: Ready for technical support placement.',
-            'mock_data' => true
+    $curl_error = curl_error($ch);
+    curl_close($ch);
+    
+    // Debug logging
+    error_log("Flask API Debug - HTTP Code: " . $httpCode);
+    error_log("Flask API Debug - cURL Error: " . $curl_error);
+    error_log("Flask API Debug - Response: " . substr($response, 0, 200));
+    
+    if ($curl_error) {
+        // Return error details for debugging
+        $error_response = [
+            'success' => false,
+            'error' => 'Flask API error or missing data.',
+            'debug' => [
+                'url' => $flask_url,
+                'http_code' => $httpCode,
+                'curl_error' => $curl_error,
+                'response' => $response,
+                'is_local' => $is_local
+            ]
         ];
-        echo json_encode($mockData);
+        echo json_encode($error_response);
     } else {
         http_response_code($httpCode);
         echo $response;
