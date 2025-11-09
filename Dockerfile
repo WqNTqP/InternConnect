@@ -12,7 +12,6 @@ RUN apt-get update && apt-get install -y \
     php8.1-pdo \
     php8.1-mysql \
     php8.1-curl \
-    php8.1-json \
     python3 \
     python3-pip \
     curl \
