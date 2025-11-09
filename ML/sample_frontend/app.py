@@ -642,7 +642,8 @@ def post_analysis():
     })
 
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
+    # Force Flask to use port 5000 internally (ignore Render's PORT environment variable)
+    port = 5000
     print(f"\n🚀 Starting Flask API on port {port}")
     print(f"📊 Model loaded: {'✅' if model_loaded else '❌'}")
     print(f"💾 Database connected: {'✅' if database_connected else '❌'}")
