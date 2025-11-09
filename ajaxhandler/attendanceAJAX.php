@@ -6,7 +6,7 @@ require_once $path."/database/sessionDetails.php";
 require_once $path."/database/coordinator.php";
 require_once $path."/database/buildingRegistrationDetails.php";
 require_once $path."/database/attendanceDetails.php";
-require('C:/xampp/htdocs/InternConnect/fpdf/fpdf.php');
+require_once $path."/fpdf/fpdf.php";
 // Prevent any direct output of errors
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);

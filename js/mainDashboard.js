@@ -2398,8 +2398,13 @@ function loadSeassions()
             }
         },
         error: function(xhr, status, error) {
-
-            alert("OOPS!");
+            console.log("AJAX Error Details:", {
+                status: status,
+                error: error,
+                responseText: xhr.responseText,
+                url: "ajaxhandler/attendanceAJAX.php"
+            });
+            alert("OOPS! Session loading failed. Check console for details.");
         }
     });
 }
