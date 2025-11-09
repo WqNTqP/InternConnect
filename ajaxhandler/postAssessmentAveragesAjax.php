@@ -40,7 +40,9 @@ try {
         $flaskUrl = $LIVE_RENDER_URL . '/api/post_analysis.php';
     } else {
         // Production: use PHP proxy
-        $flaskUrl = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . '/api/post_analysis.php';
+        $scheme = isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 
+                 (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http');
+        $flaskUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . '/api/post_analysis.php';
     }
     
     $flaskData = ["student_id" => $student_id];
