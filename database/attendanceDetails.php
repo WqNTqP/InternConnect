@@ -852,7 +852,7 @@ class attendanceDetails
 
             foreach ($studentIds as $studentId) {
                 try {
-                    // Delete from parent table - CASCADE will handle related records automatically
+                    // Delete from parent table - CASCADE will handle all related records automatically
                     $stmt = $dbo->conn->prepare("DELETE FROM interns_details WHERE STUDENT_ID = :studentId");
                     $stmt->execute([":studentId" => $studentId]);
                     $rowsDeleted = $stmt->rowCount();
@@ -860,6 +860,8 @@ class attendanceDetails
 
                     if ($rowsDeleted === 0) {
                         $errors[] = "Student $studentId not found or already deleted";
+                    } else {
+                        error_log("Deleted student $studentId with CASCADE cleanup");
                     }
 
                 } catch (Exception $e) {
@@ -870,7 +872,7 @@ class attendanceDetails
 
             if (empty($errors)) {
                 $dbo->conn->commit();
-                error_log("Successfully deleted $deletedCount student(s)");
+                error_log("Successfully deleted $deletedCount student(s) with CASCADE");
                 return true;
             } else {
                 $dbo->conn->rollBack();
