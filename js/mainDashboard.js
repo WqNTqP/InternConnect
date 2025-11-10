@@ -26,16 +26,27 @@ function getBaseUrl() {
     return fullUrl;
 }
 
-// Fetch and render all companies (HTEs) in the companies table
+// Fetch and render coordinator-specific companies (HTEs) in the companies table
 function loadAllCompaniesData() {
+    let cdrid = $("#hiddencdrid").val();
+    
+    if (!cdrid) {
+        $('#allCompaniesTableBody').html('<tr><td colspan="6" class="text-center text-red-500 py-6">Coordinator ID not found.</td></tr>');
+        return;
+    }
+
     $.ajax({
         url: 'ajaxhandler/attendanceAJAX.php',
         type: 'POST',
         dataType: 'json',
-        data: { action: 'getHTEList' },
+        data: { action: 'getHTEList', cdrid: cdrid },
         success: function(response) {
             if (response.success && response.htes && Array.isArray(response.htes)) {
-                renderCompaniesList(response.htes);
+                if (response.htes.length > 0) {
+                    renderCompaniesList(response.htes);
+                } else {
+                    $('#allCompaniesTableBody').html('<tr><td colspan="6" class="text-center text-gray-500 py-6">No companies assigned to you.</td></tr>');
+                }
             } else {
                 $('#allCompaniesTableBody').html('<tr><td colspan="6" class="text-center text-gray-500 py-6">No companies found.</td></tr>');
             }

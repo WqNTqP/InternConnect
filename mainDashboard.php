@@ -543,7 +543,7 @@ function generateStudentFilterOptions($coordinatorId) {
                             <button id="btnViewAllStudents" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="View All Students" title="View All Students">
                                 <i class="fas fa-users text-sm"></i>
                             </button>
-                            <button id="btnViewAllCompanies" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="View All Companies" title="View All Companies">
+                            <button id="btnViewAllCompanies" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="View My Companies" title="View My Assigned Companies">
                                 <i class="fas fa-city text-sm"></i>
                             </button>
                             <button id="btnAddStudent" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-green-100 text-green-600 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Add Student" title="Add Student">
@@ -907,7 +907,7 @@ function generateStudentFilterOptions($coordinatorId) {
                                 </h3>
                                 <form id="deleteHTEFormSubmit" class="space-y-6">
                                     <div>
-                                        <label for="deleteHteSelect" class="block text-sm font-medium text-gray-700 mb-2">Select HTE to Delete</label>
+                                        <label for="deleteHteSelect" class="block text-sm font-medium text-gray-700 mb-2">Select My Assigned HTE to Delete</label>
                                         <select id="deleteHteSelect" name="hteId" required="" class="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 bg-gray-50 text-gray-800">
                                             <option value="">Select HTE</option>
                                         </select>
@@ -1028,7 +1028,7 @@ function generateStudentFilterOptions($coordinatorId) {
                             <!-- View All Companies Container -->
 
                             <div id="allCompaniesContainer" class="form-container p-6 bg-white rounded-lg shadow-md" style="display:none;">
-                                <h3 class="text-2xl font-bold text-gray-800 mb-4">All Companies (HTEs)</h3>
+                                <h3 class="text-2xl font-bold text-gray-800 mb-4">My Assigned Companies (HTEs)</h3>
                                 <div class="overflow-x-auto">
                                     <table id="allCompaniesTable" class="min-w-full divide-y divide-gray-200">
                                         <thead class="bg-gray-50">
@@ -1793,25 +1793,38 @@ function generateStudentFilterOptions($coordinatorId) {
                 });
             });
 
-            // Function to load HTE options for delete dropdown
+            // Function to load coordinator-specific HTE options for delete dropdown
             function loadHTEOptions() {
+                let cdrid = $("#hiddencdrid").val();
+                
+                if (!cdrid) {
+                    $('#deleteHteSelect').html('<option value="">Coordinator ID not found</option>');
+                    return;
+                }
+
                 $.ajax({
                     url: "ajaxhandler/attendanceAJAX.php",
                     type: "POST",
                     dataType: "json",
-                    data: {action: "getHTEList"},
+                    data: {action: "getHTEList", cdrid: cdrid},
                     success: function(response) {
                         if (response.success) {
                             let options = '<option value="">Select HTE</option>';
-                            response.htes.forEach(function(hte) {
-                                options += `<option value="${hte.HTE_ID}">${hte.NAME}</option>`;
-                            });
+                            if (response.htes && response.htes.length > 0) {
+                                response.htes.forEach(function(hte) {
+                                    options += `<option value="${hte.HTE_ID}">${hte.NAME}</option>`;
+                                });
+                            } else {
+                                options = '<option value="">No HTEs assigned to you</option>';
+                            }
                             $('#deleteHteSelect').html(options);
                         } else {
+                            $('#deleteHteSelect').html('<option value="">Error loading HTEs</option>');
                             alert("Error loading HTEs: " + response.message);
                         }
                     },
                     error: function(xhr, status, error) {
+                        $('#deleteHteSelect').html('<option value="">Error loading HTEs</option>');
                         alert("Error loading HTEs. Please try again.");
                     }
                 });

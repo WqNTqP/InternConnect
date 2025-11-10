@@ -588,14 +588,22 @@ if ($action == "deleteStudents") {
     if ($action == "getHTEList") {
         $dbo = new Database();
         $ado = new attendanceDetails();
+        $cdrid = $_POST['cdrid'] ?? $_SESSION['current_user'] ?? null;
 
         try {
-            // Get all HTEs with all relevant columns for the companies table
-            $c = "SELECT hte.HTE_ID, hte.NAME, hte.INDUSTRY, hte.ADDRESS, hte.CONTACT_PERSON, hte.CONTACT_NUMBER
+            if (!$cdrid) {
+                echo json_encode(['success' => false, 'message' => 'Coordinator ID not found']);
+                exit;
+            }
+
+            // Get HTEs assigned to the current coordinator with all relevant columns for the companies table
+            $c = "SELECT DISTINCT hte.HTE_ID, hte.NAME, hte.INDUSTRY, hte.ADDRESS, hte.CONTACT_PERSON, hte.CONTACT_NUMBER, hte.LOGO
                   FROM host_training_establishment hte
+                  JOIN internship_needs itn ON hte.HTE_ID = itn.HTE_ID
+                  WHERE itn.COORDINATOR_ID = :cdrid
                   ORDER BY hte.NAME";
             $s = $dbo->conn->prepare($c);
-            $s->execute();
+            $s->execute([":cdrid" => $cdrid]);
             $htes = $s->fetchAll(PDO::FETCH_ASSOC);
 
             echo json_encode(['success' => true, 'htes' => $htes]);
