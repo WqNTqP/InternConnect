@@ -111,6 +111,45 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
             to { opacity: 1; transform: translateY(0); }
         }
         .fade-in { animation: fadeIn 0.5s ease-out; }
+        
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            .mobile-scroll {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Ensure tables are scrollable on mobile */
+            table {
+                min-width: 600px;
+            }
+            
+            /* Better button sizing on mobile */
+            .mobile-btn {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+            
+            /* Prevent horizontal overflow */
+            body {
+                overflow-x: hidden;
+            }
+            
+            /* Better select dropdown styling on mobile */
+            select {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+        
+        /* Hide scrollbar for webkit browsers */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -119,26 +158,29 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
         <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
     </div>
 
-    <div class="min-h-screen" x-data="{ sidebarOpen: false }">
+    <div class="min-h-screen" x-data="{ sidebarOpen: false, isMobile: window.innerWidth < 768 }" @resize.window="isMobile = window.innerWidth < 768">
+        <!-- Mobile Overlay -->
+        <div x-show="sidebarOpen && isMobile" @click="sidebarOpen = false" class="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"></div>
+        
         <nav class="bg-white shadow-lg fixed w-full top-0 z-30">
             <div class="px-4">
                 <div class="flex justify-between items-center h-16">
-                    <div class="flex items-center fixed left-4">
+                    <div class="flex items-center">
                         <button @click="sidebarOpen = !sidebarOpen" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none" aria-label="Toggle Sidebar">
                             <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                             </svg>
                         </button>
                         <div class="ml-4 cursor-pointer" onclick="window.location.href='mainDashboard.php';">
-                            <h2 class="text-xl font-semibold text-gray-800">InternConnect</h2>
+                            <h2 class="text-lg md:text-xl font-semibold text-gray-800">InternConnect</h2>
                         </div>
                     </div>
-                    <div class="flex items-center fixed right-4">
-                    <div class="flex items-center fixed right-4">
+                    <div class="flex items-center">
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none">
-                                <span class="text-sm font-medium">KIM CHARLES</span>
-                                <svg class="h-5 w-5" :class="{'transform rotate-180': open}" fill="currentColor" viewBox="0 0 20 20">
+                                <span class="text-xs md:text-sm font-medium hidden sm:inline">KIM CHARLES</span>
+                                <span class="text-xs md:text-sm font-medium sm:hidden">KC</span>
+                                <svg class="h-4 w-4 md:h-5 md:w-5" :class="{'transform rotate-180': open}" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                                 </svg>
                             </button>
@@ -150,48 +192,62 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                     </div>
                 </div>
             </div>
-        </div></nav>
+        </nav>
 
-        <div class="fixed left-0 bg-gray-800 text-white shadow-lg transition-all duration-300 ease-in-out w-16" :class="{'w-64': sidebarOpen, 'w-16': !sidebarOpen}" style="top: 64px; height: calc(100vh - 64px);" id="sidebar">
+        <!-- Sidebar -->
+        <div class="fixed left-0 bg-gray-800 text-white shadow-lg transition-all duration-300 ease-in-out z-25" 
+             :class="{
+                'w-64': sidebarOpen && !isMobile,
+                'w-16': !sidebarOpen && !isMobile,
+                'w-64 translate-x-0': sidebarOpen && isMobile,
+                '-translate-x-full w-64': !sidebarOpen && isMobile
+             }" 
+             style="top: 64px; height: calc(100vh - 64px);" id="sidebar">
             <ul class="py-2">
-                <li class="px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden" id="attendanceTab" data-tab="attendance">
-                    <i class="fas fa-calendar-check min-w-[16px]"></i>
-                    <span :class="{'opacity-0': !sidebarOpen}" class="transition-opacity duration-300 opacity-0">Attendance</span>
+                <li class="px-3 md:px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden" id="attendanceTab" data-tab="attendance" @click="isMobile && (sidebarOpen = false)">
+                    <i class="fas fa-calendar-check min-w-[16px] text-sm md:text-base"></i>
+                    <span :class="{'opacity-0': !sidebarOpen && !isMobile}" class="transition-opacity duration-300 text-sm md:text-base" :class="isMobile ? 'opacity-100' : (!sidebarOpen ? 'opacity-0' : 'opacity-100')">Attendance</span>
                 </li>
-                <li class="px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden bg-gray-700" id="evaluationTab" data-tab="evaluation">
-                    <i class="fas fa-clipboard-list min-w-[16px]"></i>
-                    <span :class="{'opacity-0': !sidebarOpen}" class="transition-opacity duration-300 opacity-0">Evaluation</span>
+                <li class="px-3 md:px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden bg-gray-700" id="evaluationTab" data-tab="evaluation" @click="isMobile && (sidebarOpen = false)">
+                    <i class="fas fa-clipboard-list min-w-[16px] text-sm md:text-base"></i>
+                    <span :class="{'opacity-0': !sidebarOpen && !isMobile}" class="transition-opacity duration-300 text-sm md:text-base" :class="isMobile ? 'opacity-100' : (!sidebarOpen ? 'opacity-0' : 'opacity-100')">Evaluation</span>
                 </li>
-                <li class="px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden" id="controlTab" data-tab="control">
-                    <i class="fas fa-cogs min-w-[16px]"></i>
-                    <span :class="{'opacity-0': !sidebarOpen}" class="transition-opacity duration-300 opacity-0">Control</span>
+                <li class="px-3 md:px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden" id="controlTab" data-tab="control" @click="isMobile && (sidebarOpen = false)">
+                    <i class="fas fa-cogs min-w-[16px] text-sm md:text-base"></i>
+                    <span :class="{'opacity-0': !sidebarOpen && !isMobile}" class="transition-opacity duration-300 text-sm md:text-base" :class="isMobile ? 'opacity-100' : (!sidebarOpen ? 'opacity-0' : 'opacity-100')">Control</span>
                 </li>
-                <li class="px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden" id="reportTab" data-tab="report">
-                    <i class="fas fa-file-alt min-w-[16px]"></i>
-                    <span :class="{'opacity-0': !sidebarOpen}" class="transition-opacity duration-300 opacity-0">Report</span>
+                <li class="px-3 md:px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden" id="reportTab" data-tab="report" @click="isMobile && (sidebarOpen = false)">
+                    <i class="fas fa-file-alt min-w-[16px] text-sm md:text-base"></i>
+                    <span :class="{'opacity-0': !sidebarOpen && !isMobile}" class="transition-opacity duration-300 text-sm md:text-base" :class="isMobile ? 'opacity-100' : (!sidebarOpen ? 'opacity-0' : 'opacity-100')">Report</span>
                 </li>
-                <li class="px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden" id="predictionTab" data-tab="prediction">
-                    <i class="fas fa-chart-line min-w-[16px]"></i>
-                    <span :class="{'opacity-0': !sidebarOpen}" class="transition-opacity duration-300 opacity-0">Prediction</span>
+                <li class="px-3 md:px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden" id="predictionTab" data-tab="prediction" @click="isMobile && (sidebarOpen = false)">
+                    <i class="fas fa-chart-line min-w-[16px] text-sm md:text-base"></i>
+                    <span :class="{'opacity-0': !sidebarOpen && !isMobile}" class="transition-opacity duration-300 text-sm md:text-base" :class="isMobile ? 'opacity-100' : (!sidebarOpen ? 'opacity-0' : 'opacity-100')">Prediction</span>
                 </li>
-                <li class="px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden" id="postAnalysisTab" data-tab="postAnalysis">
-                    <i class="fas fa-chart-bar min-w-[16px]"></i>
-                    <span :class="{'opacity-0': !sidebarOpen}" class="transition-opacity duration-300 opacity-0">Post-Analysis</span>
+                <li class="px-3 md:px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden" id="postAnalysisTab" data-tab="postAnalysis" @click="isMobile && (sidebarOpen = false)">
+                    <i class="fas fa-chart-bar min-w-[16px] text-sm md:text-base"></i>
+                    <span :class="{'opacity-0': !sidebarOpen && !isMobile}" class="transition-opacity duration-300 text-sm md:text-base" :class="isMobile ? 'opacity-100' : (!sidebarOpen ? 'opacity-0' : 'opacity-100')">Post-Analysis</span>
                 </li>
             </ul>
         </div>
 
-    <div class="transition-all duration-300 p-6 bg-gray-100 min-h-screen pt-24 ml-16" :class="{'ml-64': sidebarOpen, 'ml-16': !sidebarOpen}">
+    <!-- Main Content -->
+    <div class="transition-all duration-300 p-3 md:p-6 bg-gray-100 min-h-screen pt-20 md:pt-24" 
+         :class="{
+            'ml-64': sidebarOpen && !isMobile,
+            'ml-16': !sidebarOpen && !isMobile,
+            'ml-0': isMobile
+         }">
         <!-- Attendance Tab Content -->
-        <div id="attendanceContent" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
-            <div class="flex gap-6">
-                <!-- Left Column - 20% -->
-                <div class="w-1/5 space-y-4">
+        <div id="attendanceContent" class="bg-white rounded-lg shadow-md p-3 md:p-6 mb-6 hidden">
+            <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
+                <!-- Left Column - Controls -->
+                <div class="w-full lg:w-1/4 xl:w-1/5 space-y-4">
                     <!-- Session Selection -->
-                    <div class="bg-white rounded-lg shadow-md p-4">
+                    <div class="bg-gray-50 rounded-lg shadow-sm p-3 md:p-4">
                         <div class="flex flex-col">
-                            <label class="text-sm font-medium text-gray-700 mb-1">SESSION</label>
-                            <select id="ddlclass" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <label class="text-xs md:text-sm font-medium text-gray-700 mb-1">SESSION</label>
+                            <select id="ddlclass" class="mt-1 block w-full text-xs md:text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                 <option value="-1">SELECT ONE</option>
                                 <option value="1">2024 FIRST SEMESTER</option>
                                 <option value="8">2025 SECOND SEMESTER</option>
@@ -200,10 +256,10 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                     </div>
 
                     <!-- Company List -->
-                    <div id="classlistarea" class="bg-white rounded-lg shadow-md p-4">
+                    <div id="classlistarea" class="bg-gray-50 rounded-lg shadow-sm p-3 md:p-4">
                         <div class="flex flex-col">
-                            <label class="text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
-                            <select id="company-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <label class="text-xs md:text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
+                            <select id="company-select" class="mt-1 block w-full text-xs md:text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                 <option value="">Select Company</option>
                                 <option value="1" data-building="{&quot;HTE_ID&quot;:1,&quot;NAME&quot;:&quot;JairoSoft&quot;,&quot;INDUSTRY&quot;:&quot;CET&quot;}">JairoSoft</option>
                                 <option value="30" data-building="{&quot;HTE_ID&quot;:30,&quot;NAME&quot;:&quot;InfoSoft&quot;,&quot;INDUSTRY&quot;:&quot;IT&quot;}">InfoSoft</option>
@@ -213,24 +269,24 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                     </div>
 
                     <!-- Company Details -->
-                    <div id="classdetailsarea" class="bg-white rounded-lg shadow-md p-4">
-                        <h3 class="text-sm font-medium text-gray-700 mb-3">COMPANY DETAILS</h3>
+                    <div id="classdetailsarea" class="bg-gray-50 rounded-lg shadow-sm p-3 md:p-4">
+                        <h3 class="text-xs md:text-sm font-medium text-gray-700 mb-3">COMPANY DETAILS</h3>
                     </div>
                     
                     <!-- Generate Report Button -->
-                    <div class="bg-white rounded-lg shadow-md p-4">
-                        <button id="btnReport" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">
+                    <div class="bg-gray-50 rounded-lg shadow-sm p-3 md:p-4">
+                        <button id="btnReport" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out text-xs md:text-sm">
                             Generate Report
                         </button>
                     </div>
                 </div>
 
-                <!-- Right Column - 80% -->
-                <div class="w-4/5">
-                    <div id="studentlistarea" class="bg-white rounded-lg shadow-md p-4">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-lg font-semibold text-gray-900">STUDENT LIST</h2>
-                            <div class="flex space-x-2">
+                <!-- Right Column - Main Content -->
+                <div class="w-full lg:w-3/4 xl:w-4/5">
+                    <div id="studentlistarea" class="bg-white rounded-lg shadow-md p-3 md:p-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                            <h2 class="text-base md:text-lg font-semibold text-gray-900">STUDENT LIST</h2>
+                            <div class="flex flex-wrap gap-2">
                                 <input type="date" id="dtpondate" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" value="<?php echo date('Y-m-d'); ?>">
                             </div>
                         </div>
@@ -268,63 +324,67 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                     <div id="approvedReportsList" class="mt-6 hidden"></div>
                 </div>
             </div>
-        </div><!-- Evaluation Tab Content --><div id="evaluationContent" class="">
-            <div class="bg-white rounded-lg shadow-md">
-                <div class="border-b">
-                    <nav class="flex space-x-4 px-6 py-3">
-                        <button class="px-4 py-2 text-sm font-medium text-gray-900 bg-gray-100 rounded-md active" id="evalQuestionsTabBtn">
-                            All Evaluation Questions
-                        </button>
-                        <button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md" id="rateTabBtn">
-                            Pre-Assessment
-                        </button>
-                        <button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md" id="postAssessmentTabBtn">
-                            Post-Assessment
-                        </button>
-                        <button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md" id="reviewTabBtn">
-                            Review
-                        </button>
-                    </nav>
+        </div>
+        
+        <!-- Evaluation Tab Content -->
+        <div id="evaluationContent" class="bg-white rounded-lg shadow-md hidden">
+            <div class="border-b">
+                <nav class="flex flex-wrap gap-2 md:space-x-4 px-3 md:px-6 py-3 overflow-x-auto">
+                    <button class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-900 bg-gray-100 rounded-md active whitespace-nowrap" id="evalQuestionsTabBtn">
+                        All Questions
+                    </button>
+                    <button class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md whitespace-nowrap" id="rateTabBtn">
+                        Pre-Assessment
+                    </button>
+                    <button class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md whitespace-nowrap" id="postAssessmentTabBtn">
+                        Post-Assessment
+                    </button>
+                    <button class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md whitespace-nowrap" id="reviewTabBtn">
+                        Review
+                    </button>
+                </nav>
+            </div>
+            <div class="p-3 md:p-6">
+                <div id="evalQuestionsTabContent" class="space-y-6 active hidden">
+                    <div class="all-questions-container max-h-[500px] md:max-h-[540px] overflow-y-auto pr-2">
+                        <h2 class="text-lg md:text-2xl font-bold text-gray-800 mb-4">All Evaluation Questions</h2>
+                        <div id="questionsDynamicContainer"></div>
+                        <div class="flex justify-center mt-6 mb-4">
+                            <button id="btnSaveAllQuestions" class="px-4 md:px-8 py-2 text-sm md:text-lg font-semibold bg-primary text-white rounded-lg shadow hover:bg-blue-700 transition">Save All Changes</button>
+                            <span id="saveAllStatus" class="ml-4"></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="p-6">
-                            <div id="evalQuestionsTabContent" class="space-y-6 active hidden">
-                                            <div class="all-questions-container max-h-[540px] overflow-y-auto pr-2">
-                                                <h2 class="text-2xl font-bold text-gray-800 mb-4">All Evaluation Questions</h2>
-                                                <div id="questionsDynamicContainer"></div>
-                                                <div class="flex justify-center mt-6 mb-4">
-                                                    <button id="btnSaveAllQuestions" class="px-8 py-2 text-lg font-semibold bg-primary text-white rounded-lg shadow hover:bg-blue-700 transition">Save All Changes</button>
-                                                    <span id="saveAllStatus" class="ml-4"></span>
-                                                </div>
-                                            </div>
+                
+                <div id="rateTabContent" class="hidden" style="display: none;">
+                    <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
+                        <div class="w-full lg:w-1/3 bg-gray-50 rounded-lg shadow-md p-3 md:p-4">
+                            <div class="mb-4">
+                                <input type="text" id="rateStudentSearch" placeholder="Search student" class="w-full px-3 md:px-4 py-2 text-sm md:text-base text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                             </div>
-                        <div id="rateTabContent" class="hidden" style="display: none;">
-                            <div class="flex space-x-6">
-                                <div class="w-1/3 bg-white rounded-lg shadow-md p-4">
-                                    <div class="mb-4">
-                                        <input type="text" id="rateStudentSearch" placeholder="Search student" class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
-                                    </div>
-                                    <div id="studentListPanel" class="overflow-y-auto max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
-                                        <!-- Students will be loaded dynamically -->
-                                    </div>
-                                </div>
-                                <div class="w-2/3 bg-white rounded-lg shadow-md p-4">
-                                    <div id="rateEvalList" class="space-y-4">
-                                        <!-- Evaluation cards/messages will be loaded here dynamically -->
-                                    </div>
-                                </div>
+                            <div id="studentListPanel" class="overflow-y-auto max-h-64 lg:max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
+                                <!-- Students will be loaded dynamically -->
                             </div>
                         </div>
-                        <div id="postAssessmentTabContent" class="hidden" style="display: none;">
-                            <div class="flex space-x-6">
-                                <div class="w-1/3 bg-white rounded-lg shadow-md p-4">
-                                    <div class="mb-4">
-                                        <input type="text" id="postStudentSearch" placeholder="Search student" class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                        <div class="w-full lg:w-2/3 bg-white rounded-lg shadow-md p-3 md:p-4">
+                            <div id="rateEvalList" class="space-y-4">
+                                <!-- Evaluation cards/messages will be loaded here dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="postAssessmentTabContent" class="hidden" style="display: none;">
+                    <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
+                        <div class="w-full lg:w-1/3 bg-gray-50 rounded-lg shadow-md p-3 md:p-4">
+                            <div class="mb-4">
+                                <input type="text" id="postStudentSearch" placeholder="Search student" class="w-full px-3 md:px-4 py-2 text-sm md:text-base text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                                     </div>
-                                    <div id="postStudentListPanel" class="overflow-y-auto max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
+                                    <div id="postStudentListPanel" class="overflow-y-auto max-h-64 lg:max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
                                         <!-- Student list will be loaded here dynamically -->
                                     </div>
                                 </div>
-                                <div class="w-2/3 bg-white rounded-lg shadow-md p-4">
+                                <div class="w-full lg:w-2/3 bg-white rounded-lg shadow-md p-3 md:p-4">
                                     <div id="postEvalList" class="space-y-4">
                                         <!-- Post-assessment evaluation cards/messages will be loaded here dynamically -->
                                     </div>
@@ -332,16 +392,16 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                             </div>
                         </div>
                         <div id="reviewTabContent" class="hidden" style="display: none;">
-                            <div class="flex space-x-6">
-                                <div class="w-1/3 bg-white rounded-lg shadow-md p-4">
+                            <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
+                                <div class="w-full lg:w-1/3 bg-white rounded-lg shadow-md p-3 md:p-4">
                                     <div class="mb-4">
-                                        <input type="text" id="reviewStudentSearch" placeholder="Search reviewed students..." class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                                        <input type="text" id="reviewStudentSearch" placeholder="Search reviewed students..." class="w-full px-3 md:px-4 py-2 text-sm md:text-base text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                                     </div>
-                                    <div id="reviewStudentListPanel" class="overflow-y-auto max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
+                                    <div id="reviewStudentListPanel" class="overflow-y-auto max-h-64 lg:max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
                                         <!-- Students will be loaded dynamically -->
                                     </div>
                                 </div>
-                                <div class="w-2/3 bg-white rounded-lg shadow-md p-4">
+                                <div class="w-full lg:w-2/3 bg-white rounded-lg shadow-md p-3 md:p-4">
                                     <div id="reviewedEvalList" class="space-y-4">
                                         <!-- View-only evaluation cards/messages will be loaded here dynamically -->
                                     </div>
@@ -351,28 +411,28 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                     </div>
                 </div>
             </div><!-- Prediction Tab Content --><div id="predictionContent" class="hidden">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                    <div class="mt-6 overflow-x-auto">
+            <div class="bg-white rounded-lg shadow-md p-3 md:p-6">
+                    <div class="mt-4 md:mt-6 overflow-x-auto">
                         <table id="predictionTable" class="min-w-full rounded-xl shadow-lg overflow-hidden border border-gray-200">
                             <thead class="bg-blue-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Student Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">HTE Assigned</th>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Predicted Placement</th>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Analysis</th>
+                                    <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Student Name</th>
+                                    <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">HTE Assigned</th>
+                                    <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Status</th>
+                                    <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Predicted Placement</th>
+                                    <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Analysis</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
                                 <tr data-row="0" class="hover:bg-blue-50 transition">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Emping, Kim Charles</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">JairoSoft</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">Rated <span class="ml-1">✔️</span></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <span class="inline-block bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full">Business Operations</span>
+                                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900">Emping, Kim Charles</td>
+                                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-700">JairoSoft</td>
+                                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-green-600 font-semibold">Rated <span class="ml-1">✔️</span></td>
+                                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm">
+                                        <span class="inline-block bg-green-100 text-green-700 font-bold px-2 md:px-3 py-1 rounded-full text-xs">Business Operations</span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <button class="analysis-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow transition" data-analysis="%7B%22placement%22%3A%22Business%20Operations%22%2C%22reasoning%22%3A%22Recommended%20for%20Business%20Operations%20due%20to%20strong%20performance%20in%3A%20SP%20101%3A%2094%2C%20IM%20102%3A%2093%2C%20IM%20101%3A%2085.%5Cn%5CnBoth%20soft%20skill%20and%20communication%20skill%20ratings%20reinforce%20the%20suitability%20of%20this%20placement.%22%2C%22probabilities%22%3A%7B%22Business%20Operations%22%3A43%2C%22Research%22%3A2%2C%22Systems%20Development%22%3A41%2C%22Technical%20Support%22%3A14%7D%7D">Analysis</button>
+                                    <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm">
+                                        <button class="analysis-btn bg-blue-600 hover:bg-blue-700 text-white px-2 md:px-4 py-1 md:py-2 rounded-lg shadow transition text-xs md:text-sm" data-analysis="%7B%22placement%22%3A%22Business%20Operations%22%2C%22reasoning%22%3A%22Recommended%20for%20Business%20Operations%20due%20to%20strong%20performance%20in%3A%20SP%20101%3A%2094%2C%20IM%20102%3A%2093%2C%20IM%20101%3A%2085.%5Cn%5CnBoth%20soft%20skill%20and%20communication%20skill%20ratings%20reinforce%20the%20suitability%20of%20this%20placement.%22%2C%22probabilities%22%3A%7B%22Business%20Operations%22%3A43%2C%22Research%22%3A2%2C%22Systems%20Development%22%3A41%2C%22Technical%20Support%22%3A14%7D%7D">Analysis</button>
                                     </td>
                                 </tr>
                                 <tr data-row="1" class="hover:bg-blue-50 transition">
@@ -436,31 +496,31 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
             </div>
         </div><!-- Control Tab Content --><div id="controlContent" class="hidden">
             <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="mb-6">
-                    <div class="flex space-x-4">
-                        <button id="btnViewAllStudents" class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="View All Students" title="View All Students">
-                            <i class="fas fa-users"></i>
+                <div class="mb-4 md:mb-6">
+                    <div class="grid grid-cols-4 md:flex md:flex-wrap gap-2 md:gap-4">
+                        <button id="btnViewAllStudents" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="View All Students" title="View All Students">
+                            <i class="fas fa-users text-sm"></i>
                         </button>
-                        <button id="btnViewAllCompanies" class="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="View All Companies" title="View All Companies">
-                            <i class="fas fa-city"></i>
+                        <button id="btnViewAllCompanies" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="View All Companies" title="View All Companies">
+                            <i class="fas fa-city text-sm"></i>
                         </button>
-                        <button id="btnAddStudent" class="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-600 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Add Student" title="Add Student">
-                            <i class="fas fa-user-plus"></i>
+                        <button id="btnAddStudent" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-green-100 text-green-600 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Add Student" title="Add Student">
+                            <i class="fas fa-user-plus text-sm"></i>
                         </button>
-                        <button id="btnAddHTE" class="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Add HTE" title="Add HTE">
-                            <i class="fas fa-building"></i>
+                        <button id="btnAddHTE" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Add HTE" title="Add HTE">
+                            <i class="fas fa-building text-sm"></i>
                         </button>
-                        <button id="btnAddSession" class="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500" aria-label="Add Session" title="Add Session">
-                            <i class="fas fa-calendar-plus"></i>
+                        <button id="btnAddSession" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500" aria-label="Add Session" title="Add Session">
+                            <i class="fas fa-calendar-plus text-sm"></i>
                         </button>
-                        <button id="btnDeleteStudent" class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Delete Student" title="Delete Student">
-                            <i class="fas fa-user-minus"></i>
+                        <button id="btnDeleteStudent" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-red-100 text-red-600 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Delete Student" title="Delete Student">
+                            <i class="fas fa-user-minus text-sm"></i>
                         </button>
-                        <button id="btnDeleteHTE" class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500" aria-label="Delete HTE" title="Delete HTE">
-                            <i class="fas fa-building"></i>
+                        <button id="btnDeleteHTE" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500" aria-label="Delete HTE" title="Delete HTE">
+                            <i class="fas fa-building text-sm"></i>
                         </button>
-                        <button id="btnDeleteSession" class="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-500" aria-label="Delete Session" title="Delete Session">
-                            <i class="fas fa-calendar-minus"></i>
+                        <button id="btnDeleteSession" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-500" aria-label="Delete Session" title="Delete Session">
+                            <i class="fas fa-calendar-minus text-sm"></i>
                         </button>
                     </div>
                 </div>
@@ -975,13 +1035,13 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
             </div>
 
         </div><!-- Post-Analysis Tab Content --><div id="postAnalysisContent" class="tab-content hidden">
-                <div class="flex w-full min-h-[500px]">
-                    <!-- Left Column: Student List/Search (20%) -->
-                    <div class="w-1/5 min-w-[220px] max-w-xs bg-white border-r border-gray-200 p-6 flex flex-col">
-                        <div class="mb-6">
-                            <input type="text" id="postAnalysisStudentSearch" placeholder="Search student" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-200 text-gray-900 font-medium shadow-sm transition" />
+                <div class="flex flex-col lg:flex-row w-full min-h-[500px]">
+                    <!-- Left Column: Student List/Search -->
+                    <div class="w-full lg:w-1/4 lg:min-w-[220px] lg:max-w-xs bg-white lg:border-r border-gray-200 p-3 md:p-6 flex flex-col">
+                        <div class="mb-4 md:mb-6">
+                            <input type="text" id="postAnalysisStudentSearch" placeholder="Search student" class="w-full px-3 md:px-4 py-2 text-sm md:text-base rounded-lg border border-gray-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-200 text-gray-900 font-medium shadow-sm transition" />
                         </div>
-                        <div id="postAnalysisStudentListPanel" class="flex-1 overflow-y-auto postanalysis-student-list">
+                        <div id="postAnalysisStudentListPanel" class="flex-1 overflow-y-auto postanalysis-student-list max-h-64 lg:max-h-none">
                             <!-- Student items will be dynamically rendered here -->
                         </div>
                         <style>
@@ -1009,14 +1069,14 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                         }
                         </style>
                     </div>
-                    <!-- Right Column: Analysis Display (80%) -->
-                    <div class="w-4/5 p-10 bg-gray-50 flex flex-col">
+                    <!-- Right Column: Analysis Display -->
+                    <div class="w-full lg:w-3/4 p-4 md:p-6 lg:p-10 bg-gray-50 flex flex-col">
                         <div id="postAnalysisEvalPanel">
-                            <div class="mb-8">
-                                <h2 class="text-3xl font-extrabold text-blue-800 tracking-tight mb-2">Post-Analysis</h2>
-                                <p class="text-lg text-gray-500 font-medium">Insights and analysis after all evaluations and predictions.</p>
+                            <div class="mb-4 md:mb-8">
+                                <h2 class="text-xl md:text-2xl lg:text-3xl font-extrabold text-blue-800 tracking-tight mb-2">Post-Analysis</h2>
+                                <p class="text-sm md:text-base lg:text-lg text-gray-500 font-medium">Insights and analysis after all evaluations and predictions.</p>
                             </div>
-                            <div id="postAnalysisContentArea" style="max-height:620px; overflow-y:auto; padding-right:8px;"><!-- Post-analysis content will be dynamically rendered here --></div>
+                            <div id="postAnalysisContentArea" class="max-h-96 md:max-h-[500px] lg:max-h-[620px] overflow-y-auto pr-2"><!-- Post-analysis content will be dynamically rendered here --></div>
                         </div>
                     </div>
                 </div>
@@ -2083,6 +2143,157 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
             </div>
         </div>
     </div>
+
+<style>
+/* Additional Mobile Responsive Styles for Dynamic Content */
+@media (max-width: 768px) {
+    /* Modal improvements */
+    .modal-content {
+        width: 95vw !important;
+        margin: 5vh auto !important;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    /* Table improvements */
+    .table-responsive {
+        font-size: 0.75rem;
+    }
+    
+    .table-responsive th,
+    .table-responsive td {
+        padding: 0.375rem !important;
+        font-size: 0.75rem;
+    }
+    
+    /* Form improvements */
+    .form-container {
+        padding: 1rem !important;
+        margin: 0.5rem !important;
+    }
+    
+    .form-container .grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+    }
+    
+    /* Dynamic button improvements */
+    .analysis-btn {
+        font-size: 0.75rem !important;
+        padding: 0.375rem 0.75rem !important;
+    }
+    
+    /* Student list items */
+    .student-item,
+    .postanalysis-student-item {
+        font-size: 0.875rem !important;
+        padding: 0.5rem !important;
+    }
+    
+    /* Evaluation cards */
+    .evaluation-card {
+        padding: 0.75rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* Search inputs */
+    input[type="text"][placeholder*="Search"],
+    input[type="text"][placeholder*="search"] {
+        font-size: 0.875rem !important;
+    }
+    
+    /* Tab navigation */
+    .nav-tabs {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    
+    .nav-tabs button {
+        font-size: 0.75rem !important;
+        padding: 0.375rem 0.5rem !important;
+        min-width: auto;
+    }
+    
+    /* Dynamic content areas */
+    #rateEvalList,
+    #postEvalList,
+    #reviewedEvalList,
+    #postAnalysisContentArea {
+        font-size: 0.875rem;
+    }
+    
+    /* Student profile in additional info section */
+    .grid-cols-3 {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Flex layouts adjustments */
+    .space-x-6 {
+        gap: 1rem !important;
+    }
+    
+    .space-x-4 {
+        gap: 0.75rem !important;
+    }
+    
+    /* Touch-friendly improvements */
+    button, .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Notification adjustments */
+    .notification {
+        font-size: 0.875rem !important;
+        padding: 0.5rem !important;
+    }
+}
+
+/* Landscape mobile improvements */
+@media (max-width: 768px) and (orientation: landscape) {
+    .sidebar {
+        width: 60px !important;
+    }
+    
+    .sidebar .nav-link span {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-left: 60px !important;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+    .px-6 {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+    
+    .py-4 {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+    
+    .text-lg {
+        font-size: 1rem !important;
+    }
+    
+    .text-xl {
+        font-size: 1.125rem !important;
+    }
+    
+    .text-2xl {
+        font-size: 1.25rem !important;
+    }
+    
+    .text-3xl {
+        font-size: 1.5rem !important;
+    }
+}
+</style>
+
 </body>
 </html>
 
