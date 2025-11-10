@@ -554,14 +554,31 @@ function loadPostAnalysisStudents() {
                 renderPostAnalysisStudentList(allPostAnalysisStudents);
             } else {
                 allPostAnalysisStudents = [];
-                $('#postAnalysisStudentListPanel').html('<div class="no-students">No students found for post-analysis.</div>');
+                renderEmptyPostAnalysisState('No students found for post-analysis.');
             }
         },
         error: function() {
             allPostAnalysisStudents = [];
-            $('#postAnalysisStudentListPanel').html('<div class="no-students">Error loading students.</div>');
+            renderEmptyPostAnalysisState('Error loading students.');
         }
     });
+}
+
+// Render empty state for post-analysis tab
+function renderEmptyPostAnalysisState(message) {
+    // Clear the student list panel
+    $('#postAnalysisStudentListPanel').html('');
+    
+    // Update the content area with styled empty state
+    $('#postAnalysisContentArea').html(`
+        <div class="flex flex-col items-center justify-center h-full min-h-[400px]">
+            <div class="bg-blue-50 rounded-full p-6 mb-4">
+                <svg xmlns='http://www.w3.org/2000/svg' class='h-12 w-12 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' /></svg>
+            </div>
+            <div class="text-xl font-semibold text-blue-700 mb-2">No Students Available</div>
+            <div class="text-gray-500 text-base text-center">${message}</div>
+        </div>
+    `);
 }
 
 function renderPostAnalysisStudentList(students) {
@@ -592,11 +609,11 @@ function loadPreassessmentStudentList() {
                 allStudents = response.students;
                 renderStudentList(allStudents);
             } else {
-                $('#studentListPanel').html('<div class="preassessment-message">No students found.</div>');
+                renderEmptyPreAssessmentState('No students found.');
             }
         },
         error: function() {
-            $('#studentListPanel').html('<div class="preassessment-message">Error loading students.</div>');
+            renderEmptyPreAssessmentState('Error loading students.');
         }
     });
 }
@@ -665,11 +682,11 @@ function loadReviewStudentList() {
                 });
                 renderReviewStudentList(allReviewStudents);
             } else {
-                $('#reviewStudentListPanel').html('<div class="review-message">No students found.</div>');
+                renderEmptyReviewState('No students found.');
             }
         },
         error: function() {
-            $('#reviewStudentListPanel').html('<div class="review-message">Error loading students.</div>');
+            renderEmptyReviewState('Error loading students.');
         }
     });
 }
@@ -695,6 +712,43 @@ function renderReviewStudentList(students) {
     });
     
     $('#reviewStudentListPanel').html(studentListHtml);
+}
+
+// Render empty state for pre-assessment tab
+function renderEmptyPreAssessmentState(message) {
+    // Create the full layout with empty state message
+    let html = `<div class='flex w-full'>`;
+    html += `<div class='left-col w-1/3 pr-4'>`;
+    html += `<div class='mb-4'><input type='text' id='rateStudentSearch' placeholder='Search student' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200' disabled></div>`;
+    html += `<div id='studentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'></div>`;
+    html += `</div>`;
+    html += `<div class='right-col w-2/3 pl-4'>`;
+    html += `
+        <div class="flex flex-col items-center justify-center h-full">
+            <div class="bg-blue-50 rounded-full p-6 mb-4">
+                <svg xmlns='http://www.w3.org/2000/svg' class='h-12 w-12 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
+            </div>
+            <div class="text-xl font-semibold text-blue-700 mb-2">No Students Available</div>
+            <div class="text-gray-500 text-base text-center">${message}</div>
+        </div>
+    `;
+    html += `</div>`;
+    html += `</div>`;
+    $('#rateTabContent .p-6').html(html);
+}
+
+// Render empty state for review tab
+function renderEmptyReviewState(message) {
+    // Just put a styled message in the student list panel for review tab
+    $('#reviewStudentListPanel').html(`
+        <div class="flex flex-col items-center justify-center py-12">
+            <div class="bg-blue-50 rounded-full p-4 mb-3">
+                <svg xmlns='http://www.w3.org/2000/svg' class='h-8 w-8 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' /></svg>
+            </div>
+            <div class="text-lg font-semibold text-blue-700 mb-1">No Students Available</div>
+            <div class="text-gray-500 text-sm text-center">${message}</div>
+        </div>
+    `);
 }
 
 $(document).on('input', '#postAnalysisStudentSearch', function() {
@@ -1074,7 +1128,7 @@ $(function() {
         let cdrid = $("#hiddencdrid").val();
         
         if (!cdrid) {
-            $('#postStudentListPanel').html('<div class="no-students">Coordinator ID not found.</div>');
+            renderEmptyPostAssessmentState('Coordinator ID not found.');
             return;
         }
 
@@ -1090,18 +1144,41 @@ $(function() {
                         renderPostStudentList(allPostStudents);
                     } else {
                         allPostStudents = [];
-                        $('#postStudentListPanel').html('<div class="no-students">No students assigned to you for post-assessment.</div>');
+                        renderEmptyPostAssessmentState('No students assigned to you for post-assessment.');
                     }
                 } else {
                     allPostStudents = [];
-                    $('#postStudentListPanel').html('<div class="no-students">No students found for post-assessment.</div>');
+                    renderEmptyPostAssessmentState('No students found for post-assessment.');
                 }
             },
             error: function(xhr, status, error) {
                 allPostStudents = [];
-                $('#postStudentListPanel').html('<div class="no-students">Error loading students.</div>');
+                renderEmptyPostAssessmentState('Error loading students.');
             }
         });
+    }
+
+    // Render empty state for post-assessment tab
+    function renderEmptyPostAssessmentState(message) {
+        // Create the full 20/80 layout with empty state message
+        let html = `<div class='flex w-full'>`;
+        html += `<div class='left-col w-1/5 max-w-xs pr-4'>`;
+        html += `<div class='mb-4'><input type='text' id='postStudentSearch' placeholder='Search student name' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200' disabled></div>`;
+        html += `<div id='postStudentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'></div>`;
+        html += `</div>`;
+        html += `<div class='right-col w-4/5 pl-4'>`;
+        html += `
+            <div class="flex flex-col items-center justify-center h-full">
+                <div class="bg-blue-50 rounded-full p-6 mb-4">
+                    <svg xmlns='http://www.w3.org/2000/svg' class='h-12 w-12 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z' /></svg>
+                </div>
+                <div class="text-xl font-semibold text-blue-700 mb-2">No Students Available</div>
+                <div class="text-gray-500 text-base text-center">${message}</div>
+            </div>
+        `;
+        html += `</div>`;
+        html += `</div>`;
+        $('#postAssessmentTabContent').html(html);
     }
 
     $(document).on('click', '#postAssessmentTabBtn', function() {
@@ -1225,12 +1302,12 @@ function loadPostAssessmentEvaluation(studentId) {
             $('#evalQuestionsTabContent').show();
         } else if (this.id === 'rateTabBtn') {
             $('#rateTabContent').show();
-            // loadPreassessmentStudentList(); // Disabled - now handled by unified evaluation student loading
+            // Pre-assessment content already loaded on page load, just show it
         } else if (this.id === 'postAssessmentTabBtn') {
             $('#postAssessmentTabContent').show();
         } else if (this.id === 'reviewTabBtn') {
             $('#reviewTabContent').show();
-            // loadReviewStudentList(); // Disabled - now handled by unified evaluation student loading
+            // Review content already loaded on page load, just show it
         // Removed stats tab logic
         }
     });
@@ -1238,6 +1315,23 @@ function loadPostAssessmentEvaluation(studentId) {
     // Show default tab on page load
     $('#evalQuestionsTabContent').show();
     $('#rateTabContent, #postAssessmentTabContent, #reviewTabContent').hide();
+    
+    // Load all evaluation content on page load
+    loadAllEvaluationContent();
+    
+    // Unified function to load all evaluation tab content on page load
+    function loadAllEvaluationContent() {
+        // Load pre-assessment student list
+        loadPreassessmentStudentList();
+        
+        // Load review student list  
+        loadReviewStudentList();
+        
+        // Load post-assessment student list (already loads on tab click, but let's ensure it's loaded)
+        // Note: Post-assessment loads when tab is clicked, we don't need to load it here
+        // as it's handled separately and may conflict with tab switching
+    }
+    
     // --- Prediction Tab Logic ---
     // Load students for prediction tab on tab switch or page load
     function loadPredictionStudents() {
@@ -3722,11 +3816,6 @@ $(document).on('click', '.btn-edit-question, .btn-deactivate-question', function
     });
 });
 
-// Initial load
-$(document).ready(function() {
-    loadEvaluationQuestions();
-});
-
 $(document).ready(function() {
     // Load all active questions for reference in Evaluation tab
     function loadAllQuestionsList() {
@@ -4052,7 +4141,7 @@ $(document).ready(function() {
         $('#rateTabContent').addClass('active');
         $('#evalQuestionsTabContent').removeClass('active');
         $('#reviewTabContent').removeClass('active');
-        // loadPreassessmentStudentList(); // Disabled - now handled by unified evaluation student loading
+        // Pre-assessment content already loaded on page load
     });
     $('#reviewTabBtn').click(function() {
         $(this).addClass('active');
@@ -4061,7 +4150,7 @@ $(document).ready(function() {
         $('#reviewTabContent').addClass('active');
         $('#evalQuestionsTabContent').removeClass('active');
         $('#rateTabContent').removeClass('active');
-        // loadReviewStudentList(); // Disabled - now handled by unified evaluation student loading
+        // Review content already loaded on page load
     });
 
     // Load and separate students for Rate and Review tabs
@@ -4263,11 +4352,11 @@ $(document).ready(function() {
                     allStudents = response.students;
                     renderStudentList(allStudents);
                 } else {
-                    $('#studentListPanel').html('<div class="preassessment-message">No students found.</div>');
+                    renderEmptyPreAssessmentState('No students found.');
                 }
             },
             error: function() {
-                $('#studentListPanel').html('<div class="preassessment-message">Error loading students.</div>');
+                renderEmptyPreAssessmentState('Error loading students.');
             }
         });
     }
@@ -4329,8 +4418,11 @@ $(document).ready(function() {
             let idStr = (s.STUDENT_ID || s.student_id || '').toString();
             return idStr.includes(query);
         });
+    // Store current selected student before re-render
+    let currentSelectedId = selectedStudentId;
     renderStudentList(filtered);
-    // Restore the input value and focus after re-render
+    // Restore selected student and search input
+    selectedStudentId = currentSelectedId;
     const $input = $('#rateStudentSearch');
     $input.val(query);
     $input.focus();
@@ -4338,6 +4430,7 @@ $(document).ready(function() {
 
     // Handle student selection
     $(document).on('click', '.preassessment-student-item', function() {
+    console.log('[DEBUG] Pre-assessment student clicked');
     selectedStudentId = $(this).data('studentid');
     // Map INTERNS_ID to STUDENT_ID with debug
     let selectedStudent = allStudents.find(s => s.id == selectedStudentId);
@@ -4399,14 +4492,30 @@ $(document).ready(function() {
             }
         }
     });
-    // Re-render student list to update highlight
-    renderStudentList(allStudents);
+    // Update student selection highlight without rebuilding entire layout
+    console.log('[DEBUG] About to update highlight and load evaluation');
+    updateStudentSelectionHighlight();
     loadStudentEvaluation(selectedStudentId);
+    console.log('[DEBUG] Finished processing student selection');
     // Close grades modal handler
     $(document).on('click', '#closeGradesModal', function() {
     $('#gradesModal').remove();
     });
     });
+
+    // Function to update student selection highlighting without rebuilding layout
+    function updateStudentSelectionHighlight() {
+        console.log('[DEBUG] Updating student selection highlight for:', selectedStudentId);
+        // Remove highlight from all students
+        $('.preassessment-student-item').removeClass('bg-blue-100 border-blue-400 font-semibold text-blue-700').addClass('text-gray-800');
+        
+        // Add highlight to selected student
+        if (selectedStudentId) {
+            let targetElement = $(`.preassessment-student-item[data-studentid="${selectedStudentId}"]`);
+            console.log('[DEBUG] Target element for highlighting:', targetElement.length);
+            targetElement.removeClass('text-gray-800').addClass('bg-blue-100 border-blue-400 font-semibold text-blue-700');
+        }
+    }
 
     function loadStudentEvaluation(studentId) {
         // Fetch evaluation for selected student
@@ -4476,12 +4585,7 @@ $(document).ready(function() {
         });
     }
 
-    // Initial load for Pre-Assessment tab
-    $(document).ready(function() {
-        if ($('#rateTabContent').length) {
-            // loadPreassessmentStudentList(); // Disabled - now handled by unified evaluation student loading
-        }
-    });
+    // Initial load for Pre-Assessment tab is now handled by unified evaluation loading
 
     // --- Review Tab: Populate student list and handle selection ---
     let allReviewStudents = [];
@@ -4505,11 +4609,11 @@ $(document).ready(function() {
                     });
                     renderReviewStudentList(allReviewStudents);
                 } else {
-                    $('#reviewStudentListPanel').html('<div class="review-message">No students found.</div>');
+                    renderEmptyReviewState('No students found.');
                 }
             },
             error: function() {
-                $('#reviewStudentListPanel').html('<div class="review-message">Error loading students.</div>');
+                renderEmptyReviewState('Error loading students.');
             }
         });
     }
@@ -4569,9 +4673,13 @@ $(document).ready(function() {
 
     // Handle student selection in Review tab
     $(document).on('click', '.review-student-item', function() {
+    console.log('[DEBUG] Review student clicked');
     selectedReviewStudentId = $(this).data('studentid');
+    console.log('[DEBUG] About to re-render review student list');
     renderReviewStudentList(allReviewStudents);
+    console.log('[DEBUG] About to load reviewed evaluation');
     loadReviewedEvaluation(selectedReviewStudentId);
+    console.log('[DEBUG] Finished processing review student selection');
     });
 
     function loadReviewedEvaluation(studentId) {
@@ -4629,12 +4737,7 @@ $(document).ready(function() {
         });
     }
 
-    // Initial load for Review tab student list
-    $(document).ready(function() {
-        if ($('#reviewTabContent').length) {
-            // loadReviewStudentList(); // Disabled - now handled by unified evaluation student loading
-        }
-    });
+    // Initial load for Review tab student list is now handled by unified evaluation loading
 
     // Handle click on autocomplete suggestion in Review tab
     $(document).on('mousedown', '.autocomplete-item-review', function(e) {
