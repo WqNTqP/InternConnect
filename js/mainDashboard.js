@@ -4611,6 +4611,7 @@ $(document).ready(function() {
                             name: student.name || (student.SURNAME ? student.SURNAME + ', ' + student.NAME : student.NAME)
                         };
                     });
+                    console.log('[DEBUG] Review students mapped:', allReviewStudents.slice(0, 3));
                     renderReviewStudentList(allReviewStudents);
                 } else {
                     renderEmptyReviewState('No students found.');
@@ -4623,16 +4624,25 @@ $(document).ready(function() {
     }
 
     function renderReviewStudentList(students) {
+        console.log('[DEBUG] renderReviewStudentList called with:', students.length, 'students');
+        console.log('[DEBUG] selectedReviewStudentId:', selectedReviewStudentId);
         let sorted = students.slice().sort((a, b) => {
-            let aId = (a.STUDENT_ID || a.student_id || a.id || '').toString();
-            let bId = (b.STUDENT_ID || b.student_id || b.id || '').toString();
+            let aId = (a.id || '').toString();
+            let bId = (b.id || '').toString();
             return aId.localeCompare(bId);
         });
         let studentListHtml = '';
         sorted.forEach(function(student) {
             let displayName = student.name || student.NAME || student.full_name || 'Unknown Name';
+            let isSelected = student.id === selectedReviewStudentId;
+            console.log('[DEBUG] Rendering student:', { 
+                id: student.id, 
+                name: displayName, 
+                selectedReviewStudentId: selectedReviewStudentId,
+                isSelected: isSelected
+            });
             studentListHtml += `
-                <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${student.id === selectedReviewStudentId ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.id}">
+                <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${isSelected ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.id}">
                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
                         <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
                     </span>
@@ -4669,7 +4679,7 @@ $(document).ready(function() {
     $(document).on('input', '#reviewStudentSearch', function() {
         const query = $(this).val().trim().toLowerCase();
         let filtered = allReviewStudents.filter(s => {
-            let displayId = (s.STUDENT_ID || s.student_id || s.id || '').toString().toLowerCase();
+            let displayId = (s.id || '').toString().toLowerCase();
             return displayId.includes(query);
         });
         
@@ -4687,14 +4697,29 @@ $(document).ready(function() {
     $(document).on('click', '.review-student-item', function() {
     console.log('[DEBUG] Review student clicked');
     selectedReviewStudentId = $(this).data('studentid');
+    console.log('[DEBUG] Selected review student ID:', selectedReviewStudentId);
+    console.log('[DEBUG] Type of selectedReviewStudentId:', typeof selectedReviewStudentId);
     
-    // Update highlight without rebuilding layout
-    updateReviewStudentSelectionHighlight();
+    // Get current search query to maintain filtering
+    const currentQuery = $('#reviewStudentSearch').val() || '';
+    let currentList = allReviewStudents;
+    if (currentQuery.trim()) {
+        currentList = allReviewStudents.filter(s => {
+            let displayId = (s.id || '').toString().toLowerCase();
+            return displayId.includes(currentQuery.trim().toLowerCase());
+        });
+    }
     
-    // Show loading in right panel
+    // Re-render the layout to create the #reviewedEvalList container
+    renderReviewStudentList(currentList);
+    
+    // Restore search input value
+    $('#reviewStudentSearch').val(currentQuery);
+    
+    // Show loading in right panel (now that #reviewedEvalList exists)
     $('#reviewedEvalList').html('<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><div class="mt-2 text-gray-600">Loading reviewed evaluation...</div></div>');
     
-    console.log('[DEBUG] About to load reviewed evaluation');
+    console.log('[DEBUG] About to load reviewed evaluation with ID:', selectedReviewStudentId);
     loadReviewedEvaluation(selectedReviewStudentId);
     console.log('[DEBUG] Finished processing review student selection');
     });
