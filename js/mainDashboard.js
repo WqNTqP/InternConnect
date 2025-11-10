@@ -4026,7 +4026,9 @@ $(document).ready(function() {
         $('#rateTabContent').addClass('active');
         $('#evalQuestionsTabContent').removeClass('active');
         $('#reviewTabContent').removeClass('active');
-        // Pre-assessment content already loaded on page load
+        // Load pre-assessment students when tab is clicked
+        console.log('=== PRE-ASSESSMENT TAB CLICKED ===');
+        loadPreassessmentStudentList();
     });
     $('#reviewTabBtn').click(function() {
         $(this).addClass('active');
@@ -4226,6 +4228,7 @@ $(document).ready(function() {
     let selectedStudentId = null;
 
     function loadPreassessmentStudentList() {
+        console.log('=== LOADING PRE-ASSESSMENT STUDENTS ===');
         // Fetch all students eligible for rating (AJAX or from global)
         $.ajax({
             url: 'ajaxhandler/studentDashboardAjax.php',
@@ -4235,7 +4238,17 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success && Array.isArray(response.students)) {
                     allStudents = response.students;
-                    console.log('[DEBUG] AllStudents data structure:', allStudents.slice(0, 2)); // Show first 2 students
+                    console.log('=== STUDENT DATA DEBUG ===');
+                    console.log('Total students:', allStudents.length);
+                    console.log('First student structure:', allStudents[0]);
+                    console.log('Sample student data:');
+                    allStudents.slice(0, 3).forEach((student, index) => {
+                        console.log(`Student ${index + 1}:`, {
+                            id: student.id,
+                            STUDENT_ID: student.STUDENT_ID,
+                            name: student.name
+                        });
+                    });
                     renderStudentList(allStudents);
                 } else {
                     renderEmptyPreAssessmentState('No students found.');
