@@ -1520,7 +1520,7 @@ function generateStudentFilterOptions($coordinatorId) {
         // Control Panel JavaScript
         $(document).ready(function() {
             // Set initial tab
-            switchTab('evaluation');
+            switchTab('attendance');
             
             // Initialize Pre-Assessment content for the default tab
             setTimeout(function() {

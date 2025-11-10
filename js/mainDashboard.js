@@ -4340,10 +4340,10 @@ $(document).ready(function() {
     let studentDbId = selectedStudent && selectedStudent.STUDENT_ID ? selectedStudent.STUDENT_ID : selectedStudentId;
     console.log('[Pre-Assessment] Selected INTERNS_ID:', selectedStudentId, '| Mapped STUDENT_ID:', studentDbId, '| Student object:', selectedStudent);
     
-    // Update highlight
-    updateStudentSelectionHighlight();
+    // Re-render the layout to create the #rateEvalList container
+    renderStudentList(allStudents);
     
-    // Show loading in right panel
+    // Show loading in right panel (now that #rateEvalList exists)
     $('#rateEvalList').html('<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><div class="mt-2 text-gray-600">Loading student data...</div></div>');
     
     // Load both grades and evaluation data simultaneously
