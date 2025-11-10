@@ -631,16 +631,16 @@ function renderStudentList(students) {
         studentListHtml += `
             <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${student.id === selectedStudentId ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.id}">
                 <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                    <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
+                    <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' /></svg>
                 </span>
-                <span class="truncate">${student.name || (student.SURNAME ? student.SURNAME + ', ' + student.NAME : student.NAME)}</span>
+                <span class="truncate">Student ID: ${displayId}</span>
             </div>
         `;
     });
     
     let html = `<div class='flex w-full'>`;
     html += `<div class='left-col w-1/3 pr-4'>`;
-    html += `<div class='mb-4'><input type='text' id='rateStudentSearch' placeholder='Search student' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
+    html += `<div class='mb-4'><input type='text' id='rateStudentSearch' placeholder='Search Student ID' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
     html += `<div id='studentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'>${studentListHtml}</div>`;
     html += `</div>`;
     html += `<div class='right-col w-2/3 pl-4'>`;
@@ -648,14 +648,14 @@ function renderStudentList(students) {
         html += `
         <div class="flex flex-col items-center justify-center h-full">
             <div class="bg-blue-50 rounded-full p-6 mb-4">
-                <svg xmlns='http://www.w3.org/2000/svg' class='h-12 w-12 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
+                <svg xmlns='http://www.w3.org/2000/svg' class='h-12 w-12 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' /></svg>
             </div>
             <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
-            <div class="text-gray-500 text-base">Select a student from the list to view and rate their assessment details.</div>
+            <div class="text-gray-500 text-base">Select a Student ID from the list to view their grades and evaluation details.</div>
         </div>
         `;
     } else {
-        html += `<div id='rateEvalList' class='space-y-4'></div>`;
+        html += `<div id='rateEvalList' class='space-y-4 max-h-[600px] overflow-y-auto'></div>`;
     }
     html += `</div>`;
     html += `</div>`;
@@ -4428,79 +4428,24 @@ $(document).ready(function() {
     $input.focus();
     });
 
-    // Handle student selection
+    // Handle student selection - Load both grades and evaluation data
     $(document).on('click', '.preassessment-student-item', function() {
     console.log('[DEBUG] Pre-assessment student clicked');
     selectedStudentId = $(this).data('studentid');
+    
     // Map INTERNS_ID to STUDENT_ID with debug
     let selectedStudent = allStudents.find(s => s.id == selectedStudentId);
     let studentDbId = selectedStudent && selectedStudent.STUDENT_ID ? selectedStudent.STUDENT_ID : selectedStudentId;
     console.log('[Pre-Assessment] Selected INTERNS_ID:', selectedStudentId, '| Mapped STUDENT_ID:', studentDbId, '| Student object:', selectedStudent);
-    console.log('[Pre-Assessment] allStudents array:', allStudents);
-    // Fetch and show grades modal using STUDENT_ID
-    $.ajax({
-        url: 'ajaxhandler/preAssessmentGradesAjax.php',
-        type: 'POST',
-        dataType: 'json',
-        data: { student_id: studentDbId },
-        success: function(response) {
-            if (response.success && response.grades) {
-                let grades = response.grades;
-                let gradeRows = '';
-                // Only show subject grades
-                const subjectKeys = [
-                    'CC 102','CC 103','PF 101','CC 104','IPT 101','IPT 102','CC 106','CC 105',
-                    'IM 101','IM 102','HCI 101','HCI 102','WS 101','NET 101','NET 102',
-                    'IAS 101','IAS 102','CAP 101','CAP 102','SP 101'
-                ];
-                subjectKeys.forEach(function(key) {
-                    if (grades.hasOwnProperty(key)) {
-                        gradeRows += `<tr><td class='px-3 py-2 font-semibold text-gray-700'>${key}</td><td class='px-3 py-2 text-blue-700'>${grades[key]}</td></tr>`;
-                    }
-                });
-                // Find the top and left position of the student list
-                let $studentList = $('.preassessment-student-list');
-                let offset = $studentList.length ? $studentList.offset() : { top: 95, left: 32 };
-                // Shift modal right by 32px to fully cover scrollbar
-                let modalLeft = offset.left + 55;
-                let modalHtml = `
-                <div id='gradesModal' style='position:absolute;top:${offset.top}px;left:${modalLeft}px;max-width:330px;max-height:80vh;z-index:10;' class='bg-gradient-to-br from-white via-blue-50 to-blue-100 shadow-lg flex flex-col rounded-2xl border border-blue-100 animate-slidein pointer-events-auto'>
-                    <div class='flex justify-between items-center px-6 py-4 border-b border-blue-100 rounded-t-2xl'>
-                        <div class='font-extrabold text-lg text-blue-700 tracking-wide'>Grades for Student ID: <span class='text-blue-900'>${grades.STUDENT_ID}</span></div>
-                        <button id='closeGradesModal' class='text-gray-400 hover:text-blue-700 text-2xl font-bold transition'>&times;</button>
-                    </div>
-                    <div class='overflow-y-auto p-6'>
-                        <table class='w-full text-left rounded-xl border border-blue-100 bg-white shadow-md'>
-                            <thead><tr class='bg-blue-50 text-blue-700'><th class='px-3 py-2 text-base font-semibold'>Subject</th><th class='px-3 py-2 text-base font-semibold'>Grade</th></tr></thead>
-                            <tbody>${gradeRows}</tbody>
-                        </table>
-                    </div>
-                </div>
-                <style>
-                @keyframes slidein { from { transform: translateX(-40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-                .animate-slidein { animation: slidein 0.2s cubic-bezier(.4,0,.2,1); }
-                </style>`;
-                // Remove any existing modal, then show new
-                $('#gradesModal').remove();
-                $('body').append(modalHtml);
-                // Remove any existing modal, then show new
-                $('#gradesModal').remove();
-                $('body').append(modalHtml);
-                // Remove any existing modal and show new
-                $('#gradesModal').remove();
-                $('body').append(modalHtml);
-            }
-        }
-    });
-    // Update student selection highlight without rebuilding entire layout
-    console.log('[DEBUG] About to update highlight and load evaluation');
+    
+    // Update highlight
     updateStudentSelectionHighlight();
-    loadStudentEvaluation(selectedStudentId);
-    console.log('[DEBUG] Finished processing student selection');
-    // Close grades modal handler
-    $(document).on('click', '#closeGradesModal', function() {
-    $('#gradesModal').remove();
-    });
+    
+    // Show loading in right panel
+    $('#rateEvalList').html('<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><div class="mt-2 text-gray-600">Loading student data...</div></div>');
+    
+    // Load both grades and evaluation data simultaneously
+    loadStudentGradesAndEvaluation(studentDbId, selectedStudentId);
     });
 
     // Function to update student selection highlighting without rebuilding layout
@@ -4517,72 +4462,194 @@ $(document).ready(function() {
         }
     }
 
-    function loadStudentEvaluation(studentId) {
-        // Fetch evaluation for selected student
+    // Combined function to load both grades and evaluation data
+    function loadStudentGradesAndEvaluation(studentDbId, internsId) {
+        let gradesData = null;
+        let evaluationData = null;
+        let completedRequests = 0;
+        
+        // Function to render combined data when both requests complete
+        function renderCombinedData() {
+            if (completedRequests < 2) return; // Wait for both requests
+            
+            let html = `<div class="space-y-6">`;
+            
+            // Student ID Header
+            html += `<div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <h2 class="text-xl font-bold text-blue-800 flex items-center">
+                    <svg xmlns='http://www.w3.org/2000/svg' class='h-6 w-6 mr-2' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' /></svg>
+                    Student ID: ${studentDbId}
+                </h2>
+            </div>`;
+            
+            // Academic Grades Section
+            if (gradesData && gradesData.success && gradesData.grades) {
+                const grades = gradesData.grades;
+                const subjectKeys = [
+                    'CC 102','CC 103','PF 101','CC 104','IPT 101','IPT 102','CC 106','CC 105',
+                    'IM 101','IM 102','HCI 101','HCI 102','WS 101','NET 101','NET 102',
+                    'IAS 101','IAS 102','CAP 101','CAP 102','SP 101'
+                ];
+                
+                html += `<div class="bg-white rounded-xl shadow p-6 border border-gray-200">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 mr-2 text-green-600' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z' /></svg>
+                        Academic Grades
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">`;
+                
+                subjectKeys.forEach(function(key) {
+                    if (grades.hasOwnProperty(key)) {
+                        html += `<div class="bg-gray-50 rounded-lg p-3 text-center">
+                            <div class="text-sm font-semibold text-gray-700">${key}</div>
+                            <div class="text-lg font-bold text-blue-700">${grades[key]}</div>
+                        </div>`;
+                    }
+                });
+                
+                html += `</div></div>`;
+            } else {
+                html += `<div class="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                    <p class="text-yellow-800">No academic grades found for this student.</p>
+                </div>`;
+            }
+            
+            // Evaluation Questions Section
+            if (evaluationData && evaluationData.success) {
+                if (evaluationData.isRated) {
+                    html += `<div class="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <p class="text-green-800 font-semibold">✓ This student has been rated. Check the Review tab for details.</p>
+                    </div>`;
+                } else if (evaluationData.evaluations && evaluationData.evaluations.length > 0) {
+                    html += `<div class="bg-white rounded-xl shadow p-6 border border-gray-200">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                            <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 mr-2 text-purple-600' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' /></svg>
+                            Pre-Assessment Evaluation (Rate Student Answers)
+                        </h3>
+                        <div class="space-y-4">`;
+                    
+                    evaluationData.evaluations.forEach(function(ev) {
+                        html += `
+                        <div class="student-eval-block bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="mb-3">
+                                <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-1">Question</div>
+                                <div class="text-sm font-medium text-gray-900 bg-white rounded p-2 border">${ev.question_text}</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Student Answer</div>
+                                <div class="text-sm text-gray-800 bg-blue-50 rounded p-2 border border-blue-200">${ev.answer}</div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <label class="text-sm font-medium text-gray-700">Rate (1-10):</label>
+                                <select class="rating-select border border-gray-300 rounded px-2 py-1 text-sm" data-eval-id="${ev.id}">
+                                    <option value="">Select Rating</option>
+                                    ${[1,2,3,4,5,6,7,8,9,10].map(i => `<option value="${i}">${i}</option>`).join('')}
+                                </select>
+                                <button class="save-rating-btn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm" data-eval-id="${ev.id}" data-student-id="${studentDbId}">Save Rating</button>
+                            </div>
+                        </div>`;
+                    });
+                    
+                    html += `</div></div>`;
+                } else {
+                    html += `<div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <p class="text-gray-600">No evaluation questions found for this student.</p>
+                    </div>`;
+                }
+            } else {
+                html += `<div class="bg-red-50 rounded-lg p-4 border border-red-200">
+                    <p class="text-red-800">Error loading evaluation data for this student.</p>
+                </div>`;
+            }
+            
+            html += `</div>`;
+            $('#rateEvalList').html(html);
+        }
+        
+        // Fetch grades data
+        $.ajax({
+            url: 'ajaxhandler/preAssessmentGradesAjax.php',
+            type: 'POST',
+            dataType: 'json',
+            data: { student_id: studentDbId },
+            success: function(response) {
+                gradesData = response;
+                completedRequests++;
+                renderCombinedData();
+            },
+            error: function() {
+                gradesData = { success: false };
+                completedRequests++;
+                renderCombinedData();
+            }
+        });
+        
+        // Fetch evaluation data
         $.ajax({
             url: 'ajaxhandler/studentDashboardAjax.php',
             type: 'POST',
             dataType: 'json',
-            data: { action: 'getPreassessmentEvaluation', studentId: studentId },
+            data: { action: 'getPreassessmentEvaluation', studentId: internsId },
+            success: function(response) {
+                evaluationData = response;
+                completedRequests++;
+                renderCombinedData();
+            },
+            error: function() {
+                evaluationData = { success: false };
+                completedRequests++;
+                renderCombinedData();
+            }
+        });
+    }
+
+    // Event handlers for rating functionality
+    $(document).on('click', '.save-rating-btn', function() {
+        const evalId = $(this).data('eval-id');
+        const studentId = $(this).data('student-id');
+        const rating = $(`.rating-select[data-eval-id="${evalId}"]`).val();
+        
+        if (!rating) {
+            alert('Please select a rating before saving.');
+            return;
+        }
+        
+        const $button = $(this);
+        $button.prop('disabled', true).text('Saving...');
+        
+        $.ajax({
+            url: 'ajaxhandler/studentDashboardAjax.php',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'saveEvaluationRating',
+                evaluationId: evalId,
+                studentId: studentId,
+                rating: rating
+            },
             success: function(response) {
                 if (response.success) {
-                    if (response.isRated) {
-                        $('#rateEvalList').html('<div class="preassessment-message">This student has been rated. Check the Review tab.</div>');
-                    } else if (response.evaluations && response.evaluations.length > 0) {
-                        // Modern card layout for rating UI
-                        let evalHtml = '';
-                        response.evaluations.forEach(function(ev) {
-                            evalHtml += `
-                            <div class="student-eval-block bg-white rounded-xl shadow p-6 mb-8 border border-gray-200">
-                                <div class="flex flex-col md:flex-row gap-8 items-stretch mb-4">
-                                    <div class="w-full md:w-2/5 flex flex-col justify-center mb-4 md:mb-0">
-                                        <div class="eval-question-label text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Question</div>
-                                        <div class="eval-question-box text-base font-bold text-gray-900 bg-blue-50 rounded-lg p-3 border border-blue-200" style="max-height:120px;overflow-y:auto;">${ev.question_text}</div>
-                                    </div>
-                                    <div class="w-full md:w-3/5 flex flex-col justify-center">
-                                        <div class="eval-answer-label text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Student Answer</div>
-                                        <div class="eval-answer-box text-base text-gray-800 bg-green-50 rounded-lg p-3 border border-green-200">${ev.answer}</div>
-                                    </div>
-                                </div>
-                                <div class="eval-rating-section flex flex-col items-start gap-2 mt-6">
-                                    <label class="font-medium text-gray-700 mb-2">Rate this answer:</label>
-                                    <div class="flex gap-6">
-                                        ${[5,4,3,2,1].map(rating => `
-                                            <label class="flex flex-col items-center cursor-pointer">
-                                                <input type="radio" name="likert_${studentId}_${ev.id}" value="${rating}" class="hidden peer">
-                                                <span class="w-9 h-9 flex items-center justify-center rounded-full border-2 border-blue-400 peer-checked:bg-blue-600 peer-checked:text-white text-blue-600 font-bold text-lg mb-1 transition">${rating}</span>
-                                                <span class="text-xs text-gray-500">${rating}</span>
-                                            </label>
-                                        `).join('')}
-                                    </div>
-                                </div>
-                            </div>
-                            `;
-                        });
-                        evalHtml += `<div class="flex justify-center mt-10">
-                            <button class="btn-save-all-ratings px-8 py-2 text-lg font-semibold bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all duration-150" data-studentid="${studentId}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                Save All Ratings
-                            </button>
-                        </div>`;
-                        $('#rateEvalList').html(evalHtml);
-                        // Make the right column scrollable
-                        $('#rateEvalList').css({
-                            'max-height': 'calc(100vh - 260px)', // leave more space for button
-                            'overflow-y': 'auto',
-                            'padding-right': '8px'
-                        });
-                    } else {
-                        $('#rateEvalList').html('<div class="preassessment-message">Student has not submitted an evaluation yet.</div>');
-                    }
+                    $button.removeClass('bg-blue-600 hover:bg-blue-700')
+                           .addClass('bg-green-600')
+                           .text('✓ Saved')
+                           .prop('disabled', true);
+                    $(`.rating-select[data-eval-id="${evalId}"]`).prop('disabled', true);
                 } else {
-                    $('#rateEvalList').html('<div class="preassessment-message">Error loading evaluation.</div>');
+                    alert('Error saving rating: ' + (response.message || 'Unknown error'));
+                    $button.prop('disabled', false).text('Save Rating');
                 }
             },
             error: function() {
-                $('#rateEvalList').html('<div class="preassessment-message">Error loading evaluation.</div>');
+                alert('Error saving rating. Please try again.');
+                $button.prop('disabled', false).text('Save Rating');
             }
         });
+    });
+
+    function loadStudentEvaluation(studentId) {
+        // This function is now replaced by loadStudentGradesAndEvaluation
+        // Keeping it for compatibility but it won't be used
+        console.log('[DEBUG] loadStudentEvaluation called but replaced by combined function');
     }
 
     // Initial load for Pre-Assessment tab is now handled by unified evaluation loading
