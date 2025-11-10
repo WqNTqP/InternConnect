@@ -160,7 +160,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
 
     <div class="min-h-screen" x-data="{ sidebarOpen: false, isMobile: window.innerWidth < 768 }" @resize.window="isMobile = window.innerWidth < 768">
         <!-- Mobile Overlay -->
-        <div x-show="sidebarOpen && isMobile" @click="sidebarOpen = false" class="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"></div>
+        <div x-show="sidebarOpen && isMobile" @click="sidebarOpen = false" class="fixed inset-0 bg-black bg-opacity-50 z-35 md:hidden"></div>
         
         <nav class="bg-white shadow-lg fixed w-full top-0 z-30">
             <div class="px-4">
@@ -195,7 +195,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
         </nav>
 
         <!-- Sidebar -->
-        <div class="fixed left-0 bg-gray-800 text-white shadow-lg transition-all duration-300 ease-in-out z-25" 
+        <div class="fixed left-0 bg-gray-800 text-white shadow-lg transition-all duration-300 ease-in-out z-40" 
              :class="{
                 'w-64': sidebarOpen && !isMobile,
                 'w-16': !sidebarOpen && !isMobile,
@@ -410,7 +410,10 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                         </div>
                     </div>
                 </div>
-            </div><!-- Prediction Tab Content --><div id="predictionContent" class="hidden">
+            </div>
+        
+        <!-- Prediction Tab Content -->
+        <div id="predictionContent" class="hidden">
             <div class="bg-white rounded-lg shadow-md p-3 md:p-6">
                     <div class="mt-4 md:mt-6 overflow-x-auto">
                         <table id="predictionTable" class="min-w-full rounded-xl shadow-lg overflow-hidden border border-gray-200">
@@ -494,7 +497,10 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                         </table>
                 </div>
             </div>
-        </div><!-- Control Tab Content --><div id="controlContent" class="hidden">
+        </div>
+        
+        <!-- Control Tab Content -->
+        <div id="controlContent" class="hidden">
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="mb-4 md:mb-6">
                     <div class="grid grid-cols-4 md:flex md:flex-wrap gap-2 md:gap-4">
@@ -1033,8 +1039,10 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                     </div>
                 </div>
             </div>
-
-        </div><!-- Post-Analysis Tab Content --><div id="postAnalysisContent" class="tab-content hidden">
+        </div>
+        
+        <!-- Post-Analysis Tab Content -->
+        <div id="postAnalysisContent" class="tab-content hidden">
                 <div class="flex flex-col lg:flex-row w-full min-h-[500px]">
                     <!-- Left Column: Student List/Search -->
                     <div class="w-full lg:w-1/4 lg:min-w-[220px] lg:max-w-xs bg-white lg:border-r border-gray-200 p-3 md:p-6 flex flex-col">
@@ -1080,12 +1088,9 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                         </div>
                     </div>
                 </div>
-            </div></div>
-        
-        
-            
-        
+            </div>
         </div>
+    </div>
 
         
         
