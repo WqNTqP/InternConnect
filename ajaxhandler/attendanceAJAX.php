@@ -660,7 +660,6 @@ if ($action == "deleteStudents") {
         }
     }
 
-
 // Handle deleteHTE action with permission check
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'deleteHTE') {
     $hteId = $_POST['hteId'];
