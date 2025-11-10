@@ -852,29 +852,31 @@ class attendanceDetails
 
             foreach ($studentIds as $studentId) {
                 try {
-                    // First, delete related records in intern_details using STUDENT_ID
-                    $stmt = $dbo->conn->prepare("DELETE FROM intern_details WHERE INTERNS_ID = (SELECT INTERNS_ID FROM interns_details WHERE STUDENT_ID = :studentId)");
-                    $stmt->execute([":studentId" => $studentId]);
-                    $deletedCount += $stmt->rowCount();
-
-                    // Then, delete the student from interns_details using STUDENT_ID
+                    // Delete from parent table - CASCADE will handle related records automatically
                     $stmt = $dbo->conn->prepare("DELETE FROM interns_details WHERE STUDENT_ID = :studentId");
                     $stmt->execute([":studentId" => $studentId]);
-                    $deletedCount += $stmt->rowCount();
+                    $rowsDeleted = $stmt->rowCount();
+                    $deletedCount += $rowsDeleted;
+
+                    if ($rowsDeleted === 0) {
+                        $errors[] = "Student $studentId not found or already deleted";
+                    }
 
                 } catch (Exception $e) {
                     $errors[] = "Error deleting student $studentId: " . $e->getMessage();
+                    error_log("Student deletion error for $studentId: " . $e->getMessage());
                 }
             }
 
-            $dbo->conn->commit();
-
-            $message = "$deletedCount record(s) deleted successfully.";
-            if (!empty($errors)) {
-                $message .= " Errors: " . implode(", ", $errors);
+            if (empty($errors)) {
+                $dbo->conn->commit();
+                error_log("Successfully deleted $deletedCount student(s)");
+                return true;
+            } else {
+                $dbo->conn->rollBack();
+                error_log("Student deletion failed with errors: " . implode(", ", $errors));
+                return false;
             }
-
-            return true;
 
         } catch (Exception $e) {
             $dbo->conn->rollBack();
