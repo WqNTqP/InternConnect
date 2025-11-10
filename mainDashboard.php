@@ -540,8 +540,8 @@ function generateStudentFilterOptions($coordinatorId) {
                     </div>
             </div>
             
-            </div>
-            <!-- Control Tab Content --><div id="controlContent" class="hidden">
+            <!-- Control Tab Content -->
+            <div id="controlContent" class="hidden">
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="mb-4 md:mb-6">
                     <div class="grid grid-cols-4 md:flex md:flex-wrap gap-2 md:gap-4">
@@ -1080,9 +1080,9 @@ function generateStudentFilterOptions($coordinatorId) {
                     </div>
                 </div>
             </div>
-            </div>
-            
-            <!-- Post-Analysis Tab Content --><div id="postAnalysisContent" class="tab-content hidden">
+
+            <!-- Post-Analysis Tab Content -->
+            <div id="postAnalysisContent" class="tab-content hidden">
                     <div class="flex flex-col lg:flex-row w-full min-h-[500px]">
                         <!-- Left Column: Student List/Search -->
                         <div class="w-full lg:w-1/4 lg:min-w-[220px] lg:max-w-xs bg-white lg:border-r border-gray-200 p-3 md:p-6 flex flex-col">
