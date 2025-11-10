@@ -338,7 +338,7 @@ function generateStudentFilterOptions($coordinatorId) {
             </div>
         
             <!-- Evaluation Tab Content -->
-                    <div id="evaluationContent" class="bg-white rounded-lg shadow-md hidden">
+            <div id="evaluationContent" class="bg-white rounded-lg shadow-md hidden">
                         <div class="border-b">
                             <nav class="flex flex-wrap gap-2 md:space-x-4 px-3 md:px-6 py-3 overflow-x-auto">
                                 <button class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-900 bg-gray-100 rounded-md active whitespace-nowrap" id="evalQuestionsTabBtn">
@@ -509,38 +509,39 @@ function generateStudentFilterOptions($coordinatorId) {
                             <div class="text-gray-500 text-base">Select a student from the list to view their reviewed assessment details.</div>
                         </div>
                         </div>
-                    </div>
+            </div>
 
-                    <!-- Prediction Tab Content --><div id="predictionContent" class="hidden">
-        <div class="bg-white rounded-lg shadow-md p-3 md:p-6">
-                    <div class="mt-4 md:mt-6 overflow-x-auto">
-                        <table id="predictionTable" class="min-w-full rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                            <thead class="bg-blue-50">
-                                <tr>
-                                    <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Student Name</th>
-                                    <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">HTE Assigned</th>
-                                    <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Status</th>
-                                    <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Predicted Placement</th>
-                                    <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Analysis</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-100">
-                                <tr>
-                                    <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                                        <div class="flex flex-col items-center">
-                                            <div class="animate-pulse mb-2">
-                                                <i class="fas fa-chart-line text-2xl text-blue-400"></i>
+            <!-- Prediction Tab Content --><div id="predictionContent" class="hidden">
+            <div class="bg-white rounded-lg shadow-md p-3 md:p-6">
+                        <div class="mt-4 md:mt-6 overflow-x-auto">
+                            <table id="predictionTable" class="min-w-full rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                                <thead class="bg-blue-50">
+                                    <tr>
+                                        <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Student Name</th>
+                                        <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">HTE Assigned</th>
+                                        <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Status</th>
+                                        <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Predicted Placement</th>
+                                        <th class="px-3 md:px-6 py-2 md:py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">Analysis</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-100">
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                                            <div class="flex flex-col items-center">
+                                                <div class="animate-pulse mb-2">
+                                                    <i class="fas fa-chart-line text-2xl text-blue-400"></i>
+                                                </div>
+                                                <p>Loading prediction data...</p>
                                             </div>
-                                            <p>Loading prediction data...</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                </div>
-        </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                    </div>
+            </div>
             
-        </div><!-- Control Tab Content --><div id="controlContent" class="hidden">
+            </div>
+            <!-- Control Tab Content --><div id="controlContent" class="hidden">
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="mb-4 md:mb-6">
                     <div class="grid grid-cols-4 md:flex md:flex-wrap gap-2 md:gap-4">
@@ -1078,9 +1079,10 @@ function generateStudentFilterOptions($coordinatorId) {
                             </div>
                     </div>
                 </div>
-        </div>
-
-        </div><!-- Post-Analysis Tab Content --><div id="postAnalysisContent" class="tab-content hidden">
+            </div>
+            </div>
+            
+            <!-- Post-Analysis Tab Content --><div id="postAnalysisContent" class="tab-content hidden">
                     <div class="flex flex-col lg:flex-row w-full min-h-[500px]">
                         <!-- Left Column: Student List/Search -->
                         <div class="w-full lg:w-1/4 lg:min-w-[220px] lg:max-w-xs bg-white lg:border-r border-gray-200 p-3 md:p-6 flex flex-col">

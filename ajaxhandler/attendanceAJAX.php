@@ -659,6 +659,7 @@ if ($action == "deleteStudents") {
             echo json_encode(['success' => false, 'message' => 'Error fetching evaluation questions: ' . $e->getMessage()]);
         }
     }
+  } // Close the main if(isset($_REQUEST['action'])) block
 
 // Handle deleteHTE action with permission check
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'deleteHTE') {
