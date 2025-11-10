@@ -4,6 +4,9 @@ $path=$_SERVER['DOCUMENT_ROOT'];
 // Check if we're in a subdirectory (local development) or root (production)
 $basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
 require_once $basePath."/database/database.php";
+
+// Include safe upload for Render compatibility
+require_once $basePath."/config/safe_upload.php";
 require_once $basePath."/database/sessionDetails.php";
 require_once $basePath."/database/coordinator.php";
 require_once $basePath."/database/buildingRegistrationDetails.php";

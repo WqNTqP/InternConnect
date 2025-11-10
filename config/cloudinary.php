@@ -38,6 +38,16 @@ class CloudinaryUploader {
      */
     public function uploadImage($filePath, $folder = 'internconnect', $publicId = null) {
         try {
+            // Check if cURL is available
+            if (!function_exists('curl_init')) {
+                return ['success' => false, 'error' => 'cURL extension is not available'];
+            }
+            
+            // Check if file exists and is readable
+            if (!file_exists($filePath) || !is_readable($filePath)) {
+                return ['success' => false, 'error' => 'File not found or not readable: ' . $filePath];
+            }
+            
             // Generate timestamp and signature
             $timestamp = time();
             $params = [
@@ -68,23 +78,39 @@ class CloudinaryUploader {
             // Upload URL
             $url = "https://api.cloudinary.com/v1_1/{$this->cloud_name}/image/upload";
             
-            // cURL request
+            // cURL request with better error handling
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30); // 30 second timeout
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'InternConnect/1.0');
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
             curl_close($ch);
             
+            // Handle cURL errors
+            if ($response === false || !empty($curlError)) {
+                error_log("Cloudinary cURL error: " . $curlError);
+                return ['success' => false, 'error' => 'cURL error: ' . $curlError];
+            }
+            
             if ($httpCode !== 200) {
-                return ['success' => false, 'error' => 'Upload failed with HTTP code: ' . $httpCode];
+                error_log("Cloudinary HTTP error {$httpCode}: " . $response);
+                return ['success' => false, 'error' => 'Upload failed with HTTP code: ' . $httpCode . '. Response: ' . substr($response, 0, 200)];
             }
             
             $result = json_decode($response, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                error_log("Cloudinary JSON decode error: " . json_last_error_msg());
+                return ['success' => false, 'error' => 'Invalid JSON response from Cloudinary'];
+            }
             
             if (isset($result['secure_url'])) {
                 return [
@@ -94,10 +120,13 @@ class CloudinaryUploader {
                     'format' => $result['format'] ?? 'jpg'
                 ];
             } else {
-                return ['success' => false, 'error' => 'Invalid response from Cloudinary'];
+                error_log("Cloudinary upload failed: " . json_encode($result));
+                $errorMsg = isset($result['error']['message']) ? $result['error']['message'] : 'Unknown error';
+                return ['success' => false, 'error' => 'Cloudinary error: ' . $errorMsg];
             }
             
         } catch (Exception $e) {
+            error_log("Cloudinary upload exception: " . $e->getMessage());
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
