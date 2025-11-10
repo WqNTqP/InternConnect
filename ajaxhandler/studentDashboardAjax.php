@@ -289,7 +289,7 @@ switch ($action) {
             sendResponse('error', null, 'Student ID is required');
         }
         
-        // Prepare to handle file upload
+        // Prepare to handle file upload with Cloudinary
         $profilePicturePath = null;
         if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] == UPLOAD_ERR_OK) {
             $fileTmpPath = $_FILES['profile_picture']['tmp_name'];
@@ -300,25 +300,21 @@ switch ($action) {
 
             // Validate file type
             if (in_array($fileType, $allowedFileTypes)) {
-                // Set the upload directory
-                $uploadFileDir = '../uploads/';
+                // Include Cloudinary configuration
+                require_once $basePath . '/config/cloudinary.php';
                 
-                // Create uploads directory if it doesn't exist
-                if (!file_exists($uploadFileDir)) {
-                    mkdir($uploadFileDir, 0777, true);
-                }
+                $cloudinary = getCloudinaryUploader();
+                $publicId = 'profile_' . $studentId . '_' . uniqid();
                 
-                // Generate unique filename to prevent overwrites
-                $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-                $uniqueFileName = uniqid() . '_' . $studentId . '.' . $fileExtension;
-                $dest_path = $uploadFileDir . $uniqueFileName;
-
-                // Move the file to the upload directory
-                if (move_uploaded_file($fileTmpPath, $dest_path)) {
-                    // Store only the filename in the database
-                    $profilePicturePath = $uniqueFileName;
+                // Upload to Cloudinary
+                $uploadResult = $cloudinary->uploadImage($fileTmpPath, 'internconnect/profiles', $publicId);
+                
+                if ($uploadResult['success']) {
+                    $profilePicturePath = $uploadResult['url']; // Store the full Cloudinary URL
+                    error_log("Profile picture uploaded to Cloudinary: " . $profilePicturePath);
                 } else {
-                    sendResponse('error', null, 'Error moving the uploaded file');
+                    error_log("Cloudinary upload failed: " . $uploadResult['error']);
+                    sendResponse('error', null, 'Error uploading profile picture to cloud storage');
                 }
             } else {
                 sendResponse('error', null, 'Invalid file type. Only JPEG, PNG, and GIF files are allowed.');

@@ -284,18 +284,24 @@ function createPDFReport($list, $filename) {
             $coordinator_id = $_SESSION['current_user'] ?? null;
             $session_id = $_POST['sessionId'] ?? null;
 
-            // Handle logo upload
+            // Handle logo upload with Cloudinary
             $logo_filename = null;
             if (isset($_FILES['LOGO']) && $_FILES['LOGO']['error'] === UPLOAD_ERR_OK) {
-                $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/InternConnect/uploads/hte_logos/';
-                if (!is_dir($upload_dir)) {
-                    mkdir($upload_dir, 0777, true);
-                }
-                $ext = pathinfo($_FILES['LOGO']['name'], PATHINFO_EXTENSION);
-                $safe_name = uniqid('hte_logo_') . '.' . $ext;
-                $target_path = $upload_dir . $safe_name;
-                if (move_uploaded_file($_FILES['LOGO']['tmp_name'], $target_path)) {
-                    $logo_filename = $safe_name;
+                // Include Cloudinary configuration
+                require_once $basePath . '/config/cloudinary.php';
+                
+                $cloudinary = getCloudinaryUploader();
+                $tempFilePath = $_FILES['LOGO']['tmp_name'];
+                $publicId = 'hte_logo_' . uniqid();
+                
+                // Upload to Cloudinary
+                $uploadResult = $cloudinary->uploadImage($tempFilePath, 'internconnect/logos', $publicId);
+                
+                if ($uploadResult['success']) {
+                    $logo_filename = $uploadResult['url']; // Store the full Cloudinary URL
+                    error_log("Logo uploaded to Cloudinary: " . $logo_filename);
+                } else {
+                    error_log("Cloudinary upload failed: " . $uploadResult['error']);
                 }
             }
 
@@ -334,20 +340,24 @@ function createPDFReport($list, $filename) {
             $coordinator_id = $_SESSION['current_user'] ?? null;
             $session_id = $_POST['sessionId'] ?? null;
 
-            // Handle logo upload
+            // Handle logo upload with Cloudinary
             $logo_filename = null;
             if (isset($_FILES['LOGO']) && $_FILES['LOGO']['error'] === UPLOAD_ERR_OK) {
-                $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/InternConnect/uploads/hte_logos/';
-                if (!is_dir($upload_dir)) {
-                    mkdir($upload_dir, 0777, true);
-                }
-                $ext = pathinfo($_FILES['LOGO']['name'], PATHINFO_EXTENSION);
-                $safe_name = uniqid('hte_logo_') . '.' . $ext;
-                $target_path = $upload_dir . $safe_name;
-                if (move_uploaded_file($_FILES['LOGO']['tmp_name'], $target_path)) {
-                    // Store only the filename in the database to keep storage consistent
-                    // Other handlers store just the filename (e.g. hte_logo_690eb016bf3aa.jpg)
-                    $logo_filename = $safe_name;
+                // Include Cloudinary configuration
+                require_once $basePath . '/config/cloudinary.php';
+                
+                $cloudinary = getCloudinaryUploader();
+                $tempFilePath = $_FILES['LOGO']['tmp_name'];
+                $publicId = 'hte_logo_' . uniqid();
+                
+                // Upload to Cloudinary
+                $uploadResult = $cloudinary->uploadImage($tempFilePath, 'internconnect/logos', $publicId);
+                
+                if ($uploadResult['success']) {
+                    $logo_filename = $uploadResult['url']; // Store the full Cloudinary URL
+                    error_log("Logo uploaded to Cloudinary: " . $logo_filename);
+                } else {
+                    error_log("Cloudinary upload failed: " . $uploadResult['error']);
                 }
             }
 
@@ -382,15 +392,21 @@ function createPDFReport($list, $filename) {
                 }
                 $logo_filename = null;
                 if (isset($_FILES['LOGO']) && $_FILES['LOGO']['error'] === UPLOAD_ERR_OK) {
-                    $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/InternConnect/uploads/hte_logos/';
-                    if (!is_dir($upload_dir)) {
-                        mkdir($upload_dir, 0777, true);
-                    }
-                    $ext = pathinfo($_FILES['LOGO']['name'], PATHINFO_EXTENSION);
-                    $safe_name = uniqid('hte_logo_') . '.' . $ext;
-                    $target_path = $upload_dir . $safe_name;
-                    if (move_uploaded_file($_FILES['LOGO']['tmp_name'], $target_path)) {
-                        $logo_filename = $safe_name;
+                    // Include Cloudinary configuration
+                    require_once $basePath . '/config/cloudinary.php';
+                    
+                    $cloudinary = getCloudinaryUploader();
+                    $tempFilePath = $_FILES['LOGO']['tmp_name'];
+                    $publicId = 'hte_logo_' . uniqid();
+                    
+                    // Upload to Cloudinary
+                    $uploadResult = $cloudinary->uploadImage($tempFilePath, 'internconnect/logos', $publicId);
+                    
+                    if ($uploadResult['success']) {
+                        $logo_filename = $uploadResult['url']; // Store the full Cloudinary URL
+                        error_log("Logo updated to Cloudinary: " . $logo_filename);
+                    } else {
+                        error_log("Cloudinary upload failed: " . $uploadResult['error']);
                     }
                 }
                 if (!$logo_filename) {

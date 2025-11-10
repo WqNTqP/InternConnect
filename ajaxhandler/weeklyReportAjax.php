@@ -851,12 +851,13 @@ function insertReportImages($reportId, $images) {
 
 function handleImageUploads($files) {
     $uploadedImages = [];
-    $uploadDir = '../uploads/reports/';
     
-    // Create upload directory if it doesn't exist
-    if (!file_exists($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
-    }
+    // Include Cloudinary configuration
+    $path = $_SERVER['DOCUMENT_ROOT'];
+    $basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+    require_once $basePath . '/config/cloudinary.php';
+    
+    $cloudinary = getCloudinaryUploader();
     
     foreach ($files['name'] as $index => $name) {
         if ($files['error'][$index] === UPLOAD_ERR_OK) {
@@ -875,16 +876,20 @@ function handleImageUploads($files) {
                 continue;
             }
             
-            // Generate unique filename
-            $extension = pathinfo($name, PATHINFO_EXTENSION);
-            $uniqueName = uniqid() . '_' . time() . '.' . $extension;
+            // Generate unique public ID
+            $publicId = 'report_' . uniqid() . '_' . time();
             
-            // Move uploaded file
-            if (move_uploaded_file($tmpName, $uploadDir . $uniqueName)) {
+            // Upload to Cloudinary
+            $uploadResult = $cloudinary->uploadImage($tmpName, 'internconnect/reports', $publicId);
+            
+            if ($uploadResult['success']) {
                 $uploadedImages[] = [
-                    'filename' => $uniqueName,
+                    'filename' => $uploadResult['url'], // Store Cloudinary URL
                     'original_name' => $name
                 ];
+                error_log("Report image uploaded to Cloudinary: " . $uploadResult['url']);
+            } else {
+                error_log("Cloudinary upload failed: " . $uploadResult['error']);
             }
         }
     }

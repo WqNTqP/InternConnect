@@ -52,10 +52,19 @@ function renderCompaniesList(companies) {
     companies.forEach(function(company) {
         let logoHtml = '-';
         if (company.LOGO) {
-            // Support both DB values that are just filenames (hte_logo_xxx.jpg)
-            // and values that accidentally include the uploads path (uploads/hte_logos/xxx)
-            const logoPath = company.LOGO.startsWith('uploads/') ? company.LOGO : `uploads/hte_logos/${company.LOGO}`;
-            logoHtml = `<img src='${getBaseUrl()}${logoPath}' alt='Logo' class='h-8 w-8 rounded-full object-cover border' />`;
+            // Support both Cloudinary URLs and legacy local paths
+            let logoUrl;
+            if (company.LOGO.startsWith('https://res.cloudinary.com/')) {
+                // Cloudinary URL - use directly
+                logoUrl = company.LOGO;
+            } else if (company.LOGO.startsWith('uploads/')) {
+                // Legacy path format
+                logoUrl = `${getBaseUrl()}${company.LOGO}`;
+            } else {
+                // Legacy filename only
+                logoUrl = `${getBaseUrl()}uploads/hte_logos/${company.LOGO}`;
+            }
+            logoHtml = `<img src='${logoUrl}' alt='Logo' class='h-8 w-8 rounded-full object-cover border' />`;
         }
         logoHtml += ` <button class='update-logo-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs ml-2' data-hteid='${company.HTE_ID}'>Update Logo</button>`;
         html += `<tr>
@@ -370,8 +379,16 @@ $(document).on('click', '.btnProfileStudent', function() {
                 
                 // Handle profile picture
                 if (student.profile_picture) {
-                    const imgPath = 'uploads/' + student.profile_picture;
-                    $('#profilePicture img').attr('src', imgPath).show();
+                    // Support both Cloudinary URLs and legacy local paths
+                    let profileUrl;
+                    if (student.profile_picture.startsWith('https://res.cloudinary.com/')) {
+                        // Cloudinary URL - use directly
+                        profileUrl = student.profile_picture;
+                    } else {
+                        // Legacy local path
+                        profileUrl = 'uploads/' + student.profile_picture;
+                    }
+                    $('#profilePicture img').attr('src', profileUrl).show();
                     $('#profilePicture div').hide();
                 } else {
                     $('#profilePicture img').hide();
@@ -1647,7 +1664,16 @@ function loadApprovedReportsWithFilters() {
                                     let imagesHtml = "";
                                     if (report.imagesPerDay && report.imagesPerDay[day] && report.imagesPerDay[day].length > 0) {
                                         report.imagesPerDay[day].forEach(function(img) {
-                                            imagesHtml += `<img src='${getBaseUrl()}uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow-sm w-full h-24 object-cover mb-2 hover:scale-105 transition'>`;
+                                            // Support both Cloudinary URLs and legacy local paths
+                                            let imageUrl;
+                                            if (img.filename.startsWith('https://res.cloudinary.com/')) {
+                                                // Cloudinary URL - use directly
+                                                imageUrl = img.filename;
+                                            } else {
+                                                // Legacy local path
+                                                imageUrl = `${getBaseUrl()}uploads/reports/${img.filename}`;
+                                            }
+                                            imagesHtml += `<img src='${imageUrl}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow-sm w-full h-24 object-cover mb-2 hover:scale-105 transition'>`;
                                         });
                                     } else {
                                         imagesHtml = `<div class='flex items-center justify-center h-24 bg-gray-50 text-gray-400 rounded-lg border border-dashed border-gray-200'><i class='fas fa-image'></i></div>`;
@@ -2632,8 +2658,19 @@ function fetchTHE(cdrid,sessionid)
     // alert(ondate);
     let logoHtml = '';
     if (building['LOGO']) {
-        const logoPath = building['LOGO'].startsWith('uploads/') ? building['LOGO'] : `uploads/hte_logos/${building['LOGO']}`;
-        logoHtml = `<img src='${getBaseUrl()}${logoPath}' alt='Company Logo' class='w-20 h-20 object-cover rounded-full border-2 border-blue-300 shadow mb-2 bg-white' />`;
+        // Support both Cloudinary URLs and legacy local paths
+        let logoUrl;
+        if (building['LOGO'].startsWith('https://res.cloudinary.com/')) {
+            // Cloudinary URL - use directly
+            logoUrl = building['LOGO'];
+        } else if (building['LOGO'].startsWith('uploads/')) {
+            // Legacy path format
+            logoUrl = `${getBaseUrl()}${building['LOGO']}`;
+        } else {
+            // Legacy filename only
+            logoUrl = `${getBaseUrl()}uploads/hte_logos/${building['LOGO']}`;
+        }
+        logoHtml = `<img src='${logoUrl}' alt='Company Logo' class='w-20 h-20 object-cover rounded-full border-2 border-blue-300 shadow mb-2 bg-white' />`;
     } else {
         logoHtml = `<div class='w-20 h-20 flex items-center justify-center bg-gray-100 rounded-full border-2 border-gray-300 text-gray-400 mb-2'>No Logo</div>`;
     }
