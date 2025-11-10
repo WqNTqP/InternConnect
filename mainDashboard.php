@@ -358,7 +358,7 @@ function generateStudentFilterOptions($coordinatorId) {
                             </nav>
                         </div>
                         <div class="p-3 md:p-6">
-                            <div id="evalQuestionsTabContent" class="space-y-6 active hidden" style="display: block;"><div class="flex w-full"><div class="left-col w-1/5 max-w-xs pr-4"><h2 class="text-xl font-bold text-gray-800 mb-4">Categories</h2><div class="mb-4"><label for="questionCategoryDropdown" class="mr-2 text-gray-700 font-medium">Category:</label><select id="questionCategoryDropdown" class="border border-gray-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"><option value="Soft Skills">Soft Skills</option><option value="Communication Skills">Communication Skills</option><option value="Personal and Interpersonal Skills">Personal and Interpersonal Skills</option></select></div><div class="flex items-center mb-2">
+                            <div id="evalQuestionsTabContent" class="space-y-6 active hidden" style="display: block;"><div class="flex w-full"><div class="left-col w-1/5 max-w-xs pr-4"><h2 class="text-xl font-bold text-gray-800 mb-4">Categories</h2><div class="mb-4"><label for="questionCategoryDropdown" class="mr-2 text-gray-700 font-medium">Category:</label><select id="questionCategoryDropdown" class="border border-gray-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"><option value="Soft Skills">Soft Skills</option><option value="Communication Skills">Communication Skills</option><option value="Technical Skills">Technical Skills</option><option value="Personal and Interpersonal Skills">Personal and Interpersonal Skills</option></select></div><div class="flex items-center mb-2">
                                     <span class="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full mr-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l9-9a1.414 1.414 0 00-2-2l-9 9v3z"></path></svg>
                                         Editable: Click question text to edit
@@ -1185,6 +1185,10 @@ function generateStudentFilterOptions($coordinatorId) {
             $('#postStudentListPanel').html(loadingHTML);
             $('#postAnalysisStudentListPanel').html(loadingHTML);
             
+            // Additional cleanup - remove any remaining hardcoded student items
+            $('.preassessment-student-item[data-studentid="291"], .preassessment-student-item[data-studentid="190"], .preassessment-student-item[data-studentid="289"], .preassessment-student-item[data-studentid="288"], .preassessment-student-item[data-studentid="290"], .preassessment-student-item[data-studentid="292"]').remove();
+            $('.review-student-item[data-studentid="12345"], .review-student-item[data-studentid="59828881"], .review-student-item[data-studentid="59829532"], .review-student-item[data-studentid="59829536"], .review-student-item[data-studentid="59829663"], .review-student-item[data-studentid="67890"]').remove();
+            
             // Clear hardcoded evaluation questions
             $('#questionsByCategory ul').html(`
                 <li class="text-center py-8 text-gray-500">
@@ -1330,7 +1334,17 @@ function generateStudentFilterOptions($coordinatorId) {
             
             // Function to load students for evaluation tabs
             function loadEvaluationStudents() {
+                // Prevent multiple simultaneous calls
+                if (loadEvaluationStudents.isLoading) {
+                    return;
+                }
+                loadEvaluationStudents.isLoading = true;
+                
                 let cdrid = $('#hiddencdrid').val();
+                
+                // Clear existing content first to prevent duplicates
+                $('#studentListPanel').html('<div class="text-center py-8 text-gray-500"><div class="animate-pulse mb-2"><i class="fas fa-users text-2xl text-blue-400"></i></div><p>Loading students...</p></div>');
+                $('#reviewStudentListPanel').html('<div class="text-center py-8 text-gray-500"><div class="animate-pulse mb-2"><i class="fas fa-users text-2xl text-blue-400"></i></div><p>Loading students...</p></div>');
                 
                 $.ajax({
                     url: "ajaxhandler/attendanceAJAX.php",
@@ -1340,6 +1354,8 @@ function generateStudentFilterOptions($coordinatorId) {
                     success: function(response) {
                         if (response && response.success && response.students && response.students.length > 0) {
                             let studentHTML = '';
+                            let reviewHTML = '';
+                            
                             response.students.forEach(function(student) {
                                 // Generate HTML for pre-assessment students
                                 studentHTML += `
@@ -1354,7 +1370,7 @@ function generateStudentFilterOptions($coordinatorId) {
                                 `;
                                 
                                 // Also add to review list
-                                let reviewHTML = `
+                                reviewHTML += `
                                     <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="${student.STUDENT_ID}">
                                         <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1364,15 +1380,11 @@ function generateStudentFilterOptions($coordinatorId) {
                                         <span class="truncate">${student.NAME || student.STUDENT_ID}</span>
                                     </div>
                                 `;
-                                
-                                // Update review list only once (not in loop)
-                                if (response.students.indexOf(student) === 0) {
-                                    $('#reviewStudentListPanel').html('');
-                                }
-                                $('#reviewStudentListPanel').append(reviewHTML);
                             });
                             
+                            // Update both lists at once to prevent race conditions
                             $('#studentListPanel').html(studentHTML);
+                            $('#reviewStudentListPanel').html(reviewHTML);
                             console.log('Loaded', response.students.length, 'students for evaluation tabs');
                         } else {
                             const noStudentsHTML = `
@@ -1384,6 +1396,9 @@ function generateStudentFilterOptions($coordinatorId) {
                             $('#studentListPanel').html(noStudentsHTML);
                             $('#reviewStudentListPanel').html(noStudentsHTML);
                         }
+                        
+                        // Reset loading flag
+                        loadEvaluationStudents.isLoading = false;
                     },
                     error: function(e) {
                         console.error("Error loading evaluation students:", e);
@@ -1395,6 +1410,9 @@ function generateStudentFilterOptions($coordinatorId) {
                         `;
                         $('#studentListPanel').html(errorHTML);
                         $('#reviewStudentListPanel').html(errorHTML);
+                        
+                        // Reset loading flag
+                        loadEvaluationStudents.isLoading = false;
                     }
                 });
             }
@@ -1527,6 +1545,13 @@ function generateStudentFilterOptions($coordinatorId) {
         });
         // Tab switching functionality
         function switchTab(tabName) {
+            // Clean up any remaining hardcoded content before switching tabs
+            if (tabName === 'evaluation') {
+                // Clear any leftover hardcoded student items
+                $('.preassessment-student-item[data-studentid="291"], .preassessment-student-item[data-studentid="190"], .preassessment-student-item[data-studentid="289"], .preassessment-student-item[data-studentid="288"], .preassessment-student-item[data-studentid="290"], .preassessment-student-item[data-studentid="292"]').remove();
+                $('.review-student-item[data-studentid="12345"], .review-student-item[data-studentid="59828881"], .review-student-item[data-studentid="59829532"], .review-student-item[data-studentid="59829536"], .review-student-item[data-studentid="59829663"], .review-student-item[data-studentid="67890"]').remove();
+            }
+            
             // Hide all tab contents by adding hidden class
             document.querySelectorAll('[id$="Content"]').forEach(content => {
                 content.classList.add('hidden');
