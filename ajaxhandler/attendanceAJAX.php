@@ -301,8 +301,13 @@ function createPDFReport($list, $filename) {
                 );
                 
                 if ($uploadResult['success']) {
-                    $logo_filename = $uploadResult['filename']; // Store just the filename for consistency
-                    error_log("Logo uploaded successfully: " . $logo_filename);
+                    // For Cloudinary uploads, use the full URL, for local uploads use filename
+                    if ($uploadResult['method'] === 'cloudinary') {
+                        $logo_filename = $uploadResult['url']; // Store the full Cloudinary URL
+                    } else {
+                        $logo_filename = $uploadResult['filename']; // Store just the filename for local uploads
+                    }
+                    error_log("Logo uploaded successfully: " . $logo_filename . " (method: " . $uploadResult['method'] . ")");
                 } else {
                     error_log("Logo upload failed: " . ($uploadResult['error'] ?? 'Unknown error'));
                 }
@@ -357,8 +362,13 @@ function createPDFReport($list, $filename) {
                 );
                 
                 if ($uploadResult['success']) {
-                    $logo_filename = $uploadResult['filename']; // Store just the filename for consistency
-                    error_log("Logo uploaded successfully via addHTEControl: " . $logo_filename);
+                    // For Cloudinary uploads, use the full URL, for local uploads use filename
+                    if ($uploadResult['method'] === 'cloudinary') {
+                        $logo_filename = $uploadResult['url']; // Store the full Cloudinary URL
+                    } else {
+                        $logo_filename = $uploadResult['filename']; // Store just the filename for local uploads
+                    }
+                    error_log("Logo uploaded successfully via addHTEControl: " . $logo_filename . " (method: " . $uploadResult['method'] . ")");
                 } else {
                     error_log("Logo upload failed via addHTEControl: " . ($uploadResult['error'] ?? 'Unknown error'));
                 }
@@ -406,8 +416,13 @@ function createPDFReport($list, $filename) {
                     );
                     
                     if ($uploadResult['success']) {
-                        $logo_filename = $uploadResult['filename']; // Store just the filename for consistency
-                        error_log("Logo updated successfully via updateHTELogo: " . $logo_filename);
+                        // For Cloudinary uploads, use the full URL, for local uploads use filename
+                        if ($uploadResult['method'] === 'cloudinary') {
+                            $logo_filename = $uploadResult['url']; // Store the full Cloudinary URL
+                        } else {
+                            $logo_filename = $uploadResult['filename']; // Store just the filename for local uploads
+                        }
+                        error_log("Logo updated successfully via updateHTELogo: " . $logo_filename . " (method: " . $uploadResult['method'] . ")");
                     } else {
                         error_log("Logo update failed via updateHTELogo: " . ($uploadResult['error'] ?? 'Unknown error'));
                     }

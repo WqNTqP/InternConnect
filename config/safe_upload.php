@@ -55,7 +55,7 @@ function safeUploadImage($tempFile, $originalName, $folder, $subfolder = '') {
                 
                 if ($cloudinaryResult['success']) {
                     $result['success'] = true;
-                    $result['filename'] = $cloudinaryResult['filename'];
+                    $result['filename'] = $cloudinaryResult['public_id'] ?? 'cloudinary_upload';
                     $result['url'] = $cloudinaryResult['url'];
                     $result['method'] = 'cloudinary';
                     error_log("Cloudinary upload successful: " . $result['url']);
