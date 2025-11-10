@@ -12,30 +12,24 @@ function isRenderEnvironment() {
            strpos($_SERVER['SERVER_NAME'] ?? '', 'onrender.com') !== false;
 }
 
-// Disable Cloudinary on Render temporarily
-if (isRenderEnvironment()) {
-    // Override Cloudinary functions to return false (use local storage)
-    function isCloudinaryConfigured() {
-        return false; // Force local storage on Render
-    }
+// Load Cloudinary configuration for all environments
+$path = $_SERVER['DOCUMENT_ROOT'];
+$basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+
+if (file_exists($basePath . '/config/cloudinary.php')) {
+    require_once $basePath . '/config/cloudinary.php';
     
-    function getCloudinaryUploader() {
-        return null; // Force local storage on Render
+    if (isRenderEnvironment()) {
+        error_log("Render environment detected - will try Cloudinary first, then local fallback");
+    } else {
+        error_log("Local environment detected - Cloudinary enabled");
     }
-    
-    error_log("Cloudinary disabled on Render - using local storage fallback");
 } else {
-    // Load normal Cloudinary configuration for local development
-    $path = $_SERVER['DOCUMENT_ROOT'];
-    $basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
-    
-    if (file_exists($basePath . '/config/cloudinary.php')) {
-        require_once $basePath . '/config/cloudinary.php';
-    }
+    error_log("Cloudinary config not found - using local storage only");
 }
 
 /**
- * Safe upload function that works on both local and Render
+ * Safe upload function that tries Cloudinary first, falls back to local
  */
 function safeUploadImage($tempFile, $originalName, $folder, $subfolder = '') {
     $result = [
@@ -46,7 +40,35 @@ function safeUploadImage($tempFile, $originalName, $folder, $subfolder = '') {
     ];
     
     try {
-        // Always use local storage for now to prevent Bad Gateway
+        // Try Cloudinary first if configured
+        if (function_exists('isCloudinaryConfigured') && isCloudinaryConfigured()) {
+            $uploader = getCloudinaryUploader();
+            if ($uploader) {
+                error_log("Attempting Cloudinary upload for: " . $originalName);
+                
+                $cloudinaryFolder = trim($folder, '/');
+                if ($subfolder) {
+                    $cloudinaryFolder .= '/' . trim($subfolder, '/');
+                }
+                
+                $cloudinaryResult = $uploader->uploadImage($tempFile, $cloudinaryFolder);
+                
+                if ($cloudinaryResult['success']) {
+                    $result['success'] = true;
+                    $result['filename'] = $cloudinaryResult['filename'];
+                    $result['url'] = $cloudinaryResult['url'];
+                    $result['method'] = 'cloudinary';
+                    error_log("Cloudinary upload successful: " . $result['url']);
+                    return $result;
+                } else {
+                    error_log("Cloudinary upload failed: " . $cloudinaryResult['error'] . " - falling back to local");
+                }
+            }
+        }
+        
+        // Fallback to local storage
+        error_log("Using local storage fallback for: " . $originalName);
+        
         $path = $_SERVER['DOCUMENT_ROOT'];
         $basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
         
@@ -67,10 +89,11 @@ function safeUploadImage($tempFile, $originalName, $folder, $subfolder = '') {
             $result['success'] = true;
             $result['filename'] = $uniqueName;
             $result['url'] = trim($folder, '/') . '/' . ($subfolder ? trim($subfolder, '/') . '/' : '') . $uniqueName;
-            error_log("File uploaded successfully: " . $result['url']);
+            $result['method'] = 'local';
+            error_log("Local upload successful: " . $result['url']);
         } else {
             $result['error'] = 'Failed to move uploaded file';
-            error_log("Upload failed: " . $result['error']);
+            error_log("Local upload failed: " . $result['error']);
         }
         
     } catch (Exception $e) {

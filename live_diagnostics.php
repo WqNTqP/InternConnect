@@ -105,7 +105,7 @@ try {
 
 // Test 6: cURL Test
 echo "<h2>🌐 cURL Test</h2>";
-if (function_loaded('curl')) {
+if (extension_loaded('curl')) {
     echo "<p>✅ cURL extension loaded</p>";
     
     // Test basic cURL functionality
