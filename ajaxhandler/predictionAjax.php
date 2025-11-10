@@ -144,6 +144,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             exit;
             
+        case 'getPredictions':
+            // Get all predictions for coordinator's students
+            $cdrid = $_POST['cdrid'] ?? $_SESSION["current_user"];
+            
+            try {
+                $sql = "SELECT DISTINCT
+                            s.STUDENT_ID,
+                            CONCAT(s.SURNAME, ', ', s.NAME) as name,
+                            h.NAME as hte_name,
+                            pa.ojt_placement as placement,
+                            pa.prediction_reasoning as reasoning,
+                            pa.prediction_probabilities as probabilities,
+                            CASE 
+                                WHEN pa.soft_skill IS NOT NULL AND pa.communication_skill IS NOT NULL THEN 'Rated'
+                                ELSE 'Not Rated'
+                            END as status
+                        FROM student s
+                        LEFT JOIN hte h ON s.HTE_ID = h.HTE_ID  
+                        LEFT JOIN pre_assessment pa ON s.STUDENT_ID = pa.STUDENT_ID
+                        WHERE s.COORDINATOR_ID = ?
+                        ORDER BY s.SURNAME, s.NAME";
+                        
+                $stmt = $db->conn->prepare($sql);
+                $stmt->execute([$cdrid]);
+                $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                $data = [];
+                foreach ($students as $student) {
+                    $analysis = [];
+                    if ($student['placement'] && $student['reasoning'] && $student['probabilities']) {
+                        $analysis = [
+                            'placement' => $student['placement'],
+                            'reasoning' => $student['reasoning'],
+                            'probabilities' => json_decode($student['probabilities'], true) ?? []
+                        ];
+                    }
+                    
+                    $data[] = [
+                        'student_id' => $student['STUDENT_ID'],
+                        'name' => $student['name'],
+                        'hte_name' => $student['hte_name'] ?? 'Not Assigned',
+                        'placement' => $student['placement'],
+                        'status' => $student['status'],
+                        'analysis' => $analysis
+                    ];
+                }
+                
+                echo json_encode([
+                    'success' => true,
+                    'data' => $data
+                ]);
+            } catch (Exception $e) {
+                echo json_encode([
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ]);
+            }
+            exit;
+            
         default:
             echo json_encode(["error" => "Invalid action"]);
             exit;

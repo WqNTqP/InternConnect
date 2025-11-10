@@ -638,9 +638,25 @@ if ($action == "deleteStudents") {
 
         try {
             $students = $ado->getAllStudentsUnderCoordinator($dbo, $cdrid);
-            echo json_encode(['success' => true, 'data' => $students]);
+            echo json_encode(['success' => true, 'students' => $students]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => 'Error fetching students: ' . $e->getMessage()]);
+        }
+    }
+
+    if ($action == "getEvaluationQuestions") {
+        $dbo = new Database();
+        
+        try {
+            // Fetch active evaluation questions from database
+            $sql = "SELECT question_id, category, question_text FROM evaluation_questions WHERE status = 'active' ORDER BY question_id";
+            $stmt = $dbo->conn->prepare($sql);
+            $stmt->execute();
+            $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            echo json_encode(['success' => true, 'questions' => $questions]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error fetching evaluation questions: ' . $e->getMessage()]);
         }
     }
 
