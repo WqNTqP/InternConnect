@@ -307,6 +307,7 @@ function generateStudentFilterOptions($coordinatorId) {
                     </div>
                 </div>
             </div>
+            <!-- End Attendance Tab Content -->
 
             <!-- Report Tab Content --><div id="reportContent" class="hidden">
             <div class="bg-white rounded-lg shadow-md p-6">
@@ -336,6 +337,7 @@ function generateStudentFilterOptions($coordinatorId) {
                     </div>
                 </div>
             </div>
+            <!-- End Report Tab Content -->
         
             <!-- Evaluation Tab Content -->
             <div id="evaluationContent" class="bg-white rounded-lg shadow-md hidden">
@@ -509,12 +511,14 @@ function generateStudentFilterOptions($coordinatorId) {
                             <div class="text-gray-500 text-base">Select a student from the list to view their reviewed assessment details.</div>
                         </div>
                         </div>
+                </div>
+                        </div>
             </div>
-            </div>
+            <!-- End Evaluation Tab Content -->
 
             <!-- Prediction Tab Content -->
             <div id="predictionContent" class="hidden">
-            <div class="bg-white rounded-lg shadow-md p-3 md:p-6">
+                <div class="bg-white rounded-lg shadow-md p-3 md:p-6">
                         <div class="mt-4 md:mt-6 overflow-x-auto">
                             <table id="predictionTable" class="min-w-full rounded-xl shadow-lg overflow-hidden border border-gray-200">
                                 <thead class="bg-blue-50">
@@ -539,550 +543,553 @@ function generateStudentFilterOptions($coordinatorId) {
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
                     </div>
             </div>
-            </div>
+            <!-- End Prediction Tab Content -->
             
             <!-- Control Tab Content -->
             <div id="controlContent" class="hidden">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="mb-4 md:mb-6">
-                    <div class="grid grid-cols-4 md:flex md:flex-wrap gap-2 md:gap-4">
-                        <button id="btnViewAllStudents" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="View All Students" title="View All Students">
-                            <i class="fas fa-users text-sm"></i>
-                        </button>
-                        <button id="btnViewAllCompanies" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="View All Companies" title="View All Companies">
-                            <i class="fas fa-city text-sm"></i>
-                        </button>
-                        <button id="btnAddStudent" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-green-100 text-green-600 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Add Student" title="Add Student">
-                            <i class="fas fa-user-plus text-sm"></i>
-                        </button>
-                        <button id="btnAddHTE" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Add HTE" title="Add HTE">
-                            <i class="fas fa-building text-sm"></i>
-                        </button>
-                        <button id="btnAddSession" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500" aria-label="Add Session" title="Add Session">
-                            <i class="fas fa-calendar-plus text-sm"></i>
-                        </button>
-                        <button id="btnDeleteStudent" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-red-100 text-red-600 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Delete Student" title="Delete Student">
-                            <i class="fas fa-user-minus text-sm"></i>
-                        </button>
-                        <button id="btnDeleteHTE" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500" aria-label="Delete HTE" title="Delete HTE">
-                            <i class="fas fa-building text-sm"></i>
-                        </button>
-                        <button id="btnDeleteSession" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-500" aria-label="Delete Session" title="Delete Session">
-                            <i class="fas fa-calendar-minus text-sm"></i>
-                        </button>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="mb-4 md:mb-6">
+                        <div class="grid grid-cols-4 md:flex md:flex-wrap gap-2 md:gap-4">
+                            <button id="btnViewAllStudents" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="View All Students" title="View All Students">
+                                <i class="fas fa-users text-sm"></i>
+                            </button>
+                            <button id="btnViewAllCompanies" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="View All Companies" title="View All Companies">
+                                <i class="fas fa-city text-sm"></i>
+                            </button>
+                            <button id="btnAddStudent" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-green-100 text-green-600 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Add Student" title="Add Student">
+                                <i class="fas fa-user-plus text-sm"></i>
+                            </button>
+                            <button id="btnAddHTE" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Add HTE" title="Add HTE">
+                                <i class="fas fa-building text-sm"></i>
+                            </button>
+                            <button id="btnAddSession" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500" aria-label="Add Session" title="Add Session">
+                                <i class="fas fa-calendar-plus text-sm"></i>
+                            </button>
+                            <button id="btnDeleteStudent" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-red-100 text-red-600 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Delete Student" title="Delete Student">
+                                <i class="fas fa-user-minus text-sm"></i>
+                            </button>
+                            <button id="btnDeleteHTE" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500" aria-label="Delete HTE" title="Delete HTE">
+                                <i class="fas fa-building text-sm"></i>
+                            </button>
+                            <button id="btnDeleteSession" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-500" aria-label="Delete Session" title="Delete Session">
+                                <i class="fas fa-calendar-minus text-sm"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <div class="mt-6">
-                    <div class="space-y-6">
-                        <!-- Add Session Form -->
-                            <div id="sessionFormContainer" class="form-container" style="display: none;">
-                            <h3 class="text-xl font-bold mb-4">Add New Session</h3>
-                            <form id="sessionForm" class="bg-white rounded-lg shadow p-6">
-                                <style>
-                                    #sessionFormContainer input[type="number"],
-                                    #sessionFormContainer select {
-                                        background-color: #f5f7fa;
-                                        border: 1px solid gray;
-                                        color: #222;
-                                        font-size: 1.08rem;
-                                        font-weight: 500;
-                                        padding: 0.75rem 1rem;
-                                        margin-bottom: 0.5rem;
-                                        transition: border-color 0.2s, box-shadow 0.2s;
-                                    }
-                                    #sessionFormContainer input[type="number"]:focus,
-                                    #sessionFormContainer select:focus {
-                                        border-color: #6d28d9;
-                                        box-shadow: 0 0 0 2px #7c3aed33;
-                                        background-color: #fff;
-                                    }
-                                </style>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label for="sessionYear" class="block text-sm font-medium text-gray-700 mb-1">Year</label>
-                                        <input type="number" id="sessionYear" name="year" min="2000" max="2050" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Year">
+                    <div class="mt-6">
+                        <div class="space-y-6">
+                            <!-- Add Session Form -->
+                                <div id="sessionFormContainer" class="form-container" style="display: none;">
+                                <h3 class="text-xl font-bold mb-4">Add New Session</h3>
+                                <form id="sessionForm" class="bg-white rounded-lg shadow p-6">
+                                    <style>
+                                        #sessionFormContainer input[type="number"],
+                                        #sessionFormContainer select {
+                                            background-color: #f5f7fa;
+                                            border: 1px solid gray;
+                                            color: #222;
+                                            font-size: 1.08rem;
+                                            font-weight: 500;
+                                            padding: 0.75rem 1rem;
+                                            margin-bottom: 0.5rem;
+                                            transition: border-color 0.2s, box-shadow 0.2s;
+                                        }
+                                        #sessionFormContainer input[type="number"]:focus,
+                                        #sessionFormContainer select:focus {
+                                            border-color: #6d28d9;
+                                            box-shadow: 0 0 0 2px #7c3aed33;
+                                            background-color: #fff;
+                                        }
+                                    </style>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="sessionYear" class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                                            <input type="number" id="sessionYear" name="year" min="2000" max="2050" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Year">
+                                        </div>
+                                        <div>
+                                            <label for="sessionTerm" class="block text-sm font-medium text-gray-700 mb-1">Term</label>
+                                            <select id="sessionTerm" name="term" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                <option value="">Select Term</option>
+                                                <option value="FIRST SEMESTER">FIRST SEMESTER</option>
+                                                <option value="SECOND SEMESTER">SECOND SEMESTER</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label for="sessionTerm" class="block text-sm font-medium text-gray-700 mb-1">Term</label>
-                                        <select id="sessionTerm" name="term" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            <option value="">Select Term</option>
-                                            <option value="FIRST SEMESTER">FIRST SEMESTER</option>
-                                            <option value="SECOND SEMESTER">SECOND SEMESTER</option>
-                                        </select>
+                                    <div class="mt-6 flex gap-4">
+                                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">Add Session</button>
+                                        <button type="button" id="closeSessionForm" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md transition">Cancel</button>
                                     </div>
-                                </div>
-                                <div class="mt-6 flex gap-4">
-                                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">Add Session</button>
-                                    <button type="button" id="closeSessionForm" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md transition">Cancel</button>
-                                </div>
-                            </form>
-                        </div>
+                                </form>
+                            </div>
 
-                        <!-- Add Student Form -->
-                        <div id="studentFormContainer" class="form-container" style="display:none;">
-                            <h3 class="text-xl font-bold mb-4">Add Students (CSV Upload Recommended)</h3>
-                            <form id="studentForm" method="POST" enctype="multipart/form-data" class="bg-white rounded-lg shadow p-6 mb-6">
-                                <style>
-                                    #studentFormContainer input[type="text"],
-                                    #studentFormContainer input[type="email"],
-                                    #studentFormContainer input[type="file"],
-                                    #studentFormContainer input[type="number"],
-                                    #studentFormContainer select {
-                                        background-color: #f5f7fa;
-                                        border: 1px solid gray;
-                                        color: #222;
-                                        font-size: 1.08rem;
-                                        font-weight: 500;
-                                        padding: 0.75rem 1rem;
-                                        margin-bottom: 0.5rem;
-                                        transition: border-color 0.2s, box-shadow 0.2s;
-                                    }
-                                    #studentFormContainer input[type="text"]:focus,
-                                    #studentFormContainer input[type="email"]:focus,
-                                    #studentFormContainer input[type="file"]:focus,
-                                    #studentFormContainer input[type="number"]:focus,
-                                    #studentFormContainer select:focus {
-                                        border-color: gray;
-                                        box-shadow: 0 0 0 2px #2563eb33;
-                                        background-color: #fff;
-                                    }
-                                    #singleStudentFormWrapper input[type="text"],
-                                    #singleStudentFormWrapper input[type="email"],
-                                    #singleStudentFormWrapper input[type="number"],
-                                    #singleStudentFormWrapper select {
-                                        background-color: #f5f7fa;
-                                        border: 1px solid gray;
-                                        color: #222;
-                                        font-size: 1.08rem;
-                                        font-weight: 500;
-                                        padding: 0.75rem 1rem;
-                                        margin-bottom: 0.5rem;
-                                        transition: border-color 0.2s, box-shadow 0.2s;
-                                    }
-                                    #singleStudentFormWrapper input[type="text"]:focus,
-                                    #singleStudentFormWrapper input[type="email"]:focus,
-                                    #singleStudentFormWrapper input[type="number"]:focus,
-                                    #singleStudentFormWrapper select:focus {
-                                        border-color: gray;
-                                        box-shadow: 0 0 0 2px #2563eb33;
-                                        background-color: #fff;
-                                    }
-                                </style>
-                                <div class="mb-6">
-                                    <label for="csvFile" class="block text-sm font-medium text-gray-700 mb-2">Upload CSV File <span class="text-blue-600 font-semibold">(Recommended)</span></label>
-                                    <input type="file" id="csvFile" name="csvFile" accept=".csv" class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <small class="block mt-2 text-gray-500">CSV format: student_id,name,surname,age,gender,email,contact_number</small>
-                                    <a href="sample_students.csv" download="" class="block mt-1 text-blue-600 hover:underline text-sm">Download Sample CSV Format</a>
-                                </div>
-                                <div class="flex gap-4">
-                                    <div class="flex-1">
-                                        <label for="sessionSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to Session:</label>
-                                        <select id="sessionSelectStudent" name="sessionId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            <option value="">Select Session</option>
-                                        </select>
+                            <!-- Add Student Form -->
+                            <div id="studentFormContainer" class="form-container" style="display:none;">
+                                <h3 class="text-xl font-bold mb-4">Add Students (CSV Upload Recommended)</h3>
+                                <form id="studentForm" method="POST" enctype="multipart/form-data" class="bg-white rounded-lg shadow p-6 mb-6">
+                                    <style>
+                                        #studentFormContainer input[type="text"],
+                                        #studentFormContainer input[type="email"],
+                                        #studentFormContainer input[type="file"],
+                                        #studentFormContainer input[type="number"],
+                                        #studentFormContainer select {
+                                            background-color: #f5f7fa;
+                                            border: 1px solid gray;
+                                            color: #222;
+                                            font-size: 1.08rem;
+                                            font-weight: 500;
+                                            padding: 0.75rem 1rem;
+                                            margin-bottom: 0.5rem;
+                                            transition: border-color 0.2s, box-shadow 0.2s;
+                                        }
+                                        #studentFormContainer input[type="text"]:focus,
+                                        #studentFormContainer input[type="email"]:focus,
+                                        #studentFormContainer input[type="file"]:focus,
+                                        #studentFormContainer input[type="number"]:focus,
+                                        #studentFormContainer select:focus {
+                                            border-color: gray;
+                                            box-shadow: 0 0 0 2px #2563eb33;
+                                            background-color: #fff;
+                                        }
+                                        #singleStudentFormWrapper input[type="text"],
+                                        #singleStudentFormWrapper input[type="email"],
+                                        #singleStudentFormWrapper input[type="number"],
+                                        #singleStudentFormWrapper select {
+                                            background-color: #f5f7fa;
+                                            border: 1px solid gray;
+                                            color: #222;
+                                            font-size: 1.08rem;
+                                            font-weight: 500;
+                                            padding: 0.75rem 1rem;
+                                            margin-bottom: 0.5rem;
+                                            transition: border-color 0.2s, box-shadow 0.2s;
+                                        }
+                                        #singleStudentFormWrapper input[type="text"]:focus,
+                                        #singleStudentFormWrapper input[type="email"]:focus,
+                                        #singleStudentFormWrapper input[type="number"]:focus,
+                                        #singleStudentFormWrapper select:focus {
+                                            border-color: gray;
+                                            box-shadow: 0 0 0 2px #2563eb33;
+                                            background-color: #fff;
+                                        }
+                                    </style>
+                                    <div class="mb-6">
+                                        <label for="csvFile" class="block text-sm font-medium text-gray-700 mb-2">Upload CSV File <span class="text-blue-600 font-semibold">(Recommended)</span></label>
+                                        <input type="file" id="csvFile" name="csvFile" accept=".csv" class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        <small class="block mt-2 text-gray-500">CSV format: student_id,name,surname,age,gender,email,contact_number</small>
+                                        <a href="sample_students.csv" download="" class="block mt-1 text-blue-600 hover:underline text-sm">Download Sample CSV Format</a>
                                     </div>
-                                    <div class="flex-1">
-                                        <label for="hteSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to HTE:</label>
-                                        <select id="hteSelectStudent" name="hteId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            <option value="">Select HTE</option>
-                                        </select>
+                                    <div class="flex gap-4">
+                                        <div class="flex-1">
+                                            <label for="sessionSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to Session:</label>
+                                            <select id="sessionSelectStudent" name="sessionId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                <option value="">Select Session</option>
+                                            </select>
+                                        </div>
+                                        <div class="flex-1">
+                                            <label for="hteSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to HTE:</label>
+                                            <select id="hteSelectStudent" name="hteId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                <option value="">Select HTE</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="mt-6 flex gap-4">
-                                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">Add Students</button>
-                                    <button type="button" id="closeStudentForm" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md transition">Close</button>
-                                </div>
-                            </form>
-                            <div class="mt-8">
-                                <button id="toggleSingleEntry" class="text-sm text-blue-600 hover:underline mb-2">Add Single Student (Optional)</button>
-                                <div id="singleStudentFormWrapper" style="display:none;">
-                                    <form id="singleStudentForm" class="bg-gray-50 rounded-lg shadow p-6">
-                                        <div class="mb-6 flex gap-4">
-                                            <div class="flex-1">
-                                                <label for="singleSessionSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to Session:</label>
-                                                <select id="singleSessionSelectStudent" name="sessionId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                                    <option value="">Select Session</option>
-                                                </select>
+                                    <div class="mt-6 flex gap-4">
+                                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">Add Students</button>
+                                        <button type="button" id="closeStudentForm" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md transition">Close</button>
+                                    </div>
+                                </form>
+                                <div class="mt-8">
+                                    <button id="toggleSingleEntry" class="text-sm text-blue-600 hover:underline mb-2">Add Single Student (Optional)</button>
+                                    <div id="singleStudentFormWrapper" style="display:none;">
+                                        <form id="singleStudentForm" class="bg-gray-50 rounded-lg shadow p-6">
+                                            <div class="mb-6 flex gap-4">
+                                                <div class="flex-1">
+                                                    <label for="singleSessionSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to Session:</label>
+                                                    <select id="singleSessionSelectStudent" name="sessionId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                        <option value="">Select Session</option>
+                                                    </select>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <label for="singleHteSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to HTE:</label>
+                                                    <select id="singleHteSelectStudent" name="hteId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                        <option value="">Select HTE</option>
+                                                    </select>
+                                                </div>
                                             </div>
-                                            <div class="flex-1">
-                                                <label for="singleHteSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to HTE:</label>
-                                                <select id="singleHteSelectStudent" name="hteId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                                    <option value="">Select HTE</option>
-                                                </select>
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label for="studentId" class="block text-sm font-medium text-gray-700">Student ID</label>
+                                                    <input type="text" id="studentId" name="studentId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Student ID">
+                                                </div>
+                                                <div>
+                                                    <label for="name" class="block text-sm font-medium text-gray-700">First Name</label>
+                                                    <input type="text" id="name" name="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter First Name">
+                                                </div>
+                                                <div>
+                                                    <label for="surname" class="block text-sm font-medium text-gray-700">Last Name</label>
+                                                    <input type="text" id="surname" name="surname" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Last Name">
+                                                </div>
+                                                <div>
+                                                    <label for="gender" class="block text-sm font-medium text-gray-700">Gender</label>
+                                                    <select id="gender" name="gender" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                        <option value="" disabled="" selected="">Select Gender</option>
+                                                        <option value="Male">Male</option>
+                                                        <option value="Female">Female</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label for="age" class="block text-sm font-medium text-gray-700">Age</label>
+                                                    <input type="number" id="age" name="age" min="15" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Age">
+                                                </div>
+                                                <div>
+                                                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                                                    <input type="email" id="email" name="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Email">
+                                                </div>
+                                                <div>
+                                                    <label for="contactNumber" class="block text-sm font-medium text-gray-700">Contact Number</label>
+                                                    <input type="tel" id="contactNumber" name="contactNumber" pattern="[0-9+\-\s()]{7,20}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Number">
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label for="studentId" class="block text-sm font-medium text-gray-700">Student ID</label>
-                                                <input type="text" id="studentId" name="studentId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Student ID">
+                                            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label for="cc102" class="block text-sm font-medium text-gray-700">CC 102</label>
+                                                    <input type="number" id="cc102" name="cc102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="cc103" class="block text-sm font-medium text-gray-700">CC 103</label>
+                                                    <input type="number" id="cc103" name="cc103" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="pf101" class="block text-sm font-medium text-gray-700">PF 101</label>
+                                                    <input type="number" id="pf101" name="pf101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="cc104" class="block text-sm font-medium text-gray-700">CC 104</label>
+                                                    <input type="number" id="cc104" name="cc104" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="ipt101" class="block text-sm font-medium text-gray-700">IPT 101</label>
+                                                    <input type="number" id="ipt101" name="ipt101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="ipt102" class="block text-sm font-medium text-gray-700">IPT 102</label>
+                                                    <input type="number" id="ipt102" name="ipt102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="cc106" class="block text-sm font-medium text-gray-700">CC 106</label>
+                                                    <input type="number" id="cc106" name="cc106" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="cc105" class="block text-sm font-medium text-gray-700">CC 105</label>
+                                                    <input type="number" id="cc105" name="cc105" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="im101" class="block text-sm font-medium text-gray-700">IM 101</label>
+                                                    <input type="number" id="im101" name="im101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="im102" class="block text-sm font-medium text-gray-700">IM 102</label>
+                                                    <input type="number" id="im102" name="im102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="hci101" class="block text-sm font-medium text-gray-700">HCI 101</label>
+                                                    <input type="number" id="hci101" name="hci101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="hci102" class="block text-sm font-medium text-gray-700">HCI 102</label>
+                                                    <input type="number" id="hci102" name="hci102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="ws101" class="block text-sm font-medium text-gray-700">WS 101</label>
+                                                    <input type="number" id="ws101" name="ws101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="net101" class="block text-sm font-medium text-gray-700">NET 101</label>
+                                                    <input type="number" id="net101" name="net101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="net102" class="block text-sm font-medium text-gray-700">NET 102</label>
+                                                    <input type="number" id="net102" name="net102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="ias101" class="block text-sm font-medium text-gray-700">IAS 101</label>
+                                                    <input type="number" id="ias101" name="ias101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="ias102" class="block text-sm font-medium text-gray-700">IAS 102</label>
+                                                    <input type="number" id="ias102" name="ias102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="cap101" class="block text-sm font-medium text-gray-700">CAP 101</label>
+                                                    <input type="number" id="cap101" name="cap101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="cap102" class="block text-sm font-medium text-gray-700">CAP 102</label>
+                                                    <input type="number" id="cap102" name="cap102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
+                                                <div>
+                                                    <label for="sp101" class="block text-sm font-medium text-gray-700">SP 101</label>
+                                                    <input type="number" id="sp101" name="sp101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label for="name" class="block text-sm font-medium text-gray-700">First Name</label>
-                                                <input type="text" id="name" name="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter First Name">
+                                            <div class="mt-6 flex gap-4">
+                                                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md transition">Add Single Student</button>
+                                                <button type="button" id="closeSingleStudentForm" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md transition">Close</button>
                                             </div>
-                                            <div>
-                                                <label for="surname" class="block text-sm font-medium text-gray-700">Last Name</label>
-                                                <input type="text" id="surname" name="surname" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Last Name">
-                                            </div>
-                                            <div>
-                                                <label for="gender" class="block text-sm font-medium text-gray-700">Gender</label>
-                                                <select id="gender" name="gender" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                                    <option value="" disabled="" selected="">Select Gender</option>
-                                                    <option value="Male">Male</option>
-                                                    <option value="Female">Female</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label for="age" class="block text-sm font-medium text-gray-700">Age</label>
-                                                <input type="number" id="age" name="age" min="15" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Age">
-                                            </div>
-                                            <div>
-                                                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                                                <input type="email" id="email" name="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Email">
-                                            </div>
-                                            <div>
-                                                <label for="contactNumber" class="block text-sm font-medium text-gray-700">Contact Number</label>
-                                                <input type="tel" id="contactNumber" name="contactNumber" pattern="[0-9+\-\s()]{7,20}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Number">
-                                            </div>
-                                        </div>
-                                        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label for="cc102" class="block text-sm font-medium text-gray-700">CC 102</label>
-                                                <input type="number" id="cc102" name="cc102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="cc103" class="block text-sm font-medium text-gray-700">CC 103</label>
-                                                <input type="number" id="cc103" name="cc103" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="pf101" class="block text-sm font-medium text-gray-700">PF 101</label>
-                                                <input type="number" id="pf101" name="pf101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="cc104" class="block text-sm font-medium text-gray-700">CC 104</label>
-                                                <input type="number" id="cc104" name="cc104" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="ipt101" class="block text-sm font-medium text-gray-700">IPT 101</label>
-                                                <input type="number" id="ipt101" name="ipt101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="ipt102" class="block text-sm font-medium text-gray-700">IPT 102</label>
-                                                <input type="number" id="ipt102" name="ipt102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="cc106" class="block text-sm font-medium text-gray-700">CC 106</label>
-                                                <input type="number" id="cc106" name="cc106" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="cc105" class="block text-sm font-medium text-gray-700">CC 105</label>
-                                                <input type="number" id="cc105" name="cc105" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="im101" class="block text-sm font-medium text-gray-700">IM 101</label>
-                                                <input type="number" id="im101" name="im101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="im102" class="block text-sm font-medium text-gray-700">IM 102</label>
-                                                <input type="number" id="im102" name="im102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="hci101" class="block text-sm font-medium text-gray-700">HCI 101</label>
-                                                <input type="number" id="hci101" name="hci101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="hci102" class="block text-sm font-medium text-gray-700">HCI 102</label>
-                                                <input type="number" id="hci102" name="hci102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="ws101" class="block text-sm font-medium text-gray-700">WS 101</label>
-                                                <input type="number" id="ws101" name="ws101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="net101" class="block text-sm font-medium text-gray-700">NET 101</label>
-                                                <input type="number" id="net101" name="net101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="net102" class="block text-sm font-medium text-gray-700">NET 102</label>
-                                                <input type="number" id="net102" name="net102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="ias101" class="block text-sm font-medium text-gray-700">IAS 101</label>
-                                                <input type="number" id="ias101" name="ias101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="ias102" class="block text-sm font-medium text-gray-700">IAS 102</label>
-                                                <input type="number" id="ias102" name="ias102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="cap101" class="block text-sm font-medium text-gray-700">CAP 101</label>
-                                                <input type="number" id="cap101" name="cap101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="cap102" class="block text-sm font-medium text-gray-700">CAP 102</label>
-                                                <input type="number" id="cap102" name="cap102" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="sp101" class="block text-sm font-medium text-gray-700">SP 101</label>
-                                                <input type="number" id="sp101" name="sp101" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            </div>
-                                        </div>
-                                        <div class="mt-6 flex gap-4">
-                                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md transition">Add Single Student</button>
-                                            <button type="button" id="closeSingleStudentForm" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md transition">Close</button>
-                                        </div>
-                                    </form>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Add HTE Form -->
-                        <div id="addHTEFormContainer" class="form-container" style="display:none;">
-                            <h3 class="text-xl font-bold mb-4">Add New HTE</h3>
-                            <form id="hteForm" class="bg-white rounded-lg shadow p-6" enctype="multipart/form-data">
-                                <style>
-                                    #addHTEFormContainer input[type="text"],
-                                    #addHTEFormContainer input[type="email"],
-                                    #addHTEFormContainer select {
-                                        background-color: #f5f7fa;
-                                        border: 1px solid gray;
-                                        color: #222;
-                                        font-size: 1.08rem;
-                                        font-weight: 500;
-                                        padding: 0.75rem 1rem;
-                                        margin-bottom: 0.5rem;
-                                        transition: border-color 0.2s, box-shadow 0.2s;
-                                    }
-                                    #addHTEFormContainer input[type="text"]:focus,
-                                    #addHTEFormContainer input[type="email"]:focus,
-                                    #addHTEFormContainer select:focus {
-                                        border-color: #1d4ed8;
-                                        box-shadow: 0 0 0 2px #2563eb33;
-                                        background-color: #fff;
-                                    }
-                                </style>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label for="hteName" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                                        <input type="text" id="hteName" name="NAME" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter HTE Name">
+                            <!-- Add HTE Form -->
+                            <div id="addHTEFormContainer" class="form-container" style="display:none;">
+                                <h3 class="text-xl font-bold mb-4">Add New HTE</h3>
+                                <form id="hteForm" class="bg-white rounded-lg shadow p-6" enctype="multipart/form-data">
+                                    <style>
+                                        #addHTEFormContainer input[type="text"],
+                                        #addHTEFormContainer input[type="email"],
+                                        #addHTEFormContainer select {
+                                            background-color: #f5f7fa;
+                                            border: 1px solid gray;
+                                            color: #222;
+                                            font-size: 1.08rem;
+                                            font-weight: 500;
+                                            padding: 0.75rem 1rem;
+                                            margin-bottom: 0.5rem;
+                                            transition: border-color 0.2s, box-shadow 0.2s;
+                                        }
+                                        #addHTEFormContainer input[type="text"]:focus,
+                                        #addHTEFormContainer input[type="email"]:focus,
+                                        #addHTEFormContainer select:focus {
+                                            border-color: #1d4ed8;
+                                            box-shadow: 0 0 0 2px #2563eb33;
+                                            background-color: #fff;
+                                        }
+                                    </style>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="hteName" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                            <input type="text" id="hteName" name="NAME" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter HTE Name">
+                                        </div>
+                                        <div>
+                                            <label for="hteIndustry" class="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                                            <input type="text" id="hteIndustry" name="INDUSTRY" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Industry">
+                                        </div>
+                                        <div>
+                                            <label for="hteAddress" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                            <input type="text" id="hteAddress" name="ADDRESS" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Address">
+                                        </div>
+                                        <div>
+                                            <label for="hteEmail" class="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+                                            <input type="email" id="hteEmail" name="CONTACT_EMAIL" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Email">
+                                        </div>
+                                        <div>
+                                            <label for="hteContactPerson" class="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                                            <input type="text" id="hteContactPerson" name="CONTACT_PERSON" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Person">
+                                        </div>
+                                        <div>
+                                            <label for="hteContactNumber" class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                                            <input type="text" id="hteContactNumber" name="CONTACT_NUMBER" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Number">
+                                        </div>
+                                        <div>
+                                            <label for="sessionSelect" class="block text-sm font-medium text-gray-700 mb-1">Assign to Session</label>
+                                            <select id="sessionSelect" name="sessionId" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                <option value="">Select Session</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="hteLogo" class="block text-sm font-medium text-gray-700 mb-1">Company Logo <span class="text-red-500">*</span></label>
+                                            <input type="file" id="hteLogo" name="LOGO" accept="image/*" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                            <small class="text-gray-500">Upload a logo image for the company.</small>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label for="hteIndustry" class="block text-sm font-medium text-gray-700 mb-1">Industry</label>
-                                        <input type="text" id="hteIndustry" name="INDUSTRY" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Industry">
+                                    <div class="mt-6 flex gap-4">
+                                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">Add HTE</button>
+                                        <button type="button" id="closeHTEForm" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md transition">Cancel</button>
                                     </div>
-                                    <div>
-                                        <label for="hteAddress" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                                        <input type="text" id="hteAddress" name="ADDRESS" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Address">
-                                    </div>
-                                    <div>
-                                        <label for="hteEmail" class="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
-                                        <input type="email" id="hteEmail" name="CONTACT_EMAIL" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Email">
-                                    </div>
-                                    <div>
-                                        <label for="hteContactPerson" class="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
-                                        <input type="text" id="hteContactPerson" name="CONTACT_PERSON" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Person">
-                                    </div>
-                                    <div>
-                                        <label for="hteContactNumber" class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-                                        <input type="text" id="hteContactNumber" name="CONTACT_NUMBER" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Number">
-                                    </div>
-                                    <div>
-                                        <label for="sessionSelect" class="block text-sm font-medium text-gray-700 mb-1">Assign to Session</label>
-                                        <select id="sessionSelect" name="sessionId" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            <option value="">Select Session</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label for="hteLogo" class="block text-sm font-medium text-gray-700 mb-1">Company Logo <span class="text-red-500">*</span></label>
-                                        <input type="file" id="hteLogo" name="LOGO" accept="image/*" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                        <small class="text-gray-500">Upload a logo image for the company.</small>
-                                    </div>
-                                </div>
-                                <div class="mt-6 flex gap-4">
-                                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">Add HTE</button>
-                                    <button type="button" id="closeHTEForm" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md transition">Cancel</button>
-                                </div>
-                            </form>
-                        </div>
+                                </form>
+                            </div>
 
-                        <!-- Delete HTE Form - Modern Design -->
-                        <div id="deleteHTEFormContainer" class="form-container p-8 bg-white rounded-xl shadow-lg border border-gray-200 max-w-md mx-auto" style="display:none;">
-                            <h3 class="text-2xl font-bold text-yellow-600 mb-6 flex items-center gap-3">
-                                <i class="fas fa-building"></i> Delete HTE
-                            </h3>
-                            <form id="deleteHTEFormSubmit" class="space-y-6">
-                                <div>
-                                    <label for="deleteHteSelect" class="block text-sm font-medium text-gray-700 mb-2">Select HTE to Delete</label>
-                                    <select id="deleteHteSelect" name="hteId" required="" class="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 bg-gray-50 text-gray-800">
-                                        <option value="">Select HTE</option>
-                                    </select>
-                                </div>
-                                <div class="flex gap-4 justify-end">
-                                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out flex items-center gap-2">
-                                        <i class="fas fa-trash"></i> Delete HTE
-                                    </button>
-                                    <button type="button" id="closeDeleteHTEForm" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out flex items-center gap-2">
-                                        <i class="fas fa-times"></i> Cancel
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
-                        <!-- Delete Student Form -->
-                        <div id="deleteStudentFormContainer" class="form-container p-6 bg-white rounded-lg shadow-md" style="display:none;">
-                            <h3 class="text-2xl font-bold text-red-600 mb-4 flex items-center gap-2">
-                                <i class="fas fa-user-minus"></i> Delete Student(s)
-                            </h3>
-                            <form id="deleteStudentForm" class="space-y-6">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Delete HTE Form - Modern Design -->
+                            <div id="deleteHTEFormContainer" class="form-container p-8 bg-white rounded-xl shadow-lg border border-gray-200 max-w-md mx-auto" style="display:none;">
+                                <h3 class="text-2xl font-bold text-yellow-600 mb-6 flex items-center gap-3">
+                                    <i class="fas fa-building"></i> Delete HTE
+                                </h3>
+                                <form id="deleteHTEFormSubmit" class="space-y-6">
                                     <div>
-                                        <label for="deleteStudentSessionSelect" class="block text-sm font-medium text-gray-700 mb-1">Session</label>
-                                        <select id="deleteStudentSessionSelect" name="sessionId" required="" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
-                                            <option value="">Select Session</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label for="deleteStudentHteSelect" class="block text-sm font-medium text-gray-700 mb-1">HTE</label>
-                                        <select id="deleteStudentHteSelect" name="hteId" required="" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                        <label for="deleteHteSelect" class="block text-sm font-medium text-gray-700 mb-2">Select HTE to Delete</label>
+                                        <select id="deleteHteSelect" name="hteId" required="" class="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 bg-gray-50 text-gray-800">
                                             <option value="">Select HTE</option>
                                         </select>
                                     </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Students</label>
-                                    <div id="deleteStudentList" class="max-h-96 overflow-y-auto border border-gray-200 rounded-md p-3 bg-gray-50">
-                                      <table class="min-w-full divide-y divide-gray-200">
-                                        <thead class="bg-gray-100">
-                                          <tr>
-                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Student ID</th>
-                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
-                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Surname</th>
-                                            <th class="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Select</th>
-                                          </tr>
+                                    <div class="flex gap-4 justify-end">
+                                        <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out flex items-center gap-2">
+                                            <i class="fas fa-trash"></i> Delete HTE
+                                        </button>
+                                        <button type="button" id="closeDeleteHTEForm" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out flex items-center gap-2">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Delete Student Form -->
+                            <div id="deleteStudentFormContainer" class="form-container p-6 bg-white rounded-lg shadow-md" style="display:none;">
+                                <h3 class="text-2xl font-bold text-red-600 mb-4 flex items-center gap-2">
+                                    <i class="fas fa-user-minus"></i> Delete Student(s)
+                                </h3>
+                                <form id="deleteStudentForm" class="space-y-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label for="deleteStudentSessionSelect" class="block text-sm font-medium text-gray-700 mb-1">Session</label>
+                                            <select id="deleteStudentSessionSelect" name="sessionId" required="" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                                <option value="">Select Session</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="deleteStudentHteSelect" class="block text-sm font-medium text-gray-700 mb-1">HTE</label>
+                                            <select id="deleteStudentHteSelect" name="hteId" required="" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                                <option value="">Select HTE</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Students</label>
+                                        <div id="deleteStudentList" class="max-h-96 overflow-y-auto border border-gray-200 rounded-md p-3 bg-gray-50">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-100">
+                                            <tr>
+                                                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Student ID</th>
+                                                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
+                                                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Surname</th>
+                                                <th class="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Select</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody id="deleteStudentTableBody" class="bg-white divide-y divide-gray-200">
+                                            <!-- Student rows will be dynamically inserted here -->
+                                            </tbody>
+                                        </table>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-end gap-4 mt-4">
+                                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-md shadow transition duration-150 ease-in-out flex items-center gap-2">
+                                            <i class="fas fa-user-minus"></i> Delete Selected
+                                        </button>
+                                        <button type="button" id="closeDeleteStudentForm" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-6 rounded-md shadow transition duration-150 ease-in-out">Cancel</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Delete Session Form -->
+                            <!-- Delete Session Form - Modern Design -->
+                            <div id="deleteSessionFormContainer" class="form-container p-8 bg-white rounded-xl shadow-lg border border-gray-200 max-w-md mx-auto" style="display:none;">
+                                <h3 class="text-2xl font-bold text-orange-600 mb-6 flex items-center gap-3">
+                                    <i class="fas fa-calendar-minus"></i> Delete Session
+                                </h3>
+                                <form id="deleteSessionFormSubmit" class="space-y-6">
+                                    <div>
+                                        <label for="deleteSessionSelect" class="block text-sm font-medium text-gray-700 mb-2">Select Session to Delete</label>
+                                        <select id="deleteSessionSelect" name="sessionId" required="" class="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-gray-50 text-gray-800">
+                                            <option value="">Select Session</option>
+                                        </select>
+                                    </div>
+                                    <div class="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg text-orange-700 text-sm">
+                                        <strong>Warning:</strong> This will delete the session and all associated students, HTEs, and attendance records.
+                                    </div>
+                                    <div class="flex gap-4 justify-end">
+                                        <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out flex items-center gap-2">
+                                            <i class="fas fa-trash"></i> Delete Session
+                                        </button>
+                                        <button type="button" id="closeDeleteSessionForm" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out flex items-center gap-2">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- View All Students Container -->
+                            <div id="allStudentsContainer" class="form-container p-6 bg-white rounded-lg shadow-md">
+                                <h3 class="text-2xl font-bold text-gray-800 mb-4">All Students Under Coordinator</h3>
+                                <div class="overflow-x-auto">
+                                    <table id="allStudentsTable" class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student ID</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Surname</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HTE Name</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session</th>
+                                            </tr>
                                         </thead>
-                                        <tbody id="deleteStudentTableBody" class="bg-white divide-y divide-gray-200">
-                                          <!-- Student rows will be dynamically inserted here -->
+                                        <tbody id="allStudentsTableBody" class="bg-white divide-y divide-gray-200">
+                                            <!-- Student rows will be dynamically inserted here -->
                                         </tbody>
-                                      </table>
+                                    </table>
+                                </div>
+                                <div class="flex justify-end mt-4">
+                                    <button id="closeAllStudents" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">Close</button>
+                                </div>
+                            </div>
+
+                            <!-- View All Companies Container -->
+
+                            <div id="allCompaniesContainer" class="form-container p-6 bg-white rounded-lg shadow-md" style="display:none;">
+                                <h3 class="text-2xl font-bold text-gray-800 mb-4">All Companies (HTEs)</h3>
+                                <div class="overflow-x-auto">
+                                    <table id="allCompaniesTable" class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Company Name</th>
+                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Industry</th>
+                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Address</th>
+                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact Person</th>
+                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact Number</th>
+                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="allCompaniesTableBody" class="bg-white divide-y divide-gray-200">
+                                            <!-- Company rows will be dynamically inserted here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="flex justify-end mt-4">
+                                    <button id="closeAllCompanies" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">Close</button>
+                                </div>
+                            </div>
+                                <!-- Update Company Logo Modal -->
+                                <div id="updateCompanyLogoModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+                                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative">
+                                        <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold" id="closeUpdateLogoModal">×</button>
+                                        <h3 class="text-2xl font-bold text-blue-700 mb-6 text-center">Update Company Logo</h3>
+                                        <form id="updateCompanyLogoForm" enctype="multipart/form-data">
+                                            <input type="hidden" id="updateLogoHteId" name="hteId">
+                                            <div class="mb-4">
+                                                <label for="updateLogoFile" class="block text-sm font-medium text-gray-700 mb-1">Select New Logo</label>
+                                                <input type="file" id="updateLogoFile" name="LOGO" accept="image/*" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                <small class="text-gray-500">Upload a new logo image for the company.</small>
+                                            </div>
+                                            <div class="mb-4">
+                                                <img id="updateLogoPreview" src="#" alt="Logo Preview" class="hidden w-24 h-24 rounded-full object-cover border mx-auto">
+                                            </div>
+                                            <div class="flex gap-4 justify-end">
+                                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition">Save Logo</button>
+                                                <button type="button" id="cancelUpdateLogo" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg shadow">Cancel</button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
-                                <div class="flex justify-end gap-4 mt-4">
-                                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-md shadow transition duration-150 ease-in-out flex items-center gap-2">
-                                        <i class="fas fa-user-minus"></i> Delete Selected
-                                    </button>
-                                    <button type="button" id="closeDeleteStudentForm" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-6 rounded-md shadow transition duration-150 ease-in-out">Cancel</button>
-                                </div>
-                            </form>
                         </div>
-
-                        <!-- Delete Session Form -->
-                        <!-- Delete Session Form - Modern Design -->
-                        <div id="deleteSessionFormContainer" class="form-container p-8 bg-white rounded-xl shadow-lg border border-gray-200 max-w-md mx-auto" style="display:none;">
-                            <h3 class="text-2xl font-bold text-orange-600 mb-6 flex items-center gap-3">
-                                <i class="fas fa-calendar-minus"></i> Delete Session
-                            </h3>
-                            <form id="deleteSessionFormSubmit" class="space-y-6">
-                                <div>
-                                    <label for="deleteSessionSelect" class="block text-sm font-medium text-gray-700 mb-2">Select Session to Delete</label>
-                                    <select id="deleteSessionSelect" name="sessionId" required="" class="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-gray-50 text-gray-800">
-                                        <option value="">Select Session</option>
-                                    </select>
-                                </div>
-                                <div class="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg text-orange-700 text-sm">
-                                    <strong>Warning:</strong> This will delete the session and all associated students, HTEs, and attendance records.
-                                </div>
-                                <div class="flex gap-4 justify-end">
-                                    <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out flex items-center gap-2">
-                                        <i class="fas fa-trash"></i> Delete Session
-                                    </button>
-                                    <button type="button" id="closeDeleteSessionForm" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out flex items-center gap-2">
-                                        <i class="fas fa-times"></i> Cancel
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
-                        <!-- View All Students Container -->
-                        <div id="allStudentsContainer" class="form-container p-6 bg-white rounded-lg shadow-md">
-                            <h3 class="text-2xl font-bold text-gray-800 mb-4">All Students Under Coordinator</h3>
-                            <div class="overflow-x-auto">
-                                <table id="allStudentsTable" class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student ID</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Surname</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HTE Name</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="allStudentsTableBody" class="bg-white divide-y divide-gray-200">
-                                        <!-- Student rows will be dynamically inserted here -->
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="flex justify-end mt-4">
-                                <button id="closeAllStudents" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">Close</button>
-                            </div>
-                        </div>
-
-                        <!-- View All Companies Container -->
-
-                        <div id="allCompaniesContainer" class="form-container p-6 bg-white rounded-lg shadow-md" style="display:none;">
-                            <h3 class="text-2xl font-bold text-gray-800 mb-4">All Companies (HTEs)</h3>
-                            <div class="overflow-x-auto">
-                                <table id="allCompaniesTable" class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Company Name</th>
-                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Industry</th>
-                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Address</th>
-                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact Person</th>
-                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact Number</th>
-                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="allCompaniesTableBody" class="bg-white divide-y divide-gray-200">
-                                        <!-- Company rows will be dynamically inserted here -->
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="flex justify-end mt-4">
-                                <button id="closeAllCompanies" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">Close</button>
-                            </div>
-                        </div>
-                            <!-- Update Company Logo Modal -->
-                            <div id="updateCompanyLogoModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
-                                <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative">
-                                    <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold" id="closeUpdateLogoModal">×</button>
-                                    <h3 class="text-2xl font-bold text-blue-700 mb-6 text-center">Update Company Logo</h3>
-                                    <form id="updateCompanyLogoForm" enctype="multipart/form-data">
-                                        <input type="hidden" id="updateLogoHteId" name="hteId">
-                                        <div class="mb-4">
-                                            <label for="updateLogoFile" class="block text-sm font-medium text-gray-700 mb-1">Select New Logo</label>
-                                            <input type="file" id="updateLogoFile" name="LOGO" accept="image/*" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            <small class="text-gray-500">Upload a new logo image for the company.</small>
-                                        </div>
-                                        <div class="mb-4">
-                                            <img id="updateLogoPreview" src="#" alt="Logo Preview" class="hidden w-24 h-24 rounded-full object-cover border mx-auto">
-                                        </div>
-                                        <div class="flex gap-4 justify-end">
-                                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition">Save Logo</button>
-                                            <button type="button" id="cancelUpdateLogo" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg shadow">Cancel</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
                     </div>
                 </div>
             </div>
+            <!-- End Control Tab Content -->
 
             <!-- Post-Analysis Tab Content -->
             <div id="postAnalysisContent" class="tab-content hidden">
@@ -1133,22 +1140,12 @@ function generateStudentFilterOptions($coordinatorId) {
                     </div>
                 </div>
             </div>
+            <!-- End Post-Analysis Tab Content -->
         </div>
     </div>
-</div>
+<!-- End Main Content Wrapper -->
 
-
-
-        
-        
-
-        
-        
-             
-            
-    </div>
-    
-        <!-- Profile Modal -->
+    <!-- Profile Modal -->
         <div id="profileModal" class="modal" style="display: none;">
             <div class="modal-content">
                 <div class="modal-header">
