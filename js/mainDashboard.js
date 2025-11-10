@@ -61,23 +61,8 @@ function loadAllCompaniesData() {
 function renderCompaniesList(companies) {
     let html = '';
     companies.forEach(function(company) {
-        let logoHtml = '-';
-        if (company.LOGO) {
-            // Support both Cloudinary URLs and legacy local paths
-            let logoUrl;
-            if (company.LOGO.startsWith('https://res.cloudinary.com/')) {
-                // Cloudinary URL - use directly
-                logoUrl = company.LOGO;
-            } else if (company.LOGO.startsWith('uploads/')) {
-                // Legacy path format
-                logoUrl = `${getBaseUrl()}${company.LOGO}`;
-            } else {
-                // Legacy filename only
-                logoUrl = `${getBaseUrl()}uploads/hte_logos/${company.LOGO}`;
-            }
-            logoHtml = `<img src='${logoUrl}' alt='Logo' class='h-8 w-8 rounded-full object-cover border' />`;
-        }
-        logoHtml += ` <button class='update-logo-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs ml-2' data-hteid='${company.HTE_ID}'>Update Logo</button>`;
+        // For "View All Companies" tab: Show only "Update Logo" button, no logo image
+        let logoHtml = `<button class='update-logo-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs' data-hteid='${company.HTE_ID}'>Update Logo</button>`;
         html += `<tr>
             <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-900\">${company.NAME || '-'}<\/td>
             <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.INDUSTRY || '-'}<\/td>
@@ -1246,28 +1231,37 @@ function loadPostAssessmentEvaluation(studentId) {
                             let statusText = student.STATUS;
                         let hasPrediction = student.pre_assessment && student.pre_assessment.ojt_placement;
                         let placementText = hasPrediction
-                            ? `<span class="inline-block bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full">${student.pre_assessment.ojt_placement}</span>`
-                            : (student.valid
-                                ? '<span class="inline-block bg-gray-100 text-gray-500 font-bold px-3 py-1 rounded-full">Ready</span>'
-                                : '<span class="inline-block bg-gray-100 text-gray-500 font-bold px-3 py-1 rounded-full">Incomplete Data</span>');
+                            ? `<span class="inline-block bg-green-100 text-green-700 font-bold px-2 md:px-3 py-1 rounded-full text-xs">
+                                ${student.pre_assessment.ojt_placement}
+                            </span>`
+                            : `<span class="inline-block bg-gray-100 text-gray-500 font-bold px-2 md:px-3 py-1 rounded-full text-xs">
+                                Incomplete Data
+                            </span>`;
                         let analysisData = {};
                         if (hasPrediction) {
                             analysisData = {
                                 placement: student.pre_assessment.ojt_placement,
-                                reasoning: student.pre_assessment.prediction_reasoning,
+                                reasoning: student.pre_assessment.prediction_reasoning || "",
                                 probabilities: student.pre_assessment.prediction_probabilities ? JSON.parse(student.pre_assessment.prediction_probabilities) : {},
                                 confidence: student.pre_assessment.prediction_confidence
                             };
+                        } else {
+                            // For consistency with page load version, use empty array for non-rated students
+                            analysisData = [];
                         }
                         let statusClass = student.valid ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold';
-                        let analysisBtnClass = hasPrediction ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 hover:bg-gray-500';
+                        let analysisBtnClass = hasPrediction ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700';
                         tbody += `<tr data-row="${idx}" class="hover:bg-blue-50 transition">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${student.NAME}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${student.HTE_ASSIGNED}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusText}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">${placementText}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <button class="analysis-btn ${analysisBtnClass} text-white px-4 py-2 rounded-lg shadow transition" data-analysis="${encodeURIComponent(JSON.stringify(analysisData))}">Analysis</button>
+                            <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900">${student.NAME}</td>
+                            <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-700">${student.HTE_ASSIGNED}</td>
+                            <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm ${statusClass}">
+                                ${statusText} ${statusIcon}
+                            </td>
+                            <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm">${placementText}</td>
+                            <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm">
+                                <button class="analysis-btn ${analysisBtnClass} text-white px-2 md:px-4 py-1 md:py-2 rounded-lg shadow transition text-xs md:text-sm" data-analysis="${encodeURIComponent(JSON.stringify(analysisData))}">
+                                    Analysis
+                                </button>
                             </td>
                         </tr>`;
                 });
@@ -2443,7 +2437,8 @@ function loadApprovedReportsWithFilters() {
             $('#studentForm input, #studentForm select').prop('disabled', false);
         });
         $('#addHTEFormContainer').hide();
-    $('#sessionFormContainer').fadeOut();
+        $('#allCompaniesContainer').hide();
+        $('#sessionFormContainer').fadeOut();
         $('#deleteHTEFormContainer').hide();
         $('#deleteSessionFormContainer').hide();
         $('#deleteStudentFormContainer').hide();
@@ -2465,7 +2460,9 @@ function loadApprovedReportsWithFilters() {
                 console.log('AJAX response received:', response);
                 if (response.success) {
                     console.log('Success - Displaying students data');
-                    displayAllStudents(response.data);
+                    // Handle both response.data and response.students for compatibility
+                    const studentsData = response.students || response.data || [];
+                    displayAllStudents(studentsData);
                 } else {
                     console.error('Error in response:', response.message);
                     alert("Error: " + (response.message || "Unknown error occurred."));
@@ -4377,13 +4374,17 @@ $(document).ready(function() {
         function renderCombinedData() {
             if (completedRequests < 2) return; // Wait for both requests
             
-            let html = `<div class="space-y-6">`;
+            // Create horizontal layout: Grades (20%) | Evaluation (80%)
+            let html = `<div class="flex gap-4 h-full">`;
+            
+            // Left Column - Academic Grades (20% of right column)
+            html += `<div class="w-1/5 min-w-0">`;
             
             // Student ID Header
-            html += `<div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <h2 class="text-xl font-bold text-blue-800 flex items-center">
-                    <svg xmlns='http://www.w3.org/2000/svg' class='h-6 w-6 mr-2' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' /></svg>
-                    Student ID: ${studentDbId}
+            html += `<div class="bg-blue-50 rounded-lg p-3 border border-blue-200 mb-4">
+                <h2 class="text-lg font-bold text-blue-800 flex items-center">
+                    <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 mr-2' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' /></svg>
+                    ID: ${studentDbId}
                 </h2>
             </div>`;
             
@@ -4396,30 +4397,34 @@ $(document).ready(function() {
                     'IAS 101','IAS 102','CAP 101','CAP 102','SP 101'
                 ];
                 
-                html += `<div class="bg-white rounded-xl shadow p-6 border border-gray-200">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                        <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 mr-2 text-green-600' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z' /></svg>
+                html += `<div class="bg-white rounded-xl shadow p-4 border border-gray-200">
+                    <h3 class="text-sm font-bold text-gray-800 mb-3 flex items-center">
+                        <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4 mr-1 text-green-600' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z' /></svg>
                         Academic Grades
                     </h3>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">`;
+                    <div class="max-h-96 overflow-y-auto space-y-2">`;
                 
                 subjectKeys.forEach(function(key) {
                     if (grades.hasOwnProperty(key)) {
-                        html += `<div class="bg-gray-50 rounded-lg p-3 text-center">
-                            <div class="text-sm font-semibold text-gray-700">${key}</div>
-                            <div class="text-lg font-bold text-blue-700">${grades[key]}</div>
+                        html += `<div class="bg-gray-50 rounded p-2 text-center">
+                            <div class="text-xs font-semibold text-gray-700">${key}</div>
+                            <div class="text-sm font-bold text-blue-700">${grades[key]}</div>
                         </div>`;
                     }
                 });
                 
                 html += `</div></div>`;
             } else {
-                html += `<div class="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                    <p class="text-yellow-800">No academic grades found for this student.</p>
+                html += `<div class="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                    <p class="text-xs text-yellow-800">No academic grades found.</p>
                 </div>`;
             }
             
-            // Evaluation Questions Section
+            html += `</div>`; // Close left column
+            
+            // Right Column - Evaluation Questions (80% of right column)
+            html += `<div class="w-4/5 min-w-0">`;
+            
             if (evaluationData && evaluationData.success) {
                 if (evaluationData.isRated) {
                     html += `<div class="bg-green-50 rounded-lg p-4 border border-green-200">
@@ -4431,7 +4436,7 @@ $(document).ready(function() {
                             <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 mr-2 text-purple-600' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' /></svg>
                             Pre-Assessment Evaluation (Rate Student Answers)
                         </h3>
-                        <div class="space-y-4">`;
+                        <div class="max-h-96 overflow-y-auto space-y-4">`;
                     
                     evaluationData.evaluations.forEach(function(ev) {
                         html += `
@@ -4444,13 +4449,38 @@ $(document).ready(function() {
                                 <div class="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Student Answer</div>
                                 <div class="text-sm text-gray-800 bg-blue-50 rounded p-2 border border-blue-200">${ev.answer}</div>
                             </div>
-                            <div class="flex items-center gap-4">
-                                <label class="text-sm font-medium text-gray-700">Rate (1-10):</label>
-                                <select class="rating-select border border-gray-300 rounded px-2 py-1 text-sm" data-eval-id="${ev.id}">
-                                    <option value="">Select Rating</option>
-                                    ${[1,2,3,4,5,6,7,8,9,10].map(i => `<option value="${i}">${i}</option>`).join('')}
-                                </select>
-                                <button class="save-rating-btn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm" data-eval-id="${ev.id}" data-student-id="${studentDbId}">Save Rating</button>
+                            <div class="mb-3">
+                                <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Likert Scale Rating (5=Excellent, 1=Poor)</div>
+                                <div class="flex items-center justify-center gap-2 bg-white rounded p-3 border">
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-green-600 mb-1">5</span>
+                                        <span class="text-xs text-gray-600 mb-1">Excellent</span>
+                                        <input type="radio" name="likert_${ev.id}" value="5" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-blue-600 mb-1">4</span>
+                                        <span class="text-xs text-gray-600 mb-1">Good</span>
+                                        <input type="radio" name="likert_${ev.id}" value="4" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-yellow-600 mb-1">3</span>
+                                        <span class="text-xs text-gray-600 mb-1">Average</span>
+                                        <input type="radio" name="likert_${ev.id}" value="3" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-orange-600 mb-1">2</span>
+                                        <span class="text-xs text-gray-600 mb-1">Poor</span>
+                                        <input type="radio" name="likert_${ev.id}" value="2" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-red-600 mb-1">1</span>
+                                        <span class="text-xs text-gray-600 mb-1">Very Poor</span>
+                                        <input type="radio" name="likert_${ev.id}" value="1" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <button class="save-rating-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium" data-eval-id="${ev.id}" data-student-id="${studentDbId}">Save Rating</button>
                             </div>
                         </div>`;
                     });
@@ -4467,7 +4497,8 @@ $(document).ready(function() {
                 </div>`;
             }
             
-            html += `</div>`;
+            html += `</div>`; // Close right column
+            html += `</div>`; // Close main flex container
             $('#rateEvalList').html(html);
         }
         
@@ -4512,7 +4543,7 @@ $(document).ready(function() {
     $(document).on('click', '.save-rating-btn', function() {
         const evalId = $(this).data('eval-id');
         const studentId = $(this).data('student-id');
-        const rating = $(`.rating-select[data-eval-id="${evalId}"]`).val();
+        const rating = $(`input[name="likert_${evalId}"]:checked`).val();
         
         if (!rating) {
             alert('Please select a rating before saving.');
@@ -4535,10 +4566,11 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     $button.removeClass('bg-blue-600 hover:bg-blue-700')
-                           .addClass('bg-green-600')
+                           .addClass('bg-green-600 hover:bg-green-700')
                            .text('✓ Saved')
                            .prop('disabled', true);
-                    $(`.rating-select[data-eval-id="${evalId}"]`).prop('disabled', true);
+                    // Disable all radio buttons for this evaluation
+                    $(`input[name="likert_${evalId}"]`).prop('disabled', true);
                 } else {
                     alert('Error saving rating: ' + (response.message || 'Unknown error'));
                     $button.prop('disabled', false).text('Save Rating');
@@ -4640,19 +4672,46 @@ $(document).ready(function() {
             let displayId = (s.STUDENT_ID || s.student_id || s.id || '').toString().toLowerCase();
             return displayId.includes(query);
         });
+        
+        // Store current selected student before re-render
+        let currentSelectedId = selectedReviewStudentId;
         renderReviewStudentList(filtered);
+        // Restore selected student and search input
+        selectedReviewStudentId = currentSelectedId;
+        const $input = $('#reviewStudentSearch');
+        $input.val(query);
+        $input.focus();
     });
 
     // Handle student selection in Review tab
     $(document).on('click', '.review-student-item', function() {
     console.log('[DEBUG] Review student clicked');
     selectedReviewStudentId = $(this).data('studentid');
-    console.log('[DEBUG] About to re-render review student list');
-    renderReviewStudentList(allReviewStudents);
+    
+    // Update highlight without rebuilding layout
+    updateReviewStudentSelectionHighlight();
+    
+    // Show loading in right panel
+    $('#reviewedEvalList').html('<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><div class="mt-2 text-gray-600">Loading reviewed evaluation...</div></div>');
+    
     console.log('[DEBUG] About to load reviewed evaluation');
     loadReviewedEvaluation(selectedReviewStudentId);
     console.log('[DEBUG] Finished processing review student selection');
     });
+
+    // Function to update review student selection highlighting without rebuilding layout
+    function updateReviewStudentSelectionHighlight() {
+        console.log('[DEBUG] Updating review student selection highlight for:', selectedReviewStudentId);
+        // Remove highlight from all students
+        $('.review-student-item').removeClass('bg-blue-100 border-blue-400 font-semibold text-blue-700').addClass('text-gray-800');
+        
+        // Add highlight to selected student
+        if (selectedReviewStudentId) {
+            let targetElement = $(`.review-student-item[data-studentid="${selectedReviewStudentId}"]`);
+            console.log('[DEBUG] Target element for highlighting:', targetElement.length);
+            targetElement.removeClass('text-gray-800').addClass('bg-blue-100 border-blue-400 font-semibold text-blue-700');
+        }
+    }
 
     function loadReviewedEvaluation(studentId) {
         // Fetch reviewed evaluation for selected student
