@@ -30,8 +30,9 @@ if (file_exists($basePath . '/config/cloudinary.php')) {
 
 /**
  * Safe upload function that tries Cloudinary first, falls back to local
+ * Set $requireCloudinary = true to prevent data loss by failing instead of using ephemeral storage
  */
-function safeUploadImage($tempFile, $originalName, $folder, $subfolder = '') {
+function safeUploadImage($tempFile, $originalName, $folder, $subfolder = '', $requireCloudinary = false) {
     $result = [
         'success' => false,
         'filename' => null,
@@ -61,9 +62,20 @@ function safeUploadImage($tempFile, $originalName, $folder, $subfolder = '') {
                     error_log("Cloudinary upload successful: " . $result['url']);
                     return $result;
                 } else {
-                    error_log("Cloudinary upload failed: " . $cloudinaryResult['error'] . " - falling back to local");
+                    error_log("Cloudinary upload failed: " . $cloudinaryResult['error'] . " - " . ($requireCloudinary ? "failing upload" : "falling back to local"));
+                    
+                    if ($requireCloudinary) {
+                        $result['error'] = 'Cloudinary upload required but failed: ' . $cloudinaryResult['error'];
+                        return $result;
+                    }
                 }
             }
+        }
+        
+        // Check if Cloudinary is required
+        if ($requireCloudinary) {
+            $result['error'] = 'Cloudinary upload required but not available';
+            return $result;
         }
         
         // Fallback to local storage

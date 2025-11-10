@@ -306,15 +306,17 @@ switch ($action) {
                 $uploadResult = safeUploadImage(
                     $fileTmpPath,
                     $fileName,
-                    'uploads'
+                    'uploads',
+                    'student_profiles',
+                    true // Require Cloudinary - fail if not available to prevent data loss
                 );
                 
                 if ($uploadResult['success']) {
-                    $profilePicturePath = $uploadResult['filename']; // Store just the filename for consistency
-                    error_log("Profile picture uploaded successfully: " . $profilePicturePath);
+                    $profilePicturePath = $uploadResult['url']; // Always URL since we require Cloudinary
+                    error_log("Profile picture uploaded to Cloudinary: " . $profilePicturePath);
                 } else {
-                    error_log("Profile picture upload failed: " . ($uploadResult['error'] ?? 'Unknown error'));
-                    sendResponse('error', null, 'Error uploading profile picture');
+                    error_log("Profile picture upload failed (Cloudinary required): " . ($uploadResult['error'] ?? 'Unknown error'));
+                    sendResponse('error', null, 'Profile picture upload failed: ' . ($uploadResult['error'] ?? 'Cloud storage unavailable'));
                 }
             } else {
                 sendResponse('error', null, 'Invalid file type. Only JPEG, PNG, and GIF files are allowed.');

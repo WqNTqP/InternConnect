@@ -297,19 +297,17 @@ function createPDFReport($list, $filename) {
                     $_FILES['LOGO']['tmp_name'],
                     $_FILES['LOGO']['name'],
                     'uploads',
-                    'hte_logos'
+                    'hte_logos',
+                    true // Require Cloudinary - fail if not available to prevent data loss
                 );
                 
                 if ($uploadResult['success']) {
-                    // For Cloudinary uploads, use the full URL, for local uploads use filename
-                    if ($uploadResult['method'] === 'cloudinary') {
-                        $logo_filename = $uploadResult['url']; // Store the full Cloudinary URL
-                    } else {
-                        $logo_filename = $uploadResult['filename']; // Store just the filename for local uploads
-                    }
-                    error_log("Logo uploaded successfully: " . $logo_filename . " (method: " . $uploadResult['method'] . ")");
+                    $logo_filename = $uploadResult['url']; // Always use URL since we require Cloudinary
+                    error_log("Logo uploaded to Cloudinary: " . $logo_filename);
                 } else {
-                    error_log("Logo upload failed: " . ($uploadResult['error'] ?? 'Unknown error'));
+                    error_log("Logo upload failed (Cloudinary required): " . ($uploadResult['error'] ?? 'Unknown error'));
+                    echo json_encode(['success' => false, 'message' => 'Upload failed: ' . ($uploadResult['error'] ?? 'Cloud storage unavailable')]);
+                    return;
                 }
             }
 
@@ -358,19 +356,17 @@ function createPDFReport($list, $filename) {
                     $_FILES['LOGO']['tmp_name'],
                     $_FILES['LOGO']['name'],
                     'uploads',
-                    'hte_logos'
+                    'hte_logos',
+                    true // Require Cloudinary - fail if not available to prevent data loss
                 );
                 
                 if ($uploadResult['success']) {
-                    // For Cloudinary uploads, use the full URL, for local uploads use filename
-                    if ($uploadResult['method'] === 'cloudinary') {
-                        $logo_filename = $uploadResult['url']; // Store the full Cloudinary URL
-                    } else {
-                        $logo_filename = $uploadResult['filename']; // Store just the filename for local uploads
-                    }
-                    error_log("Logo uploaded successfully via addHTEControl: " . $logo_filename . " (method: " . $uploadResult['method'] . ")");
+                    $logo_filename = $uploadResult['url']; // Always use URL since we require Cloudinary
+                    error_log("Logo uploaded to Cloudinary via addHTEControl: " . $logo_filename);
                 } else {
-                    error_log("Logo upload failed via addHTEControl: " . ($uploadResult['error'] ?? 'Unknown error'));
+                    error_log("Logo upload failed via addHTEControl (Cloudinary required): " . ($uploadResult['error'] ?? 'Unknown error'));
+                    echo json_encode(['success' => false, 'message' => 'Upload failed: ' . ($uploadResult['error'] ?? 'Cloud storage unavailable')]);
+                    return;
                 }
             }
 
@@ -412,19 +408,17 @@ function createPDFReport($list, $filename) {
                         $_FILES['LOGO']['tmp_name'],
                         $_FILES['LOGO']['name'],
                         'uploads',
-                        'hte_logos'
+                        'hte_logos',
+                        true // Require Cloudinary - fail if not available to prevent data loss
                     );
                     
                     if ($uploadResult['success']) {
-                        // For Cloudinary uploads, use the full URL, for local uploads use filename
-                        if ($uploadResult['method'] === 'cloudinary') {
-                            $logo_filename = $uploadResult['url']; // Store the full Cloudinary URL
-                        } else {
-                            $logo_filename = $uploadResult['filename']; // Store just the filename for local uploads
-                        }
-                        error_log("Logo updated successfully via updateHTELogo: " . $logo_filename . " (method: " . $uploadResult['method'] . ")");
+                        $logo_filename = $uploadResult['url']; // Always use URL since we require Cloudinary
+                        error_log("Logo updated to Cloudinary via updateHTELogo: " . $logo_filename);
                     } else {
-                        error_log("Logo update failed via updateHTELogo: " . ($uploadResult['error'] ?? 'Unknown error'));
+                        error_log("Logo update failed via updateHTELogo (Cloudinary required): " . ($uploadResult['error'] ?? 'Unknown error'));
+                        echo json_encode(['success' => false, 'message' => 'Logo upload failed: ' . ($uploadResult['error'] ?? 'Cloud storage unavailable')]);
+                        return;
                     }
                 }
                 if (!$logo_filename) {
@@ -766,25 +760,21 @@ if (isset($_POST['action']) && $_POST['action'] == 'updateCoordinatorProfilePict
             throw new Exception('Invalid file type. Only JPG and PNG are allowed.');
         }
 
-        // Create upload directory if it doesn't exist
-        $uploadDir = __DIR__ . '/../uploads/';
-        if (!is_dir($uploadDir)) {
-            if (!mkdir($uploadDir, 0755, true)) {
-                throw new Exception('Failed to create upload directory');
-            }
+        // Use safe upload with Cloudinary support - require cloud storage
+        $uploadResult = safeUploadImage(
+            $_FILES['profilePicture']['tmp_name'],
+            $_FILES['profilePicture']['name'],
+            'uploads',
+            'coordinator_profiles',
+            true // Require Cloudinary - fail if not available to prevent data loss
+        );
+
+        if (!$uploadResult['success']) {
+            throw new Exception('Profile picture upload failed: ' . ($uploadResult['error'] ?? 'Cloud storage unavailable'));
         }
 
-        // Generate unique filename
-        $extension = pathinfo($_FILES['profilePicture']['name'], PATHINFO_EXTENSION);
-        $uniqueId = uniqid();
-        $fileName = $uniqueId . '_' . $cdrid . '.' . $extension;
-        $targetFilePath = $uploadDir . $fileName;
-
-        error_log("Attempting to move uploaded file to: " . $targetFilePath);
-
-        if (!move_uploaded_file($_FILES['profilePicture']['tmp_name'], $targetFilePath)) {
-            throw new Exception('Failed to move uploaded file. Check permissions and path.');
-        }
+        $fileName = $uploadResult['url']; // Always URL since we require Cloudinary
+        error_log("Profile picture uploaded to Cloudinary: " . $fileName);
 
         // Update database
         $attendanceDetails = new attendanceDetails();

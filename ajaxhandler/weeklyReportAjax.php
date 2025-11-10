@@ -20,6 +20,19 @@ $dbo = new Database();
 $conn = $dbo->conn;
 
 /**
+ * Helper function to generate correct image URL for both Cloudinary and local files
+ */
+function getImageUrl($filename, $baseUrl) {
+    if (strpos($filename, 'https://res.cloudinary.com') === 0) {
+        // It's already a Cloudinary URL
+        return $filename;
+    } else {
+        // It's a local filename, prepend base URL
+        return $baseUrl . 'uploads/reports/' . $filename;
+    }
+}
+
+/**
  * Adjust session checks to support student session variable names
  * from student_dashboard.php where student ID is stored in $_SESSION['student_user']
  * and user_type is not set.
@@ -947,23 +960,29 @@ function handleImageUploadsPerDay($files) {
                         continue;
                     }
 
-                    // Generate unique filename
-                    $extension = pathinfo($name, PATHINFO_EXTENSION);
-                    if (empty($extension)) {
-                        $extension = 'jpg'; // Default extension
-                    }
-                    $uniqueName = uniqid() . '_' . time() . '_' . $day . '.' . $extension;
+                    // Use safe upload with Cloudinary support
+                    $path = $_SERVER['DOCUMENT_ROOT'];
+                    $basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+                    require_once $basePath."/config/safe_upload.php";
+                    
+                    $uploadResult = safeUploadImage(
+                        $tmpName,
+                        $name,
+                        'uploads',
+                        'reports',
+                        true // Require Cloudinary - fail if not available to prevent data loss
+                    );
 
-                    // Move uploaded file to permanent location
-                    $destinationPath = $uploadDir . $uniqueName;
-                    if (move_uploaded_file($tmpName, $destinationPath)) {
+                    if ($uploadResult['success']) {
                         $uploadedImagesPerDay[$day][] = [
-                            'filename' => $uniqueName,
+                            'filename' => $uploadResult['url'], // Always URL since we require Cloudinary
                             'original_name' => $name
                         ];
-                        error_log("Successfully moved uploaded file to: $destinationPath for day: $day");
+                        error_log("Report image uploaded to Cloudinary: " . $uploadResult['url'] . " for day: $day");
                     } else {
-                        error_log("Failed to move uploaded file from $tmpName to $destinationPath");
+                        error_log("Report image upload failed (Cloudinary required): " . ($uploadResult['error'] ?? 'Unknown error'));
+                        // Don't continue processing this file - fail the entire upload batch
+                        throw new Exception("Report image upload failed: " . ($uploadResult['error'] ?? 'Cloud storage unavailable'));
                     }
                 } else {
                     error_log("File upload error code: " . $files['images']['error'][$dayKey][$index] . " for file $name");
