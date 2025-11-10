@@ -590,129 +590,17 @@ function renderPostAnalysisStudentList(students) {
     $('#postAnalysisStudentListPanel').html(html);
 }
 
-// Global variables for student lists
-let allStudents = [];
-let selectedStudentId = null;
-let allReviewStudents = [];
-let selectedReviewStudentId = null;
+// Note: Global student list variables removed to prevent duplicate rendering
+// All student list functionality is now handled by local functions within the document ready block
 
-// Global function for loading pre-assessment students
-function loadPreassessmentStudentList() {
-    // Fetch all students eligible for rating (AJAX or from global)
-    $.ajax({
-        url: 'ajaxhandler/studentDashboardAjax.php',
-        type: 'POST',
-        dataType: 'json',
-        data: { action: 'getStudentsForPreassessment' },
-        success: function(response) {
-            if (response.success && Array.isArray(response.students)) {
-                allStudents = response.students;
-                renderStudentList(allStudents);
-            } else {
-                renderEmptyPreAssessmentState('No students found.');
-            }
-        },
-        error: function() {
-            renderEmptyPreAssessmentState('Error loading students.');
-        }
-    });
-}
+// Global loadPreassessmentStudentList function removed to prevent duplicate rendering
 
-// Global function for rendering pre-assessment student list
-function renderStudentList(students) {
-    let sorted = students.slice().sort((a, b) => {
-        let aId = (a.STUDENT_ID || a.student_id || '').toString();
-        let bId = (b.STUDENT_ID || b.student_id || '').toString();
-        return aId.localeCompare(bId);
-    });
-    let studentListHtml = '';
-    sorted.forEach(function(student) {
-        let displayId = student.STUDENT_ID || student.student_id || 'Unknown ID';
-        studentListHtml += `
-            <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${student.id === selectedStudentId ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.id}">
-                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                    <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' /></svg>
-                </span>
-                <span class="truncate">Student ID: ${displayId}</span>
-            </div>
-        `;
-    });
-    
-    let html = `<div class='flex w-full'>`;
-    html += `<div class='left-col w-1/3 pr-4'>`;
-    html += `<div class='mb-4'><input type='text' id='rateStudentSearch' placeholder='Search Student ID' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
-    html += `<div id='studentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'>${studentListHtml}</div>`;
-    html += `</div>`;
-    html += `<div class='right-col w-2/3 pl-4'>`;
-    if (!selectedStudentId) {
-        html += `
-        <div class="flex flex-col items-center justify-center h-full">
-            <div class="bg-blue-50 rounded-full p-6 mb-4">
-                <svg xmlns='http://www.w3.org/2000/svg' class='h-12 w-12 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' /></svg>
-            </div>
-            <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
-            <div class="text-gray-500 text-base">Select a Student ID from the list to view their grades and evaluation details.</div>
-        </div>
-        `;
-    } else {
-        html += `<div id='rateEvalList' class='space-y-4 max-h-[600px] overflow-y-auto'></div>`;
-    }
-    html += `</div>`;
-    html += `</div>`;
-    
-    $('#rateTabContent .p-6').html(html);
-}
+// Global renderStudentList function removed to prevent duplicate rendering
 
-// Global function for loading review students
-function loadReviewStudentList() {
-    // Fetch all students eligible for review (same as pre-assessment)
-    $.ajax({
-        url: 'ajaxhandler/studentDashboardAjax.php',
-        type: 'POST',
-        dataType: 'json',
-        data: { action: 'getStudentsForPreassessment' },
-        success: function(response) {
-            if (response.success && Array.isArray(response.students)) {
-                // Map students to use STUDENT_ID for review selection
-                allReviewStudents = response.students.map(function(student) {
-                    return {
-                        id: student.STUDENT_ID || student.id, // Use STUDENT_ID if available
-                        name: student.name || (student.SURNAME ? student.SURNAME + ', ' + student.NAME : student.NAME)
-                    };
-                });
-                renderReviewStudentList(allReviewStudents);
-            } else {
-                renderEmptyReviewState('No students found.');
-            }
-        },
-        error: function() {
-            renderEmptyReviewState('Error loading students.');
-        }
-    });
-}
+// Global loadReviewStudentList function removed to prevent duplicate rendering
 
-// Global function for rendering review student list
-function renderReviewStudentList(students) {
-    let sorted = students.slice().sort((a, b) => {
-        let aId = (a.STUDENT_ID || a.student_id || a.id || '').toString();
-        let bId = (b.STUDENT_ID || b.student_id || b.id || '').toString();
-        return aId.localeCompare(bId);
-    });
-    let studentListHtml = '';
-    sorted.forEach(function(student) {
-        let displayName = student.name || student.NAME || student.full_name || 'Unknown Name';
-        studentListHtml += `
-            <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${student.id === selectedReviewStudentId ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.id}">
-                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                    <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
-                </span>
-                <span class="truncate">${displayName}</span>
-            </div>
-        `;
-    });
-    
-    $('#reviewStudentListPanel').html(studentListHtml);
-}
+// Global renderReviewStudentList function removed to prevent duplicate rendering
+
 
 // Render empty state for pre-assessment tab
 function renderEmptyPreAssessmentState(message) {
@@ -1321,11 +1209,8 @@ function loadPostAssessmentEvaluation(studentId) {
     
     // Unified function to load all evaluation tab content on page load
     function loadAllEvaluationContent() {
-        // Load pre-assessment student list
-        loadPreassessmentStudentList();
-        
-        // Load review student list  
-        loadReviewStudentList();
+        // Note: Student lists are now loaded on-demand when tabs are clicked
+        // This prevents double-loading and duplicate student lists
         
         // Load post-assessment student list (already loads on tab click, but let's ensure it's loaded)
         // Note: Post-assessment loads when tab is clicked, we don't need to load it here
