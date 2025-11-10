@@ -289,7 +289,7 @@ switch ($action) {
             sendResponse('error', null, 'Student ID is required');
         }
         
-        // Prepare to handle file upload with Cloudinary
+        // Prepare to handle file upload with safe fallback
         $profilePicturePath = null;
         if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] == UPLOAD_ERR_OK) {
             $fileTmpPath = $_FILES['profile_picture']['tmp_name'];
@@ -300,21 +300,21 @@ switch ($action) {
 
             // Validate file type
             if (in_array($fileType, $allowedFileTypes)) {
-                // Include Cloudinary configuration
-                require_once $basePath . '/config/cloudinary.php';
+                // Include safe upload configuration
+                require_once $basePath . '/config/safe_upload.php';
                 
-                $cloudinary = getCloudinaryUploader();
-                $publicId = 'profile_' . $studentId . '_' . uniqid();
-                
-                // Upload to Cloudinary
-                $uploadResult = $cloudinary->uploadImage($fileTmpPath, 'internconnect/profiles', $publicId);
+                $uploadResult = safeUploadImage(
+                    $fileTmpPath,
+                    $fileName,
+                    'uploads'
+                );
                 
                 if ($uploadResult['success']) {
-                    $profilePicturePath = $uploadResult['url']; // Store the full Cloudinary URL
-                    error_log("Profile picture uploaded to Cloudinary: " . $profilePicturePath);
+                    $profilePicturePath = $uploadResult['filename']; // Store just the filename for consistency
+                    error_log("Profile picture uploaded successfully: " . $profilePicturePath);
                 } else {
-                    error_log("Cloudinary upload failed: " . $uploadResult['error']);
-                    sendResponse('error', null, 'Error uploading profile picture to cloud storage');
+                    error_log("Profile picture upload failed: " . ($uploadResult['error'] ?? 'Unknown error'));
+                    sendResponse('error', null, 'Error uploading profile picture');
                 }
             } else {
                 sendResponse('error', null, 'Invalid file type. Only JPEG, PNG, and GIF files are allowed.');
