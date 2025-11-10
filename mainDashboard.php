@@ -422,15 +422,7 @@ function generateStudentFilterOptions($coordinatorId) {
         <!-- Pre-Assessment Tab -->
         <div id="rateTabContent" class="hidden">
             <div class="flex w-full">
-                <div class="left-col w-1/5 max-w-xs pr-4">
-                    <div class="mb-4">
-                        <input type="text" id="rateStudentSearch" placeholder="Search student"
-                            class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
-                    </div>
-                    <div id="studentListPanel" class="overflow-y-auto max-h-[420px] flex flex-col gap-1">
-                        <!-- Student list dynamically loaded -->
-                    </div>
-                </div>
+                <!-- Left column will be rendered by JavaScript -->
                 <div class="right-col w-4/5 pl-4">
                     <div class="flex flex-col items-center justify-center h-full">
                         <div class="bg-blue-50 rounded-full p-6 mb-4">
@@ -440,9 +432,7 @@ function generateStudentFilterOptions($coordinatorId) {
                                     d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                         </div>
-                        <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
-                        <div class="text-gray-500 text-base">Select a student from the list to view their
-                            pre-assessment details.</div>
+                        <!-- This will be replaced by JavaScript rendering -->
                     </div>
                 </div>
             </div>
@@ -1205,7 +1195,13 @@ function generateStudentFilterOptions($coordinatorId) {
             // Load evaluation students when evaluation tab is shown
             $(document).on('click', '[data-tab="evaluation"]', function() {
                 if (!dataLoaded.evaluation) {
-                    loadEvaluationStudents();
+                    // Use new JavaScript system for Pre-Assessment
+                    if (typeof loadPreassessmentStudentList === 'function') {
+                        loadPreassessmentStudentList();
+                    }
+                    // Load students for Review tab using old system
+                    loadReviewStudents();
+                    // Keep loading evaluation questions (for the questions tab)
                     loadEvaluationQuestions();
                     dataLoaded.evaluation = true;
                 }
@@ -1316,8 +1312,8 @@ function generateStudentFilterOptions($coordinatorId) {
                 });
             }
             
-            // Function to load students for evaluation tabs
-            function loadEvaluationStudents() {
+            // Function to load students for Review tab only (Pre-Assessment now uses new JavaScript system)
+            function loadReviewStudents() {
                 let cdrid = $('#hiddencdrid').val();
                 
                 $.ajax({
@@ -1327,25 +1323,12 @@ function generateStudentFilterOptions($coordinatorId) {
                     data: {cdrid: cdrid, action: "getAllStudentsUnderCoordinator"},
                     success: function(response) {
                         if (response && response.success && response.students && response.students.length > 0) {
-                            let studentHTML = '';
                             let reviewHTML = '';
                             
                             response.students.forEach(function(student) {
-                                // Generate HTML for pre-assessment students
-                                studentHTML += `
-                                    <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="${student.STUDENT_ID}">
-                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 616 0z"></path>
-                                            </svg>
-                                        </span>
-                                        <span class="truncate">${student.STUDENT_ID}</span>
-                                    </div>
-                                `;
-                                
-                                // Also add to review list
+                                // Generate HTML for review tab students only
                                 reviewHTML += `
-                                    <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="${student.STUDENT_ID}">
+                                    <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="${student.id}">
                                         <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 616 0z"></path>
@@ -1356,10 +1339,9 @@ function generateStudentFilterOptions($coordinatorId) {
                                 `;
                             });
                             
-                            // Update both lists at once to prevent race conditions
-                            $('#studentListPanel').html(studentHTML);
+                            // Update only review list (Pre-Assessment handled by new JS system)
                             $('#reviewStudentListPanel').html(reviewHTML);
-                            console.log('Loaded', response.students.length, 'students for evaluation tabs');
+                            console.log('Loaded', response.students.length, 'students for review tab');
                         } else {
                             const noStudentsHTML = `
                                 <div class="text-center py-8 text-gray-500">
@@ -1367,19 +1349,17 @@ function generateStudentFilterOptions($coordinatorId) {
                                     <p>No students assigned to this coordinator.</p>
                                 </div>
                             `;
-                            $('#studentListPanel').html(noStudentsHTML);
                             $('#reviewStudentListPanel').html(noStudentsHTML);
                         }
                     },
                     error: function(e) {
-                        console.error("Error loading evaluation students:", e);
+                        console.error("Error loading review students:", e);
                         const errorHTML = `
                             <div class="text-center py-8 text-red-500">
                                 <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
                                 <p>Error loading students. Please try again.</p>
                             </div>
                         `;
-                        $('#studentListPanel').html(errorHTML);
                         $('#reviewStudentListPanel').html(errorHTML);
                     }
                 });
@@ -1540,7 +1520,26 @@ function generateStudentFilterOptions($coordinatorId) {
         // Control Panel JavaScript
         $(document).ready(function() {
             // Set initial tab
-            switchTab('attendance');
+            switchTab('evaluation');
+            
+            // Initialize Pre-Assessment content for the default tab
+            setTimeout(function() {
+                if (typeof loadPreassessmentStudentList === 'function') {
+                    loadPreassessmentStudentList();
+                }
+                // Load students for Review tab
+                loadReviewStudents();
+                // Load evaluation questions
+                loadEvaluationQuestions();
+                
+                // Ensure All Questions sub-tab is properly activated
+                $('#evalQuestionsTabBtn').removeClass('text-gray-500 hover:text-gray-700 hover:bg-gray-50')
+                                         .addClass('text-gray-900 bg-gray-100');
+                $('#rateTabBtn, #postAssessmentTabBtn, #reviewTabBtn').removeClass('text-gray-900 bg-gray-100')
+                                                                      .addClass('text-gray-500 hover:text-gray-700 hover:bg-gray-50');
+                
+                dataLoaded.evaluation = true;
+            }, 100);
             
             // Tab click event for sidebar
             $('[data-tab]').click(function() {

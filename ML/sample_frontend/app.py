@@ -332,23 +332,42 @@ def post_analysis():
         }
     ]
 
-    # Check if all key columns are empty/null
-    key_fields = [
-        placement,
-        reasoning,
-        data.get('prediction_probabilities'),
+    # STRICT VALIDATION: Only allow post-analysis when complete post-assessment data exists
+    # Post-analysis requires actual supervisor and self ratings from the OJT experience
+    post_supervisor_ratings = [
         data.get('post_systems_development_avg'),
         data.get('post_research_avg'),
         data.get('post_business_operations_avg'),
-        data.get('post_technical_support_avg'),
+        data.get('post_technical_support_avg')
+    ]
+    
+    post_self_ratings = [
         data.get('self_systems_development_avg'),
         data.get('self_research_avg'),
         data.get('self_business_operations_avg'),
-        data.get('self_technical_support_avg'),
-        data.get('supervisor_comment')
+        data.get('self_technical_support_avg')
     ]
-    if all(f is None or f == '' for f in key_fields):
-        return jsonify({'error': 'No post-analysis data found for this student.'}), 404
+    
+    # Filter out None/empty values
+    valid_supervisor_ratings = [r for r in post_supervisor_ratings if r is not None and r != '' and r != 0]
+    valid_self_ratings = [r for r in post_self_ratings if r is not None and r != '' and r != 0]
+    
+    # Require substantial post-assessment data for meaningful analysis
+    # Need at least 3 supervisor ratings AND 3 self ratings
+    min_required_ratings = 3
+    
+    if len(valid_supervisor_ratings) < min_required_ratings or len(valid_self_ratings) < min_required_ratings:
+        return jsonify({
+            'error': 'Post-analysis requires completed post-assessment data. Student must have supervisor and self-evaluation ratings from their OJT experience.',
+            'debug': {
+                'supervisor_ratings_count': len(valid_supervisor_ratings),
+                'self_ratings_count': len(valid_self_ratings),
+                'required_minimum': min_required_ratings,
+                'supervisor_ratings': valid_supervisor_ratings,
+                'self_ratings': valid_self_ratings,
+                'student_id': student_id
+            }
+        }), 404
 
     # Probability explanation (simple logic based on values)
     prob_explanation = ''
