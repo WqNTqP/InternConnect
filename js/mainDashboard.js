@@ -4034,7 +4034,12 @@ $(document).ready(function() {
         $('#reviewTabContent').addClass('active');
         $('#evalQuestionsTabContent').removeClass('active');
         $('#rateTabContent').removeClass('active');
-        // Review content already loaded on page load
+        
+        // Load review students if not already loaded
+        if (allReviewStudents.length === 0) {
+            console.log('[DEBUG] Loading review students for the first time');
+            loadReviewStudentList();
+        }
     });
 
     // Load and separate students for Rate and Review tabs
@@ -4696,18 +4701,27 @@ $(document).ready(function() {
     // Handle student selection in Review tab
     $(document).on('click', '.review-student-item', function() {
     console.log('[DEBUG] Review student clicked');
+    console.log('[DEBUG] Clicked element:', this);
+    console.log('[DEBUG] Element attributes:', this.attributes);
+    console.log('[DEBUG] data-studentid attribute:', $(this).attr('data-studentid'));
+    
     selectedReviewStudentId = $(this).data('studentid');
     console.log('[DEBUG] Selected review student ID:', selectedReviewStudentId);
     console.log('[DEBUG] Type of selectedReviewStudentId:', typeof selectedReviewStudentId);
+    console.log('[DEBUG] allReviewStudents length:', allReviewStudents.length);
+    console.log('[DEBUG] allReviewStudents sample:', allReviewStudents.slice(0, 2));
     
     // Get current search query to maintain filtering
     const currentQuery = $('#reviewStudentSearch').val() || '';
+    console.log('[DEBUG] Current search query:', currentQuery);
+    
     let currentList = allReviewStudents;
     if (currentQuery.trim()) {
         currentList = allReviewStudents.filter(s => {
             let displayId = (s.id || '').toString().toLowerCase();
             return displayId.includes(currentQuery.trim().toLowerCase());
         });
+        console.log('[DEBUG] Filtered list length:', currentList.length);
     }
     
     // Re-render the layout to create the #reviewedEvalList container
