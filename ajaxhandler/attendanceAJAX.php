@@ -345,7 +345,9 @@ function createPDFReport($list, $filename) {
                 $safe_name = uniqid('hte_logo_') . '.' . $ext;
                 $target_path = $upload_dir . $safe_name;
                 if (move_uploaded_file($_FILES['LOGO']['tmp_name'], $target_path)) {
-                    $logo_filename = 'uploads/hte_logos/' . $safe_name;
+                    // Store only the filename in the database to keep storage consistent
+                    // Other handlers store just the filename (e.g. hte_logo_690eb016bf3aa.jpg)
+                    $logo_filename = $safe_name;
                 }
             }
 

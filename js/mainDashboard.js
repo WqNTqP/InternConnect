@@ -50,7 +50,13 @@ function loadAllCompaniesData() {
 function renderCompaniesList(companies) {
     let html = '';
     companies.forEach(function(company) {
-        let logoHtml = company.LOGO ? `<img src='${getBaseUrl()}uploads/hte_logos/${company.LOGO}' alt='Logo' class='h-8 w-8 rounded-full object-cover border' />` : '-';
+        let logoHtml = '-';
+        if (company.LOGO) {
+            // Support both DB values that are just filenames (hte_logo_xxx.jpg)
+            // and values that accidentally include the uploads path (uploads/hte_logos/xxx)
+            const logoPath = company.LOGO.startsWith('uploads/') ? company.LOGO : `uploads/hte_logos/${company.LOGO}`;
+            logoHtml = `<img src='${getBaseUrl()}${logoPath}' alt='Logo' class='h-8 w-8 rounded-full object-cover border' />`;
+        }
         logoHtml += ` <button class='update-logo-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs ml-2' data-hteid='${company.HTE_ID}'>Update Logo</button>`;
         html += `<tr>
             <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-900\">${company.NAME || '-'}<\/td>
@@ -2626,7 +2632,8 @@ function fetchTHE(cdrid,sessionid)
     // alert(ondate);
     let logoHtml = '';
     if (building['LOGO']) {
-        logoHtml = `<img src='${getBaseUrl()}uploads/hte_logos/${building['LOGO']}' alt='Company Logo' class='w-20 h-20 object-cover rounded-full border-2 border-blue-300 shadow mb-2 bg-white' />`;
+        const logoPath = building['LOGO'].startsWith('uploads/') ? building['LOGO'] : `uploads/hte_logos/${building['LOGO']}`;
+        logoHtml = `<img src='${getBaseUrl()}${logoPath}' alt='Company Logo' class='w-20 h-20 object-cover rounded-full border-2 border-blue-300 shadow mb-2 bg-white' />`;
     } else {
         logoHtml = `<div class='w-20 h-20 flex items-center justify-center bg-gray-100 rounded-full border-2 border-gray-300 text-gray-400 mb-2'>No Logo</div>`;
     }
