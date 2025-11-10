@@ -232,14 +232,13 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
         </div>
 
     <!-- Main Content -->
-    <div class="transition-all duration-300 p-3 md:p-6 bg-gray-100 min-h-screen pt-20 md:pt-24" 
-         :class="{
-            'ml-64': sidebarOpen && !isMobile,
-            'ml-16': !sidebarOpen && !isMobile,
+<div class="transition-all duration-300 p-3 md:p-6 bg-gray-100 min-h-screen pt-20 md:pt-24 ml-0" :class="{
+            'ml-64': sidebarOpen &amp;&amp; !isMobile,
+            'ml-16': !sidebarOpen &amp;&amp; !isMobile,
             'ml-0': isMobile
          }">
         <!-- Attendance Tab Content -->
-        <div id="attendanceContent" class="bg-white rounded-lg shadow-md p-3 md:p-6 mb-6 hidden">
+        <div id="attendanceContent" class="bg-white rounded-lg shadow-md p-3 md:p-6 mb-6">
             <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
                 <!-- Left Column - Controls -->
                 <div class="w-full lg:w-1/4 xl:w-1/5 space-y-4">
@@ -247,31 +246,18 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                     <div class="bg-gray-50 rounded-lg shadow-sm p-3 md:p-4">
                         <div class="flex flex-col">
                             <label class="text-xs md:text-sm font-medium text-gray-700 mb-1">SESSION</label>
-                            <select id="ddlclass" class="mt-1 block w-full text-xs md:text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="-1">SELECT ONE</option>
-                                <option value="1">2024 FIRST SEMESTER</option>
-                                <option value="8">2025 SECOND SEMESTER</option>
-                            </select>
+                            <select id="ddlclass" class="mt-1 block w-full text-xs md:text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"><option value="-1">SELECT ONE</option><option value="1">2024 FIRST SEMESTER</option><option value="9">2025 SECOND SEMESTER</option></select>
                         </div>
                     </div>
 
                     <!-- Company List -->
-                    <div id="classlistarea" class="bg-gray-50 rounded-lg shadow-sm p-3 md:p-4">
-                        <div class="flex flex-col">
-                            <label class="text-xs md:text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
-                            <select id="company-select" class="mt-1 block w-full text-xs md:text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="">Select Company</option>
-                                <option value="1" data-building="{&quot;HTE_ID&quot;:1,&quot;NAME&quot;:&quot;JairoSoft&quot;,&quot;INDUSTRY&quot;:&quot;CET&quot;}">JairoSoft</option>
-                                <option value="30" data-building="{&quot;HTE_ID&quot;:30,&quot;NAME&quot;:&quot;InfoSoft&quot;,&quot;INDUSTRY&quot;:&quot;IT&quot;}">InfoSoft</option>
-                                <option value="31" data-building="{&quot;HTE_ID&quot;:31,&quot;NAME&quot;:&quot;Holy Cross&quot;,&quot;INDUSTRY&quot;:&quot;IT&quot;}">Holy Cross</option>
-                            </select>
-                        </div>
-                    </div>
+                    <div id="classlistarea" class="bg-gray-50 rounded-lg shadow-sm p-3 md:p-4"><div class="flex flex-col">
+        <label class="text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
+        <select id="company-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <option value="">Select Company</option><option value="1" data-building="{&quot;HTE_ID&quot;:1,&quot;NAME&quot;:&quot;JairoSoft&quot;,&quot;INDUSTRY&quot;:&quot;CET&quot;,&quot;LOGO&quot;:null}">JairoSoft</option><option value="30" data-building="{&quot;HTE_ID&quot;:30,&quot;NAME&quot;:&quot;InfoSoft&quot;,&quot;INDUSTRY&quot;:&quot;IT&quot;,&quot;LOGO&quot;:null}">InfoSoft</option><option value="31" data-building="{&quot;HTE_ID&quot;:31,&quot;NAME&quot;:&quot;Holy Cross&quot;,&quot;INDUSTRY&quot;:&quot;IT&quot;,&quot;LOGO&quot;:&quot;https://res.cloudinary.com/dubq3bubx/image/upload/v1762754816/uploads/hte_logos/dhho3kcsa69lrv3rbvly.jpg&quot;}">Holy Cross</option></select></div></div>
 
                     <!-- Company Details -->
-                    <div id="classdetailsarea" class="bg-gray-50 rounded-lg shadow-sm p-3 md:p-4">
-                        <h3 class="text-xs md:text-sm font-medium text-gray-700 mb-3">COMPANY DETAILS</h3>
-                    </div>
+                    <div id="classdetailsarea" class="bg-gray-50 rounded-lg shadow-sm p-3 md:p-4"></div>
                     
                     <!-- Generate Report Button -->
                     <div class="bg-gray-50 rounded-lg shadow-sm p-3 md:p-4">
@@ -283,18 +269,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
 
                 <!-- Right Column - Main Content -->
                 <div class="w-full lg:w-3/4 xl:w-4/5">
-                    <div id="studentlistarea" class="bg-white rounded-lg shadow-md p-3 md:p-4">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-                            <h2 class="text-base md:text-lg font-semibold text-gray-900">STUDENT LIST</h2>
-                            <div class="flex flex-wrap gap-2">
-                                <input type="date" id="dtpondate" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" value="<?php echo date('Y-m-d'); ?>">
-                            </div>
-                        </div>
-                        <div class="studentlist min-h-[200px]">
-                            <p class="text-gray-500 text-center py-8">No students found.</p>
-                        </div>
-                        <div class="reportsection mt-4"></div>
-                    </div>
+                    <div id="studentlistarea" class="bg-white rounded-lg shadow-md p-3 md:p-4"><div class="text-gray-500 text-center py-8">No students found.</div></div>
                 </div>
             </div>
         </div>
@@ -345,34 +320,90 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                 </nav>
             </div>
             <div class="p-3 md:p-6">
-                <div id="evalQuestionsTabContent" class="space-y-6 active hidden">
-                    <div class="all-questions-container max-h-[500px] md:max-h-[540px] overflow-y-auto pr-2">
-                        <h2 class="text-lg md:text-2xl font-bold text-gray-800 mb-4">All Evaluation Questions</h2>
-                        <div id="questionsDynamicContainer"></div>
-                        <div class="flex justify-center mt-6 mb-4">
-                            <button id="btnSaveAllQuestions" class="px-4 md:px-8 py-2 text-sm md:text-lg font-semibold bg-primary text-white rounded-lg shadow hover:bg-blue-700 transition">Save All Changes</button>
-                            <span id="saveAllStatus" class="ml-4"></span>
-                        </div>
-                    </div>
-                </div>
+                <div id="evalQuestionsTabContent" class="space-y-6 active hidden" style="display: block;"><div class="flex w-full"><div class="left-col w-1/5 max-w-xs pr-4"><h2 class="text-xl font-bold text-gray-800 mb-4">Categories</h2><div class="mb-4"><label for="questionCategoryDropdown" class="mr-2 text-gray-700 font-medium">Category:</label><select id="questionCategoryDropdown" class="border border-gray-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"><option value="Soft Skills">Soft Skills</option><option value="Communication Skills">Communication Skills</option><option value="Personal and Interpersonal Skills">Personal and Interpersonal Skills</option></select></div><div class="flex items-center mb-2">
+                        <span class="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full mr-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l9-9a1.414 1.414 0 00-2-2l-9 9v3z"></path></svg>
+                            Editable: Click question text to edit
+                        </span>
+                    </div></div><div class="right-col w-4/5 pl-4"><h2 class="text-2xl font-bold text-gray-800 mb-4">All Evaluation Questions</h2><div id="questionsByCategory" style="max-height:calc(100vh - 320px);overflow-y:auto;"><ul class="space-y-3"><li class="bg-white rounded-lg shadow p-4">
+                                  <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="1">Describe a time you worked effectively in a team.</div>
+                                </li><li class="bg-white rounded-lg shadow p-4">
+                                  <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="2">How do you handle stressful situations at work or school?</div>
+                                </li><li class="bg-white rounded-lg shadow p-4">
+                                  <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="3">Give an example of how you adapted to a major change.</div>
+                                </li><li class="bg-white rounded-lg shadow p-4">
+                                  <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="4">How do you approach solving a difficult problem?</div>
+                                </li><li class="bg-white rounded-lg shadow p-4">
+                                  <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="5">What motivates you to achieve your goals?</div>
+                                </li><li class="bg-white rounded-lg shadow p-4">
+                                  <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="6">How do you manage your time when working on multiple tasks?</div>
+                                </li><li class="bg-white rounded-lg shadow p-4">
+                                  <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="7">Describe a situation where you showed leadership.</div>
+                                </li><li class="bg-white rounded-lg shadow p-4">
+                                  <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="8">How do you respond to constructive criticism?</div>
+                                </li><li class="bg-white rounded-lg shadow p-4">
+                                  <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="9">What steps do you take to stay organized?</div>
+                                </li><li class="bg-white rounded-lg shadow p-4">
+                                  <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="10">How do you maintain a positive attitude during setbacks?</div>
+                                </li></ul></div><div class="flex flex-col items-center mt-6 mb-4">
+                        <button id="btnSaveAllQuestions" class="px-8 py-2 text-lg font-semibold bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all duration-150">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            Save All Changes
+                        </button>
+                        <span id="saveAllStatus" class="mt-4 px-4 py-2 rounded-lg text-base font-medium hidden"></span>
+                    </div></div></div></div>
                 
-                <div id="rateTabContent" class="hidden" style="display: none;">
-                    <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
-                        <div class="w-full lg:w-1/3 bg-gray-50 rounded-lg shadow-md p-3 md:p-4">
-                            <div class="mb-4">
-                                <input type="text" id="rateStudentSearch" placeholder="Search student" class="w-full px-3 md:px-4 py-2 text-sm md:text-base text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
-                            </div>
-                            <div id="studentListPanel" class="overflow-y-auto max-h-64 lg:max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
-                                <!-- Students will be loaded dynamically -->
-                            </div>
-                        </div>
-                        <div class="w-full lg:w-2/3 bg-white rounded-lg shadow-md p-3 md:p-4">
-                            <div id="rateEvalList" class="space-y-4">
-                                <!-- Evaluation cards/messages will be loaded here dynamically -->
-                            </div>
-                        </div>
-                    </div>
+                <div id="rateTabContent" class="hidden" style="display: none;"><div class="flex w-full"><div class="left-col w-1/5 max-w-xs pr-4"><div class="mb-4"><input type="text" id="rateStudentSearch" placeholder="Search student" class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200"></div><div id="studentListPanel" class="overflow-y-auto max-h-[420px] flex flex-col gap-1">
+                <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="291">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <span class="truncate">12345</span>
                 </div>
+            
+                <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="190">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <span class="truncate">59828881</span>
+                </div>
+            
+                <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="289">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <span class="truncate">59829532</span>
+                </div>
+            
+                <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="288">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <span class="truncate">59829536</span>
+                </div>
+            
+                <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="290">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <span class="truncate">59829663</span>
+                </div>
+            
+                <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="292">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <span class="truncate">67890</span>
+                </div>
+            </div></div><div class="right-col w-4/5 pl-4">
+            <div class="flex flex-col items-center justify-center h-full">
+                <div class="bg-blue-50 rounded-full p-6 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </div>
+                <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
+                <div class="text-gray-500 text-base">Select a student from the list to view their pre-assessment details.</div>
+            </div>
+            </div></div></div>
                 
                 <div id="postAssessmentTabContent" class="hidden" style="display: none;">
                     <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
@@ -391,29 +422,60 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                                 </div>
                             </div>
                         </div>
-                        <div id="reviewTabContent" class="hidden" style="display: none;">
-                            <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
-                                <div class="w-full lg:w-1/3 bg-white rounded-lg shadow-md p-3 md:p-4">
-                                    <div class="mb-4">
-                                        <input type="text" id="reviewStudentSearch" placeholder="Search reviewed students..." class="w-full px-3 md:px-4 py-2 text-sm md:text-base text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
-                                    </div>
-                                    <div id="reviewStudentListPanel" class="overflow-y-auto max-h-64 lg:max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
-                                        <!-- Students will be loaded dynamically -->
-                                    </div>
-                                </div>
-                                <div class="w-full lg:w-2/3 bg-white rounded-lg shadow-md p-3 md:p-4">
-                                    <div id="reviewedEvalList" class="space-y-4">
-                                        <!-- View-only evaluation cards/messages will be loaded here dynamically -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <div id="reviewTabContent" class="hidden" style="display: none;"><div class="flex w-full"><div class="left-col w-1/5 max-w-xs pr-4"><div class="mb-4"><input type="text" id="reviewStudentSearch" placeholder="Search student" class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200"></div><div id="reviewStudentListPanel" class="overflow-y-auto max-h-[420px] flex flex-col gap-1">
+                <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="12345">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <span class="truncate">John Doe</span>
+                </div>
+            
+                <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="59828881">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <span class="truncate">Kim Charles Emping</span>
+                </div>
+            
+                <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="59829532">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <span class="truncate">James Harold Roble</span>
+                </div>
+            
+                <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="59829536">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <span class="truncate">Urien Adriane  Suico</span>
+                </div>
+            
+                <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="59829663">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <span class="truncate">Christine  Serdan</span>
+                </div>
+            
+                <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="67890">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <span class="truncate">Jane Smith</span>
+                </div>
+            </div></div><div class="right-col w-4/5 pl-4">
+            <div class="flex flex-col items-center justify-center h-full">
+                <div class="bg-blue-50 rounded-full p-6 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </div>
+                <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
+                <div class="text-gray-500 text-base">Select a student from the list to view their reviewed assessment details.</div>
+            </div>
+            </div></div></div>
                     </div>
                 </div>
-            </div>
-        
-        <!-- Prediction Tab Content -->
-        <div id="predictionContent" class="hidden">
+            <!-- Prediction Tab Content --><div id="predictionContent" class="hidden">
             <div class="bg-white rounded-lg shadow-md p-3 md:p-6">
                     <div class="mt-4 md:mt-6 overflow-x-auto">
                         <table id="predictionTable" class="min-w-full rounded-xl shadow-lg overflow-hidden border border-gray-200">
@@ -497,10 +559,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                         </table>
                 </div>
             </div>
-        </div>
-        
-        <!-- Control Tab Content -->
-        <div id="controlContent" class="hidden">
+        </div><!-- Control Tab Content --><div id="controlContent" class="hidden">
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="mb-4 md:mb-6">
                     <div class="grid grid-cols-4 md:flex md:flex-wrap gap-2 md:gap-4">
@@ -631,18 +690,18 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                                     <label for="csvFile" class="block text-sm font-medium text-gray-700 mb-2">Upload CSV File <span class="text-blue-600 font-semibold">(Recommended)</span></label>
                                     <input type="file" id="csvFile" name="csvFile" accept=".csv" class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                     <small class="block mt-2 text-gray-500">CSV format: student_id,name,surname,age,gender,email,contact_number</small>
-                                    <a href="sample_students.csv" download class="block mt-1 text-blue-600 hover:underline text-sm">Download Sample CSV Format</a>
+                                    <a href="sample_students.csv" download="" class="block mt-1 text-blue-600 hover:underline text-sm">Download Sample CSV Format</a>
                                 </div>
                                 <div class="flex gap-4">
                                     <div class="flex-1">
                                         <label for="sessionSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to Session:</label>
-                                        <select id="sessionSelectStudent" name="sessionId" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        <select id="sessionSelectStudent" name="sessionId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                             <option value="">Select Session</option>
                                         </select>
                                     </div>
                                     <div class="flex-1">
                                         <label for="hteSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to HTE:</label>
-                                        <select id="hteSelectStudent" name="hteId" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        <select id="hteSelectStudent" name="hteId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                             <option value="">Select HTE</option>
                                         </select>
                                     </div>
@@ -659,13 +718,13 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                                         <div class="mb-6 flex gap-4">
                                             <div class="flex-1">
                                                 <label for="singleSessionSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to Session:</label>
-                                                <select id="singleSessionSelectStudent" name="sessionId" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                <select id="singleSessionSelectStudent" name="sessionId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                                     <option value="">Select Session</option>
                                                 </select>
                                             </div>
                                             <div class="flex-1">
                                                 <label for="singleHteSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to HTE:</label>
-                                                <select id="singleHteSelectStudent" name="hteId" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                <select id="singleHteSelectStudent" name="hteId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                                     <option value="">Select HTE</option>
                                                 </select>
                                             </div>
@@ -686,7 +745,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                                             <div>
                                                 <label for="gender" class="block text-sm font-medium text-gray-700">Gender</label>
                                                 <select id="gender" name="gender" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                                    <option value="" disabled selected>Select Gender</option>
+                                                    <option value="" disabled="" selected="">Select Gender</option>
                                                     <option value="Male">Male</option>
                                                     <option value="Female">Female</option>
                                                 </select>
@@ -823,37 +882,37 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label for="hteName" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                                        <input type="text" id="hteName" name="NAME" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter HTE Name">
+                                        <input type="text" id="hteName" name="NAME" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter HTE Name">
                                     </div>
                                     <div>
                                         <label for="hteIndustry" class="block text-sm font-medium text-gray-700 mb-1">Industry</label>
-                                        <input type="text" id="hteIndustry" name="INDUSTRY" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Industry">
+                                        <input type="text" id="hteIndustry" name="INDUSTRY" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Industry">
                                     </div>
                                     <div>
                                         <label for="hteAddress" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                                        <input type="text" id="hteAddress" name="ADDRESS" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Address">
+                                        <input type="text" id="hteAddress" name="ADDRESS" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Address">
                                     </div>
                                     <div>
                                         <label for="hteEmail" class="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
-                                        <input type="email" id="hteEmail" name="CONTACT_EMAIL" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Email">
+                                        <input type="email" id="hteEmail" name="CONTACT_EMAIL" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Email">
                                     </div>
                                     <div>
                                         <label for="hteContactPerson" class="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
-                                        <input type="text" id="hteContactPerson" name="CONTACT_PERSON" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Person">
+                                        <input type="text" id="hteContactPerson" name="CONTACT_PERSON" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Person">
                                     </div>
                                     <div>
                                         <label for="hteContactNumber" class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-                                        <input type="text" id="hteContactNumber" name="CONTACT_NUMBER" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Number">
+                                        <input type="text" id="hteContactNumber" name="CONTACT_NUMBER" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Number">
                                     </div>
                                     <div>
                                         <label for="sessionSelect" class="block text-sm font-medium text-gray-700 mb-1">Assign to Session</label>
-                                        <select id="sessionSelect" name="sessionId" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        <select id="sessionSelect" name="sessionId" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                             <option value="">Select Session</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label for="hteLogo" class="block text-sm font-medium text-gray-700 mb-1">Company Logo <span class="text-red-500">*</span></label>
-                                        <input type="file" id="hteLogo" name="LOGO" accept="image/*" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        <input type="file" id="hteLogo" name="LOGO" accept="image/*" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                         <small class="text-gray-500">Upload a logo image for the company.</small>
                                     </div>
                                 </div>
@@ -872,7 +931,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                             <form id="deleteHTEFormSubmit" class="space-y-6">
                                 <div>
                                     <label for="deleteHteSelect" class="block text-sm font-medium text-gray-700 mb-2">Select HTE to Delete</label>
-                                    <select id="deleteHteSelect" name="hteId" required class="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 bg-gray-50 text-gray-800">
+                                    <select id="deleteHteSelect" name="hteId" required="" class="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 bg-gray-50 text-gray-800">
                                         <option value="">Select HTE</option>
                                     </select>
                                 </div>
@@ -896,13 +955,13 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label for="deleteStudentSessionSelect" class="block text-sm font-medium text-gray-700 mb-1">Session</label>
-                                        <select id="deleteStudentSessionSelect" name="sessionId" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                        <select id="deleteStudentSessionSelect" name="sessionId" required="" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
                                             <option value="">Select Session</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label for="deleteStudentHteSelect" class="block text-sm font-medium text-gray-700 mb-1">HTE</label>
-                                        <select id="deleteStudentHteSelect" name="hteId" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                        <select id="deleteStudentHteSelect" name="hteId" required="" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
                                             <option value="">Select HTE</option>
                                         </select>
                                     </div>
@@ -943,7 +1002,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                             <form id="deleteSessionFormSubmit" class="space-y-6">
                                 <div>
                                     <label for="deleteSessionSelect" class="block text-sm font-medium text-gray-700 mb-2">Select Session to Delete</label>
-                                    <select id="deleteSessionSelect" name="sessionId" required class="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-gray-50 text-gray-800">
+                                    <select id="deleteSessionSelect" name="sessionId" required="" class="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-gray-50 text-gray-800">
                                         <option value="">Select Session</option>
                                     </select>
                                 </div>
@@ -1017,17 +1076,17 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                             <!-- Update Company Logo Modal -->
                             <div id="updateCompanyLogoModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
                                 <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative">
-                                    <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold" id="closeUpdateLogoModal">&times;</button>
+                                    <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold" id="closeUpdateLogoModal">×</button>
                                     <h3 class="text-2xl font-bold text-blue-700 mb-6 text-center">Update Company Logo</h3>
                                     <form id="updateCompanyLogoForm" enctype="multipart/form-data">
-                                        <input type="hidden" id="updateLogoHteId" name="hteId" />
+                                        <input type="hidden" id="updateLogoHteId" name="hteId">
                                         <div class="mb-4">
                                             <label for="updateLogoFile" class="block text-sm font-medium text-gray-700 mb-1">Select New Logo</label>
-                                            <input type="file" id="updateLogoFile" name="LOGO" accept="image/*" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                            <input type="file" id="updateLogoFile" name="LOGO" accept="image/*" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                             <small class="text-gray-500">Upload a new logo image for the company.</small>
                                         </div>
                                         <div class="mb-4">
-                                            <img id="updateLogoPreview" src="#" alt="Logo Preview" class="hidden w-24 h-24 rounded-full object-cover border mx-auto" />
+                                            <img id="updateLogoPreview" src="#" alt="Logo Preview" class="hidden w-24 h-24 rounded-full object-cover border mx-auto">
                                         </div>
                                         <div class="flex gap-4 justify-end">
                                             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition">Save Logo</button>
@@ -1039,15 +1098,12 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Post-Analysis Tab Content -->
-        <div id="postAnalysisContent" class="tab-content hidden">
+        </div><!-- Post-Analysis Tab Content --><div id="postAnalysisContent" class="tab-content hidden">
                 <div class="flex flex-col lg:flex-row w-full min-h-[500px]">
                     <!-- Left Column: Student List/Search -->
                     <div class="w-full lg:w-1/4 lg:min-w-[220px] lg:max-w-xs bg-white lg:border-r border-gray-200 p-3 md:p-6 flex flex-col">
                         <div class="mb-4 md:mb-6">
-                            <input type="text" id="postAnalysisStudentSearch" placeholder="Search student" class="w-full px-3 md:px-4 py-2 text-sm md:text-base rounded-lg border border-gray-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-200 text-gray-900 font-medium shadow-sm transition" />
+                            <input type="text" id="postAnalysisStudentSearch" placeholder="Search student" class="w-full px-3 md:px-4 py-2 text-sm md:text-base rounded-lg border border-gray-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-200 text-gray-900 font-medium shadow-sm transition">
                         </div>
                         <div id="postAnalysisStudentListPanel" class="flex-1 overflow-y-auto postanalysis-student-list max-h-64 lg:max-h-none">
                             <!-- Student items will be dynamically rendered here -->
@@ -1088,9 +1144,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
+            </div></div>
 
         
         
@@ -1100,17 +1154,17 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
              
             
     
-    <!-- Profile Modal -->
-    <div id="profileModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Profile Details</h2>
-                <button class="modal-close" id="closeProfileModal">×</button>
+        <!-- Profile Modal -->
+        <div id="profileModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Profile Details</h2>
+                    <button class="modal-close" id="closeProfileModal">×</button>
+                </div>
+                <div class="modal-body hidden" id="profileModalContent">
+                    <!-- Profile content will be loaded here -->
+                </div>
             </div>
-            <div class="modal-body hidden" id="profileModalContent">
-                <!-- Profile content will be loaded here -->
-            </div>
-        </div>
     </div>
 
     <input type="hidden" id="hiddencdrid" value="59828996">
