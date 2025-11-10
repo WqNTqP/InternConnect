@@ -1071,14 +1071,27 @@ $(function() {
     // Populate post-assessment student list when tab is activated
     // Load post-assessment students for coordinator
     function loadPostAssessmentStudents() {
+        let cdrid = $("#hiddencdrid").val();
+        
+        if (!cdrid) {
+            $('#postStudentListPanel').html('<div class="no-students">Coordinator ID not found.</div>');
+            return;
+        }
+
         $.ajax({
             url: 'ajaxhandler/coordinatorPostAssessmentAjax.php',
             type: 'POST',
             dataType: 'json',
+            data: { coordinator_id: cdrid },
             success: function(response) {
                 if (response.success && response.students) {
-                    allPostStudents = response.students;
-                    renderPostStudentList(allPostStudents);
+                    if (response.students.length > 0) {
+                        allPostStudents = response.students;
+                        renderPostStudentList(allPostStudents);
+                    } else {
+                        allPostStudents = [];
+                        $('#postStudentListPanel').html('<div class="no-students">No students assigned to you for post-assessment.</div>');
+                    }
                 } else {
                     allPostStudents = [];
                     $('#postStudentListPanel').html('<div class="no-students">No students found for post-assessment.</div>');

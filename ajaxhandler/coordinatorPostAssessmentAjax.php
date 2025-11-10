@@ -49,10 +49,18 @@ if (isset($_POST['action']) && $_POST['action'] === 'getStudentPostAssessment' &
 try {
     $db = new Database();
     $conn = $db->conn;
-    // Fetch all students from interns_details (no attendance or post_assessment join)
-    $stmt = $conn->prepare("SELECT INTERNS_ID, STUDENT_ID, SURNAME, NAME FROM interns_details");
-    $stmt->execute();
+    
+    // Fetch students assigned to the current coordinator through internship_needs
+    $stmt = $conn->prepare("
+        SELECT DISTINCT id.INTERNS_ID, id.STUDENT_ID, id.SURNAME, id.NAME 
+        FROM interns_details id
+        JOIN student s ON id.STUDENT_ID = s.STUDENT_ID
+        JOIN internship_needs itn ON s.HTE_ID = itn.HTE_ID
+        WHERE itn.COORDINATOR_ID = ?
+    ");
+    $stmt->execute([$coordinator_id]);
     $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
     echo json_encode(["success" => true, "students" => $students]);
 } catch (Exception $e) {
     http_response_code(500);
