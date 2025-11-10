@@ -514,6 +514,7 @@ function generateStudentFilterOptions($coordinatorId) {
                 </div>
                         </div>
             </div>
+            </div>
             <!-- End Evaluation Tab Content -->
 
             <!-- Prediction Tab Content -->
