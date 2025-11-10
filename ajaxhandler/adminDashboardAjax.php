@@ -149,36 +149,43 @@ switch ($action) {
             sendResponse('error', null, 'Please select a valid profile picture to upload');
         }
 
-        $fileTmpPath = $_FILES['profilePicture']['tmp_name'];
-        $fileName = $_FILES['profilePicture']['name'];
-        $fileSize = $_FILES['profilePicture']['size'];
-        $fileType = $_FILES['profilePicture']['type'];
+        // Validate file type
         $allowedFileTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $_FILES['profilePicture']['tmp_name']);
+        finfo_close($finfo);
 
-        if (!in_array($fileType, $allowedFileTypes)) {
+        if (!in_array($mimeType, $allowedFileTypes)) {
             sendResponse('error', null, 'Invalid file type. Only JPEG, PNG, and GIF files are allowed.');
         }
 
-        $uploadFileDir = '../uploads/';
-        if (!file_exists($uploadFileDir)) {
-            mkdir($uploadFileDir, 0777, true);
-        }
-        $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-        $uniqueFileName = uniqid() . '_' . $adminId . '.' . $fileExtension;
-        $dest_path = $uploadFileDir . $uniqueFileName;
+        // Use safe upload with Cloudinary support - require cloud storage
+        $path = $_SERVER['DOCUMENT_ROOT'];
+        $basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+        require_once $basePath . '/config/safe_upload.php';
+        
+        $uploadResult = safeUploadImage(
+            $_FILES['profilePicture']['tmp_name'],
+            $_FILES['profilePicture']['name'],
+            'uploads',
+            'admin_profiles',
+            true // Require Cloudinary - fail if not available to prevent data loss
+        );
 
-        if (move_uploaded_file($fileTmpPath, $dest_path)) {
+        if ($uploadResult['success']) {
             try {
-                // Update only the profile picture with filename only (no path)
+                // Store the full Cloudinary URL
                 $stmt = $dbo->conn->prepare("UPDATE coordinator SET PROFILE = ? WHERE COORDINATOR_ID = ?");
-                $stmt->execute([$uniqueFileName, $adminId]);
+                $stmt->execute([$uploadResult['url'], $adminId]);
                 sendResponse('success', null, 'Profile picture updated successfully');
+                error_log("Admin profile picture uploaded to Cloudinary: " . $uploadResult['url']);
             } catch (Exception $e) {
-                logError("Error updating profile picture: " . $e->getMessage());
+                logError("Error updating profile picture in database: " . $e->getMessage());
                 sendResponse('error', null, 'Error updating profile picture');
             }
         } else {
-            sendResponse('error', null, 'Error moving the uploaded file');
+            logError("Admin profile picture upload failed (Cloudinary required): " . ($uploadResult['error'] ?? 'Unknown error'));
+            sendResponse('error', null, 'Profile picture upload failed: ' . ($uploadResult['error'] ?? 'Cloud storage unavailable'));
         }
         break;
 
