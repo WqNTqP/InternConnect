@@ -73,10 +73,12 @@ switch ($action) {
             }
             $studentId = $row['STUDENT_ID'];
 
-            // Get all evaluation answers for this student
-            $stmt = $dbo->conn->prepare("SELECT se.id as id, se.id as student_evaluation_id, eq.question_text, se.answer FROM student_evaluation se JOIN evaluation_questions eq ON se.question_id = eq.question_id WHERE se.STUDENT_ID = ?");
+            // Get all evaluation answers for this student with LEFT JOIN to handle missing questions
+            $stmt = $dbo->conn->prepare("SELECT se.id as id, se.id as student_evaluation_id, COALESCE(eq.question_text, CONCAT('Question ', se.question_id)) as question_text, se.answer, se.question_id FROM student_evaluation se LEFT JOIN evaluation_questions eq ON se.question_id = eq.question_id WHERE se.STUDENT_ID = ? ORDER BY se.question_id");
             $stmt->execute([$studentId]);
             $evaluations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
 
             // Check if all answers have been rated by coordinator
             $isRated = false;

@@ -4235,6 +4235,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success && Array.isArray(response.students)) {
                     allStudents = response.students;
+                    console.log('[DEBUG] AllStudents data structure:', allStudents.slice(0, 2)); // Show first 2 students
                     renderStudentList(allStudents);
                 } else {
                     renderEmptyPreAssessmentState('No students found.');
@@ -4255,6 +4256,12 @@ $(document).ready(function() {
         let studentListHtml = '';
         sorted.forEach(function(student) {
             let displayId = student.STUDENT_ID || student.student_id || 'Unknown ID';
+            console.log('[DEBUG] Rendering student:', { 
+                id: student.id, 
+                STUDENT_ID: student.STUDENT_ID, 
+                displayId: displayId,
+                dataStudentId: student.id // This will be in the HTML
+            });
             studentListHtml += `
                 <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${student.id === selectedStudentId ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.id}">
                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
