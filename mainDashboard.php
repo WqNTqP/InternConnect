@@ -339,183 +339,169 @@ function generateStudentFilterOptions($coordinatorId) {
             </div>
             <!-- End Report Tab Content -->
         
-            <!-- Evaluation Tab Content -->
-            <div id="evaluationContent" class="bg-white rounded-lg shadow-md hidden">
-                        <div class="border-b">
-                            <nav class="flex flex-wrap gap-2 md:space-x-4 px-3 md:px-6 py-3 overflow-x-auto">
-                                <button class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-900 bg-gray-100 rounded-md active whitespace-nowrap" id="evalQuestionsTabBtn">
-                                    All Questions
-                                </button>
-                                <button class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md whitespace-nowrap" id="rateTabBtn">
-                                    Pre-Assessment
-                                </button>
-                                <button class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md whitespace-nowrap" id="postAssessmentTabBtn">
-                                    Post-Assessment
-                                </button>
-                                <button class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md whitespace-nowrap" id="reviewTabBtn">
-                                    Review
-                                </button>
-                            </nav>
-                        </div>
-                        <div class="p-3 md:p-6">
-                            <div id="evalQuestionsTabContent" class="space-y-6 active hidden" style="display: block;"><div class="flex w-full"><div class="left-col w-1/5 max-w-xs pr-4"><h2 class="text-xl font-bold text-gray-800 mb-4">Categories</h2><div class="mb-4"><label for="questionCategoryDropdown" class="mr-2 text-gray-700 font-medium">Category:</label><select id="questionCategoryDropdown" class="border border-gray-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"><option value="Soft Skills">Soft Skills</option><option value="Communication Skills">Communication Skills</option><option value="Technical Skills">Technical Skills</option><option value="Personal and Interpersonal Skills">Personal and Interpersonal Skills</option></select></div><div class="flex items-center mb-2">
-                                    <span class="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full mr-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l9-9a1.414 1.414 0 00-2-2l-9 9v3z"></path></svg>
-                                        Editable: Click question text to edit
-                                    </span>
-                                </div></div><div class="right-col w-4/5 pl-4"><h2 class="text-2xl font-bold text-gray-800 mb-4">All Evaluation Questions</h2><div id="questionsByCategory" style="max-height:calc(100vh - 320px);overflow-y:auto;"><ul class="space-y-3"><li class="bg-white rounded-lg shadow p-4">
-                                            <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="1">Describe a time you worked effectively in a team.</div>
-                                            </li><li class="bg-white rounded-lg shadow p-4">
-                                            <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="2">How do you handle stressful situations at work or school?</div>
-                                            </li><li class="bg-white rounded-lg shadow p-4">
-                                            <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="3">Give an example of how you adapted to a major change.</div>
-                                            </li><li class="bg-white rounded-lg shadow p-4">
-                                            <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="4">How do you approach solving a difficult problem?</div>
-                                            </li><li class="bg-white rounded-lg shadow p-4">
-                                            <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="5">What motivates you to achieve your goals?</div>
-                                            </li><li class="bg-white rounded-lg shadow p-4">
-                                            <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="6">How do you manage your time when working on multiple tasks?</div>
-                                            </li><li class="bg-white rounded-lg shadow p-4">
-                                            <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="7">Describe a situation where you showed leadership.</div>
-                                            </li><li class="bg-white rounded-lg shadow p-4">
-                                            <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="8">How do you respond to constructive criticism?</div>
-                                            </li><li class="bg-white rounded-lg shadow p-4">
-                                            <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="9">What steps do you take to stay organized?</div>
-                                            </li><li class="bg-white rounded-lg shadow p-4">
-                                            <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="10">How do you maintain a positive attitude during setbacks?</div>
-                                            </li></ul></div><div class="flex flex-col items-center mt-6 mb-4">
-                                    <button id="btnSaveAllQuestions" class="px-8 py-2 text-lg font-semibold bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all duration-150">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                        Save All Changes
-                                    </button>
-                                    <span id="saveAllStatus" class="mt-4 px-4 py-2 rounded-lg text-base font-medium hidden"></span>
-                                </div></div></div></div>
-                            
-                            <div id="rateTabContent" class="hidden" style="display: none;"><div class="flex w-full"><div class="left-col w-1/5 max-w-xs pr-4"><div class="mb-4"><input type="text" id="rateStudentSearch" placeholder="Search student" class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200"></div><div id="studentListPanel" class="overflow-y-auto max-h-[420px] flex flex-col gap-1">
-                            <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="291">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                </span>
-                                <span class="truncate">12345</span>
-                            </div>
-                        
-                            <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="190">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                </span>
-                                <span class="truncate">59828881</span>
-                            </div>
-                        
-                            <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="289">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                </span>
-                                <span class="truncate">59829532</span>
-                            </div>
-                        
-                            <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="288">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                </span>
-                                <span class="truncate">59829536</span>
-                            </div>
-                        
-                            <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="290">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                </span>
-                                <span class="truncate">59829663</span>
-                            </div>
-                        
-                            <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="292">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                </span>
-                                <span class="truncate">67890</span>
-                            </div>
-                        </div></div><div class="right-col w-4/5 pl-4">
-                        <div class="flex flex-col items-center justify-center h-full">
-                            <div class="bg-blue-50 rounded-full p-6 mb-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                            </div>
-                            <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
-                            <div class="text-gray-500 text-base">Select a student from the list to view their pre-assessment details.</div>
-                        </div>
-                        </div></div></div>
-                            
-                            <div id="postAssessmentTabContent" class="hidden" style="display: none;">
-                                <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
-                                    <div class="w-full lg:w-1/3 bg-gray-50 rounded-lg shadow-md p-3 md:p-4">
-                                        <div class="mb-4">
-                                            <input type="text" id="postStudentSearch" placeholder="Search student" class="w-full px-3 md:px-4 py-2 text-sm md:text-base text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
-                                                </div>
-                                                <div id="postStudentListPanel" class="overflow-y-auto max-h-64 lg:max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
-                                                    <!-- Student list will be loaded here dynamically -->
-                                                </div>
-                                            </div>
-                                            <div class="w-full lg:w-2/3 bg-white rounded-lg shadow-md p-3 md:p-4">
-                                                <div id="postEvalList" class="space-y-4">
-                                                    <!-- Post-assessment evaluation cards/messages will be loaded here dynamically -->
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div id="reviewTabContent" class="hidden" style="display: none;"><div class="flex w-full"><div class="left-col w-1/5 max-w-xs pr-4"><div class="mb-4"><input type="text" id="reviewStudentSearch" placeholder="Search student" class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200"></div><div id="reviewStudentListPanel" class="overflow-y-auto max-h-[420px] flex flex-col gap-1">
-                            <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="12345">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                </span>
-                                <span class="truncate">John Doe</span>
-                            </div>
-                        
-                            <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="59828881">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                </span>
-                                <span class="truncate">Kim Charles Emping</span>
-                            </div>
-                        
-                            <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="59829532">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                </span>
-                                <span class="truncate">James Harold Roble</span>
-                            </div>
-                        
-                            <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="59829536">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                </span>
-                                <span class="truncate">Urien Adriane  Suico</span>
-                            </div>
-                        
-                            <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="59829663">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                </span>
-                                <span class="truncate">Christine  Serdan</span>
-                            </div>
-                        
-                            <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="67890">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                </span>
-                                <span class="truncate">Jane Smith</span>
-                            </div>
-                        </div></div><div class="right-col w-4/5 pl-4">
-                        <div class="flex flex-col items-center justify-center h-full">
-                            <div class="bg-blue-50 rounded-full p-6 mb-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                            </div>
-                            <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
-                            <div class="text-gray-500 text-base">Select a student from the list to view their reviewed assessment details.</div>
-                        </div>
-                        </div>
+<!-- Evaluation Tab Content -->
+<div id="evaluationContent" class="bg-white rounded-lg shadow-md hidden">
+    <div class="border-b">
+        <nav class="flex flex-wrap gap-2 md:space-x-4 px-3 md:px-6 py-3 overflow-x-auto">
+            <button id="evalQuestionsTabBtn"
+                class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-900 bg-gray-100 rounded-md active whitespace-nowrap">
+                All Questions
+            </button>
+            <button id="rateTabBtn"
+                class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md whitespace-nowrap">
+                Pre-Assessment
+            </button>
+            <button id="postAssessmentTabBtn"
+                class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md whitespace-nowrap">
+                Post-Assessment
+            </button>
+            <button id="reviewTabBtn"
+                class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md whitespace-nowrap">
+                Review
+            </button>
+        </nav>
+    </div>
+
+    <div class="p-3 md:p-6">
+        <!-- All Questions Tab -->
+        <div id="evalQuestionsTabContent" class="space-y-6 active">
+            <div class="flex w-full">
+                <!-- Left Column -->
+                <div class="left-col w-1/5 max-w-xs pr-4">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Categories</h2>
+                    <div class="mb-4">
+                        <label for="questionCategoryDropdown"
+                            class="mr-2 text-gray-700 font-medium">Category:</label>
+                        <select id="questionCategoryDropdown"
+                            class="border border-gray-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                            <option value="Soft Skills">Soft Skills</option>
+                            <option value="Communication Skills">Communication Skills</option>
+                            <option value="Technical Skills">Technical Skills</option>
+                            <option value="Personal and Interpersonal Skills">Personal and Interpersonal Skills</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center mb-2">
+                        <span
+                            class="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full mr-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15.232 5.232l3.536 3.536M9 13h3l9-9a1.414 1.414 0 00-2-2l-9 9v3z" />
+                            </svg>
+                            Editable: Click question text to edit
+                        </span>
+                    </div>
                 </div>
+
+                <!-- Right Column -->
+                <div class="right-col w-4/5 pl-4">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">All Evaluation Questions</h2>
+                    <div id="questionsByCategory" class="max-h-[calc(100vh-320px)] overflow-y-auto">
+                        <ul class="space-y-3">
+                            <!-- Evaluation questions will be loaded here dynamically -->
+                        </ul>
+                    </div>
+
+                    <div class="flex flex-col items-center mt-6 mb-4">
+                        <button id="btnSaveAllQuestions"
+                            class="px-8 py-2 text-lg font-semibold bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all duration-150">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                            Save All Changes
+                        </button>
+                        <span id="saveAllStatus"
+                            class="mt-4 px-4 py-2 rounded-lg text-base font-medium hidden"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pre-Assessment Tab -->
+        <div id="rateTabContent" class="hidden">
+            <div class="flex w-full">
+                <div class="left-col w-1/5 max-w-xs pr-4">
+                    <div class="mb-4">
+                        <input type="text" id="rateStudentSearch" placeholder="Search student"
+                            class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                    </div>
+                    <div id="studentListPanel" class="overflow-y-auto max-h-[420px] flex flex-col gap-1">
+                        <!-- Student list dynamically loaded -->
+                    </div>
+                </div>
+                <div class="right-col w-4/5 pl-4">
+                    <div class="flex flex-col items-center justify-center h-full">
+                        <div class="bg-blue-50 rounded-full p-6 mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-400" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
                         </div>
+                        <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
+                        <div class="text-gray-500 text-base">Select a student from the list to view their
+                            pre-assessment details.</div>
+                    </div>
+                </div>
             </div>
+        </div>
+
+        <!-- Post-Assessment Tab -->
+        <div id="postAssessmentTabContent" class="hidden">
+            <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
+                <div class="w-full lg:w-1/3 bg-gray-50 rounded-lg shadow-md p-3 md:p-4">
+                    <div class="mb-4">
+                        <input type="text" id="postStudentSearch" placeholder="Search student"
+                            class="w-full px-3 md:px-4 py-2 text-sm md:text-base text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                    </div>
+                    <div id="postStudentListPanel"
+                        class="overflow-y-auto max-h-64 lg:max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
+                        <!-- Student list will be loaded here dynamically -->
+                    </div>
+                </div>
+                <div class="w-full lg:w-2/3 bg-white rounded-lg shadow-md p-3 md:p-4">
+                    <div id="postEvalList" class="space-y-4">
+                        <!-- Post-assessment evaluation cards/messages will be loaded here dynamically -->
+                    </div>
+                </div>
             </div>
-            <!-- End Evaluation Tab Content -->
+        </div>
+
+        <!-- Review Tab -->
+        <div id="reviewTabContent" class="hidden">
+            <div class="flex w-full">
+                <div class="left-col w-1/5 max-w-xs pr-4">
+                    <div class="mb-4">
+                        <input type="text" id="reviewStudentSearch" placeholder="Search student"
+                            class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                    </div>
+                    <div id="reviewStudentListPanel"
+                        class="overflow-y-auto max-h-[420px] flex flex-col gap-1">
+                        <!-- Review list dynamically loaded -->
+                    </div>
+                </div>
+                <div class="right-col w-4/5 pl-4">
+                    <div class="flex flex-col items-center justify-center h-full">
+                        <div class="bg-blue-50 rounded-full p-6 mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-400" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                        <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
+                        <div class="text-gray-500 text-base">Select a student from the list to view their reviewed
+                            assessment details.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End Evaluation Tab Content -->
+
 
             <!-- Prediction Tab Content -->
             <div id="predictionContent" class="hidden">
@@ -1185,9 +1171,7 @@ function generateStudentFilterOptions($coordinatorId) {
             $('#postStudentListPanel').html(loadingHTML);
             $('#postAnalysisStudentListPanel').html(loadingHTML);
             
-            // Additional cleanup - remove any remaining hardcoded student items
-            $('.preassessment-student-item[data-studentid="291"], .preassessment-student-item[data-studentid="190"], .preassessment-student-item[data-studentid="289"], .preassessment-student-item[data-studentid="288"], .preassessment-student-item[data-studentid="290"], .preassessment-student-item[data-studentid="292"]').remove();
-            $('.review-student-item[data-studentid="12345"], .review-student-item[data-studentid="59828881"], .review-student-item[data-studentid="59829532"], .review-student-item[data-studentid="59829536"], .review-student-item[data-studentid="59829663"], .review-student-item[data-studentid="67890"]').remove();
+
             
             // Clear hardcoded evaluation questions
             $('#questionsByCategory ul').html(`
@@ -1334,17 +1318,7 @@ function generateStudentFilterOptions($coordinatorId) {
             
             // Function to load students for evaluation tabs
             function loadEvaluationStudents() {
-                // Prevent multiple simultaneous calls
-                if (loadEvaluationStudents.isLoading) {
-                    return;
-                }
-                loadEvaluationStudents.isLoading = true;
-                
                 let cdrid = $('#hiddencdrid').val();
-                
-                // Clear existing content first to prevent duplicates
-                $('#studentListPanel').html('<div class="text-center py-8 text-gray-500"><div class="animate-pulse mb-2"><i class="fas fa-users text-2xl text-blue-400"></i></div><p>Loading students...</p></div>');
-                $('#reviewStudentListPanel').html('<div class="text-center py-8 text-gray-500"><div class="animate-pulse mb-2"><i class="fas fa-users text-2xl text-blue-400"></i></div><p>Loading students...</p></div>');
                 
                 $.ajax({
                     url: "ajaxhandler/attendanceAJAX.php",
@@ -1365,7 +1339,7 @@ function generateStudentFilterOptions($coordinatorId) {
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 616 0z"></path>
                                             </svg>
                                         </span>
-                                        <span class="truncate">${student.NAME || student.STUDENT_ID}</span>
+                                        <span class="truncate">${student.STUDENT_ID}</span>
                                     </div>
                                 `;
                                 
@@ -1377,7 +1351,7 @@ function generateStudentFilterOptions($coordinatorId) {
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 616 0z"></path>
                                             </svg>
                                         </span>
-                                        <span class="truncate">${student.NAME || student.STUDENT_ID}</span>
+                                        <span class="truncate">${student.STUDENT_ID}</span>
                                     </div>
                                 `;
                             });
@@ -1396,9 +1370,6 @@ function generateStudentFilterOptions($coordinatorId) {
                             $('#studentListPanel').html(noStudentsHTML);
                             $('#reviewStudentListPanel').html(noStudentsHTML);
                         }
-                        
-                        // Reset loading flag
-                        loadEvaluationStudents.isLoading = false;
                     },
                     error: function(e) {
                         console.error("Error loading evaluation students:", e);
@@ -1410,9 +1381,6 @@ function generateStudentFilterOptions($coordinatorId) {
                         `;
                         $('#studentListPanel').html(errorHTML);
                         $('#reviewStudentListPanel').html(errorHTML);
-                        
-                        // Reset loading flag
-                        loadEvaluationStudents.isLoading = false;
                     }
                 });
             }
@@ -1545,12 +1513,6 @@ function generateStudentFilterOptions($coordinatorId) {
         });
         // Tab switching functionality
         function switchTab(tabName) {
-            // Clean up any remaining hardcoded content before switching tabs
-            if (tabName === 'evaluation') {
-                // Clear any leftover hardcoded student items
-                $('.preassessment-student-item[data-studentid="291"], .preassessment-student-item[data-studentid="190"], .preassessment-student-item[data-studentid="289"], .preassessment-student-item[data-studentid="288"], .preassessment-student-item[data-studentid="290"], .preassessment-student-item[data-studentid="292"]').remove();
-                $('.review-student-item[data-studentid="12345"], .review-student-item[data-studentid="59828881"], .review-student-item[data-studentid="59829532"], .review-student-item[data-studentid="59829536"], .review-student-item[data-studentid="59829663"], .review-student-item[data-studentid="67890"]').remove();
-            }
             
             // Hide all tab contents by adding hidden class
             document.querySelectorAll('[id$="Content"]').forEach(content => {

@@ -1201,12 +1201,12 @@ function loadPostAssessmentEvaluation(studentId) {
             $('#evalQuestionsTabContent').show();
         } else if (this.id === 'rateTabBtn') {
             $('#rateTabContent').show();
-            loadPreassessmentStudentList(); // Load students dynamically when pre-assessment tab is clicked
+            // loadPreassessmentStudentList(); // Disabled - now handled by unified evaluation student loading
         } else if (this.id === 'postAssessmentTabBtn') {
             $('#postAssessmentTabContent').show();
         } else if (this.id === 'reviewTabBtn') {
             $('#reviewTabContent').show();
-            loadReviewStudentList(); // Load students dynamically when review tab is clicked
+            // loadReviewStudentList(); // Disabled - now handled by unified evaluation student loading
         // Removed stats tab logic
         }
     });
@@ -4020,7 +4020,7 @@ $(document).ready(function() {
         $('#rateTabContent').addClass('active');
         $('#evalQuestionsTabContent').removeClass('active');
         $('#reviewTabContent').removeClass('active');
-        loadPreassessmentStudentList(); // Load students dynamically when pre-assessment tab is clicked
+        // loadPreassessmentStudentList(); // Disabled - now handled by unified evaluation student loading
     });
     $('#reviewTabBtn').click(function() {
         $(this).addClass('active');
@@ -4029,7 +4029,7 @@ $(document).ready(function() {
         $('#reviewTabContent').addClass('active');
         $('#evalQuestionsTabContent').removeClass('active');
         $('#rateTabContent').removeClass('active');
-        loadReviewStudentList(); // Load students dynamically when review tab is clicked
+        // loadReviewStudentList(); // Disabled - now handled by unified evaluation student loading
     });
 
     // Load and separate students for Rate and Review tabs
@@ -4447,7 +4447,7 @@ $(document).ready(function() {
     // Initial load for Pre-Assessment tab
     $(document).ready(function() {
         if ($('#rateTabContent').length) {
-            loadPreassessmentStudentList();
+            // loadPreassessmentStudentList(); // Disabled - now handled by unified evaluation student loading
         }
     });
 
@@ -4600,7 +4600,7 @@ $(document).ready(function() {
     // Initial load for Review tab student list
     $(document).ready(function() {
         if ($('#reviewTabContent').length) {
-            loadReviewStudentList();
+            // loadReviewStudentList(); // Disabled - now handled by unified evaluation student loading
         }
     });
 
