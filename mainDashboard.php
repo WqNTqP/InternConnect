@@ -510,8 +510,10 @@ function generateStudentFilterOptions($coordinatorId) {
                         </div>
                         </div>
             </div>
+            </div>
 
-            <!-- Prediction Tab Content --><div id="predictionContent" class="hidden">
+            <!-- Prediction Tab Content -->
+            <div id="predictionContent" class="hidden">
             <div class="bg-white rounded-lg shadow-md p-3 md:p-6">
                         <div class="mt-4 md:mt-6 overflow-x-auto">
                             <table id="predictionTable" class="min-w-full rounded-xl shadow-lg overflow-hidden border border-gray-200">
@@ -538,6 +540,7 @@ function generateStudentFilterOptions($coordinatorId) {
                                 </tbody>
                             </table>
                     </div>
+            </div>
             </div>
             
             <!-- Control Tab Content -->
@@ -1143,6 +1146,7 @@ function generateStudentFilterOptions($coordinatorId) {
         
              
             
+    </div>
     
         <!-- Profile Modal -->
         <div id="profileModal" class="modal" style="display: none;">
