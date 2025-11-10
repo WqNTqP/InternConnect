@@ -37,14 +37,6 @@ if(!empty($action))
             ];
         }
 
-        for($i=0;$i<100000;$i++)
-        {
-          for($j=0;$j<2000;$j++)
-          {
-            
-          }
-        }
-
         // Return the response as JSON
         echo json_encode($rv);
     }
