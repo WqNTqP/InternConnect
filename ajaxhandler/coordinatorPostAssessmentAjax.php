@@ -54,8 +54,8 @@ try {
     $stmt = $conn->prepare("
         SELECT DISTINCT id.INTERNS_ID, id.STUDENT_ID, id.SURNAME, id.NAME 
         FROM interns_details id
-        JOIN student s ON id.STUDENT_ID = s.STUDENT_ID
-        JOIN internship_needs itn ON s.HTE_ID = itn.HTE_ID
+        JOIN intern_details idet ON id.INTERNS_ID = idet.INTERNS_ID
+        JOIN internship_needs itn ON idet.HTE_ID = itn.HTE_ID
         WHERE itn.COORDINATOR_ID = ?
     ");
     $stmt->execute([$coordinator_id]);

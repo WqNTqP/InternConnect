@@ -1253,6 +1253,14 @@ function loadPostAssessmentEvaluation(studentId) {
                     return;
                 }
                 let students = response.students;
+                
+                // Handle empty student list
+                if (!students || students.length === 0) {
+                    $('#predictionTable tbody').html('<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No students assigned to you for prediction.</td></tr>');
+                    window.predictionStudents = [];
+                    return;
+                }
+                
                 let tbody = '';
                 students.forEach(function(student, idx) {
                         let statusIcon = student.valid ? '<span class="ml-1">✔️</span>' : '<span class="ml-1" style="color:red;" title="Missing: ' + student.missing.join(', ') + '">❌</span>';

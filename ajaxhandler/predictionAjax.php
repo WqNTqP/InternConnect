@@ -150,9 +150,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             
             try {
                 $sql = "SELECT DISTINCT
-                            s.STUDENT_ID,
-                            CONCAT(s.SURNAME, ', ', s.NAME) as name,
-                            h.NAME as hte_name,
+                            id.STUDENT_ID,
+                            CONCAT(id.SURNAME, ', ', id.NAME) as name,
+                            hte.NAME as hte_name,
                             pa.ojt_placement as placement,
                             pa.prediction_reasoning as reasoning,
                             pa.prediction_probabilities as probabilities,
@@ -160,11 +160,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 WHEN pa.soft_skill IS NOT NULL AND pa.communication_skill IS NOT NULL THEN 'Rated'
                                 ELSE 'Not Rated'
                             END as status
-                        FROM student s
-                        LEFT JOIN hte h ON s.HTE_ID = h.HTE_ID  
-                        LEFT JOIN pre_assessment pa ON s.STUDENT_ID = pa.STUDENT_ID
-                        WHERE s.COORDINATOR_ID = ?
-                        ORDER BY s.SURNAME, s.NAME";
+                        FROM internship_needs ineed
+                        JOIN intern_details idet ON ineed.HTE_ID = idet.HTE_ID
+                        JOIN interns_details id ON idet.INTERNS_ID = id.INTERNS_ID
+                        JOIN host_training_establishment hte ON idet.HTE_ID = hte.HTE_ID
+                        LEFT JOIN pre_assessment pa ON id.STUDENT_ID = pa.STUDENT_ID
+                        WHERE ineed.COORDINATOR_ID = ?
+                        ORDER BY id.SURNAME, id.NAME";
                         
                 $stmt = $db->conn->prepare($sql);
                 $stmt->execute([$cdrid]);
