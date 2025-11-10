@@ -1592,8 +1592,8 @@ $(document).on('click', '#saveProfilePicture', function() {
         },
         success: function(response) {
             if (response.status === 'success' && response.data && response.data.filename) {
-                // Use backend filename for image src
-                const imgPath = 'uploads/' + response.data.filename + '?t=' + new Date().getTime();
+                // Use backend filename for image src - handle both local and Cloudinary URLs
+                const imgPath = response.data.filename.startsWith('http') ? response.data.filename : 'uploads/' + response.data.filename + '?t=' + new Date().getTime();
                 // Update modal image
                 $('#coordinatorProfilePicture img').attr('src', imgPath).show();
                 $('#coordinatorProfilePicture div').hide();
@@ -1862,7 +1862,7 @@ function loadApprovedReportsWithFilters() {
                 <div class="profile-header">
                     <div class="profile-avatar">
                         ${coordinatorData.PROFILE 
-                            ? `<img src="${getBaseUrl()}uploads/${coordinatorData.PROFILE}" alt="Profile" class="profile-image">` 
+                            ? `<img src="${coordinatorData.PROFILE.startsWith('http') ? coordinatorData.PROFILE : getBaseUrl() + 'uploads/' + coordinatorData.PROFILE}" alt="Profile" class="profile-image">` 
                             : `<div class="avatar-placeholder">${coordinatorData.NAME.charAt(0)}</div>`
                         }
                     </div>
@@ -1966,7 +1966,7 @@ function loadApprovedReportsWithFilters() {
                             <div class="profile-picture-section">
                                 <div class="current-profile-picture">
                                     ${coordinatorData.PROFILE_PICTURE ? 
-                                        `<img src="${getBaseUrl()}uploads/${coordinatorData.PROFILE_PICTURE}" alt="Current Profile" class="current-image">` :
+                                        `<img src="${coordinatorData.PROFILE_PICTURE.startsWith('http') ? coordinatorData.PROFILE_PICTURE : getBaseUrl() + 'uploads/' + coordinatorData.PROFILE_PICTURE}" alt="Current Profile" class="current-image">` :
                                         `<div class="avatar-placeholder">
                                             <i class="fas fa-user"></i>
                                         </div>`
@@ -2099,7 +2099,8 @@ function loadApprovedReportsWithFilters() {
                         $submitButton.after($successMessage);
                         
                         // Update the profile picture display
-                        $('.profile-image, .profile-image-preview').attr('src', 'uploads/' + jsonResponse.filename);
+                        const imageUrl = jsonResponse.filename.startsWith('http') ? jsonResponse.filename : 'uploads/' + jsonResponse.filename;
+                        $('.profile-image, .profile-image-preview').attr('src', imageUrl);
                         
                         // Fade out the modal and show profile after a short delay
                         setTimeout(() => {
@@ -2189,66 +2190,122 @@ function loadApprovedReportsWithFilters() {
         showChangePasswordModal();
     });
 
-    // Function to show change password modal
+    // Function to show change password modal with Tailwind styling
     function showChangePasswordModal() {
         let html = `
-            <div id="changePasswordModal" class="modal" style="display: flex;">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2>Change Password</h2>
-                        <button type="button" class="modal-close" id="closeChangePasswordModal">&times;</button>
+            <div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+                    <!-- Modal Header -->
+                    <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-semibold text-gray-800">Change Password</h2>
+                        <button type="button" id="closeChangePasswordModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
                     </div>
-                        <div class="modal-body">
-                            <form id="changePasswordForm">
-                                <div class="form-group">
-                                    <label for="currentPassword">Current Password:</label>
-                                    <input type="password" id="currentPassword" name="current_password" required style="position: relative; z-index: 1501;">
-                                </div>
-                                <div class="form-group">
-                                    <label for="newPassword">New Password:</label>
-                                    <input type="password" id="newPassword" name="new_password" required style="position: relative; z-index: 1501;">
-                                </div>
-                                <div class="form-group">
-                                    <label for="confirmPassword">Confirm New Password:</label>
-                                    <input type="password" id="confirmPassword" name="confirm_password" required style="position: relative; z-index: 1501;">
-                                </div>
-                                <div class="form-actions">
-                                    <button type="submit" class="btn-submit">Change Password</button>
-                                    <button type="button" id="cancelPasswordChange" class="btn-cancel">Cancel</button>
-                                </div>
-                            </form>
-                        </div>
+                    
+                    <!-- Modal Body -->
+                    <div class="p-6">
+                        <form id="changePasswordForm" class="space-y-4">
+                            <!-- Current Password -->
+                            <div class="space-y-2">
+                                <label for="currentPassword" class="block text-sm font-medium text-gray-700">
+                                    Current Password
+                                </label>
+                                <input 
+                                    type="password" 
+                                    id="currentPassword" 
+                                    name="current_password" 
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                    placeholder="Enter your current password"
+                                >
+                            </div>
+                            
+                            <!-- New Password -->
+                            <div class="space-y-2">
+                                <label for="newPassword" class="block text-sm font-medium text-gray-700">
+                                    New Password
+                                </label>
+                                <input 
+                                    type="password" 
+                                    id="newPassword" 
+                                    name="new_password" 
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                    placeholder="Enter new password (min. 6 characters)"
+                                >
+                            </div>
+                            
+                            <!-- Confirm Password -->
+                            <div class="space-y-2">
+                                <label for="confirmPassword" class="block text-sm font-medium text-gray-700">
+                                    Confirm New Password
+                                </label>
+                                <input 
+                                    type="password" 
+                                    id="confirmPassword" 
+                                    name="confirm_password" 
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                    placeholder="Confirm your new password"
+                                >
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="flex gap-3 pt-4">
+                                <button 
+                                    type="submit" 
+                                    class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
+                                >
+                                    Change Password
+                                </button>
+                                <button 
+                                    type="button" 
+                                    id="cancelPasswordChange" 
+                                    class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors font-medium"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
         `;
 
         $('body').append(html);
-        $("#changePasswordModal").hide().fadeIn();
+        $("#changePasswordModal").removeClass('hidden');
     }
 
-    // Modal event handlers
+    // Modal event handlers for Tailwind change password modal
     $(document).on('click', '#closeChangePasswordModal', function() {
-        $('#changePasswordModal').fadeOut(function() {
-            $(this).remove();
-        });
+        $('#changePasswordModal').addClass('opacity-0');
+        setTimeout(function() {
+            $('#changePasswordModal').remove();
+        }, 300);
     });
 
     $(document).on('click', '#cancelPasswordChange', function() {
-        $('#changePasswordModal').fadeOut(function() {
-            $(this).remove();
-        });
+        $('#changePasswordModal').addClass('opacity-0');
+        setTimeout(function() {
+            $('#changePasswordModal').remove();
+        }, 300);
     });
 
+    // Close modal when clicking outside
     $(document).on('click', '#changePasswordModal', function(e) {
         if (e.target === this) {
-            $(this).fadeOut(function() {
-                $(this).remove();
-            });
+            $(this).addClass('opacity-0');
+            setTimeout(function() {
+                $('#changePasswordModal').remove();
+            }, 300);
         }
     });
 
-    $(document).on('click', '#changePasswordModal .modal-content', function(e) {
+    // Prevent closing when clicking inside modal content
+    $(document).on('click', '#changePasswordModal > div', function(e) {
         e.stopPropagation();
     });
 
@@ -2283,7 +2340,7 @@ function loadApprovedReportsWithFilters() {
         }
 
         // Show loading state
-        $('.btn-submit').prop('disabled', true).text('Verifying...');
+        $('#changePasswordForm button[type="submit"]').prop('disabled', true).text('Verifying...');
         
         console.log("Starting password change for coordinator:", coordinatorId);
         
@@ -2299,12 +2356,12 @@ function loadApprovedReportsWithFilters() {
             },
             success: function(response) {
                 console.log("Password verification response:", response);
-                $('.btn-submit').prop('disabled', false).text('Change Password');
+                $('#changePasswordForm button[type="submit"]').prop('disabled', false).text('Change Password');
                 
                 if (response.success) {
                     console.log("Password verified, proceeding with update");
                     // Password verified, now update it
-                    $('.btn-submit').text('Updating...');
+                    $('#changePasswordForm button[type="submit"]').text('Updating...');
                     
                     $.ajax({
                         url: "ajaxhandler/attendanceAJAX.php",
@@ -2320,8 +2377,9 @@ function loadApprovedReportsWithFilters() {
                             console.log("Password update response:", updateResponse);
                             if (updateResponse.success) {
                                 alert("Password changed successfully!");
-                                $('#changePasswordModal').fadeOut(function() {
-                                    $(this).remove();
+                                $('#changePasswordModal').addClass('opacity-0');
+                                setTimeout(function() {
+                                    $('#changePasswordModal').remove();
                                     console.log("Change password modal removed");
                                     // Show coordinator details modal again
                                     $.ajax({
@@ -2338,7 +2396,7 @@ function loadApprovedReportsWithFilters() {
                                             }
                                         }
                                     });
-                                });
+                                }, 300);
                             } else {
                                 alert("Error: " + (updateResponse.message || "Failed to update password"));
                             }
@@ -2353,7 +2411,7 @@ function loadApprovedReportsWithFilters() {
                 }
             },
             error: function(xhr, status, error) {
-                $('.btn-submit').prop('disabled', false).text('Change Password');
+                $('#changePasswordForm button[type="submit"]').prop('disabled', false).text('Change Password');
                 console.error("Error verifying password - Status:", status);
                 console.error("Error verifying password - Error:", error);
                 
