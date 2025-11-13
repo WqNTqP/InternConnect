@@ -1,6 +1,9 @@
 <?php 
 // Include the database and session handling
-require_once $_SERVER['DOCUMENT_ROOT'] . "/database/admindashboarddb.php";
+// Old code - commented out
+$path = $_SERVER['DOCUMENT_ROOT'];
+require_once $path."/database/database.php";
+
 
 // Fetch pending attendance records with student details
 $stmt = $dbo->conn->prepare("
@@ -34,22 +37,34 @@ $adminName = $name ?? 'Admin';
                 <h2 class="logo" style="cursor: pointer;">InternConnect</h2>
             </div>
             <div class="user-profile" id="userProfile">
-                <span id="userName" data-admin-id="<?php echo htmlspecialchars($adminId); ?>"><?php echo htmlspecialchars($adminName); ?> &#x25BC;</span>
+                <div class="user-avatar-circle" id="userAvatarCircle">
+                    <i class="fas fa-user"></i>
+                </div>
+                <span id="userName" class="user-name-text" data-admin-id="<?php echo htmlspecialchars($adminId); ?>"><?php echo htmlspecialchars($adminName); ?> &#x25BC;</span>
                 <div class="user-dropdown" id="userDropdown" style="display:none;">
+                    <div class="user-dropdown-header">
+                        <div class="user-dropdown-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-dropdown-name" id="userDropdownName"><?php echo htmlspecialchars($adminName); ?></div>
+                    </div>
                     <button id="btnProfile">Profile</button>
                     <button id="logoutBtn">Logout</button>
                 </div>
             </div>
         </div>
 
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
         <div class="sidebar">
             <ul class="sidebar-menu">
-                <li class="sidebar-item active" id="dashboardTab"><i class="fas fa-tachometer-alt"></i> Dashboard</li>
-                <li class="sidebar-item" id="pendingTab"><i class="fas fa-user-check"></i> Attendance</li>
-                <li class="sidebar-item" id="historyTab"><i class="fas fa-history"></i> History</li>
-                <li class="sidebar-item" id="reportsTab"><i class="fas fa-file-alt"></i> Reports</li>
-                <li class="sidebar-item" id="evaluationTab"><i class="fas fa-star"></i> Evaluation</li>
-                <li class="sidebar-item" id="contralTab"><i class="fas fa-cogs"></i> Contral</li>
+                <li class="sidebar-item active" id="dashboardTab"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></li>
+                <li class="sidebar-item" id="pendingTab"><i class="fas fa-user-check"></i> <span>Attendance</span></li>
+                <li class="sidebar-item" id="historyTab"><i class="fas fa-history"></i> <span>History</span></li>
+                <li class="sidebar-item" id="reportsTab"><i class="fas fa-file-alt"></i> <span>Reports</span></li>
+                <li class="sidebar-item" id="evaluationTab"><i class="fas fa-star"></i> <span>Evaluation</span></li>
+                <li class="sidebar-item" id="contralTab"><i class="fas fa-cogs"></i> <span>Contral</span></li>
             </ul>
         </div>
 
@@ -61,8 +76,8 @@ $adminName = $name ?? 'Admin';
 
     <!-- Evaluation Tab Content -->
         <div id="evaluationTabContent" class="tab-content" style="display: none;">
-            <div class="admin-eval-container" style="display: flex; gap: 32px; padding: 24px 0;">
-                <div class="admin-eval-sidebar" style="width: 260px; background: #f7f7f7; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 16px; display: flex; flex-direction: column;">
+            <div class="admin-eval-container admin-eval-main-wrapper" style="display: flex; gap: 32px; padding: 24px 0;">
+                <div class="admin-eval-sidebar admin-eval-student-list-section" style="width: 260px; background: #f7f7f7; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 16px; display: flex; flex-direction: column;">
                     <input type="text" class="admin-eval-search" placeholder="Search students..." style="padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 16px; font-size: 16px;">
                     <ul class="admin-eval-student-list" style="list-style: none; padding: 0; margin: 0; max-height: 600px; overflow-y: auto; border: 1px solid #e5e7eb; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
                         <?php if (!empty($allStudents)): ?>
@@ -76,7 +91,7 @@ $adminName = $name ?? 'Admin';
                         <?php endif; ?>
                     </ul>
                 </div>
-                <div class="admin-eval-main" style="flex: 1; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 24px;">
+                <div class="admin-eval-main admin-eval-content-section" style="flex: 1; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 24px;">
                     <!-- Evaluation table and ratings will be loaded dynamically via JS -->
                 </div>
             </div>
@@ -178,60 +193,64 @@ $adminName = $name ?? 'Admin';
                 <!-- Pending Attendance Records Section (at the top) -->
                 <div class="pending-attendance" style="margin-bottom: 2rem;">
                     <h3>Pending Attendance Records</h3>
-                    <table>
-                        <tr>
-                            <th>Student ID</th>
-                            <th>Time In</th>
-                            <th>Time Out</th>
-                            <th>Action</th>
-                        </tr>
-                        <?php if (!empty($pendingRecords)): ?>
-                            <?php foreach ($pendingRecords as $record): ?>
+                    <div class="table-wrapper">
+                        <table>
                             <tr>
-                                <td><?php echo htmlspecialchars($record['STUDENT_ID']); ?></td>
-                                <td><?php echo htmlspecialchars($record['TIMEIN'] ? date('h:i A', strtotime($record['TIMEIN'])) : '--:--'); ?></td>
-                                <td><?php echo htmlspecialchars($record['TIMEOUT'] ? date('h:i A', strtotime($record['TIMEOUT'])) : '--:--'); ?></td>
-                                <td>
-                                    <button onclick="approveAttendance(<?php echo $record['ID']; ?>)" class="btn-accept">Approve</button>
-                                    <button onclick="deletePendingAttendance(<?php echo $record['ID']; ?>)" class="btn-decline">Decline</button>
-                                </td>
+                                <th>Student ID</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Action</th>
                             </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="4">No pending attendance records found.</td>
-                            </tr>
-                        <?php endif; ?>
-                    </table>
+                            <?php if (!empty($pendingRecords)): ?>
+                                <?php foreach ($pendingRecords as $record): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($record['STUDENT_ID']); ?></td>
+                                    <td><?php echo htmlspecialchars($record['TIMEIN'] ? date('h:i A', strtotime($record['TIMEIN'])) : '--:--'); ?></td>
+                                    <td><?php echo htmlspecialchars($record['TIMEOUT'] ? date('h:i A', strtotime($record['TIMEOUT'])) : '--:--'); ?></td>
+                                    <td>
+                                        <button onclick="approveAttendance(<?php echo $record['ID']; ?>)" class="btn-accept">Approve</button>
+                                        <button onclick="deletePendingAttendance(<?php echo $record['ID']; ?>)" class="btn-decline">Decline</button>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="4">No pending attendance records found.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- All Students Section (below pending attendance) -->
                 <div class="pending-attendance">
                     <h3>All Students Under Your Management</h3>
-                    <table>
-                        <tr>
-                            <th>Student ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Contact Number</th>
-                            <th>Analysis</th>
-                        </tr>
-                        <?php if (!empty($allStudents)): ?>
-                            <?php foreach ($allStudents as $student): ?>
+                    <div class="table-wrapper">
+                        <table>
                             <tr>
-                                <td><?php echo htmlspecialchars($student['STUDENT_ID']); ?></td>
-                                <td><?php echo htmlspecialchars($student['SURNAME']); ?></td>
-                                <td><?php echo htmlspecialchars($student['EMAIL']); ?></td>
-                                <td><?php echo htmlspecialchars($student['CONTACT_NUMBER']); ?></td>
-                                <td><button class="analysis-btn" data-student-id="<?php echo htmlspecialchars($student['STUDENT_ID']); ?>">Analysis</button></td>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Contact Number</th>
+                                <th>Analysis</th>
                             </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="5">No students found under your management.</td>
-                            </tr>
-                        <?php endif; ?>
-                    </table>
+                            <?php if (!empty($allStudents)): ?>
+                                <?php foreach ($allStudents as $student): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($student['STUDENT_ID']); ?></td>
+                                    <td><?php echo htmlspecialchars($student['SURNAME']); ?></td>
+                                    <td><?php echo htmlspecialchars($student['EMAIL']); ?></td>
+                                    <td><?php echo htmlspecialchars($student['CONTACT_NUMBER']); ?></td>
+                                    <td><button class="analysis-btn" data-student-id="<?php echo htmlspecialchars($student['STUDENT_ID']); ?>">Analysis</button></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="5">No students found under your management.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -482,17 +501,104 @@ $adminName = $name ?? 'Admin';
                 loadReportsBtn.click();
             }
         });
+        // Initialize sidebar state on page load
+        function initializeSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            // On desktop, sidebar should be open by default
+            if (window.innerWidth > 768) {
+                sidebar.classList.add('sidebar-open');
+                document.querySelector('.content-area').classList.add('sidebar-open');
+            } else {
+                sidebar.classList.remove('sidebar-open');
+                document.querySelector('.content-area').classList.remove('sidebar-open');
+                if (overlay) overlay.classList.remove('active');
+            }
+        }
+        
+        // Initialize on page load
+        initializeSidebar();
+        
         // Add sidebar toggle functionality
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            document.querySelector('.sidebar').classList.toggle('sidebar-open');
-            document.querySelector('.content-area').classList.toggle('sidebar-open');
+        document.getElementById('sidebarToggle').addEventListener('click', function(e) {
+            e.stopPropagation();
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const contentArea = document.querySelector('.content-area');
+            const isMobile = window.innerWidth <= 768;
+            
+            sidebar.classList.toggle('sidebar-open');
+            contentArea.classList.toggle('sidebar-open');
+            
+            // Toggle overlay on mobile only
+            if (isMobile && overlay) {
+                overlay.classList.toggle('active');
+                // Prevent body scroll when sidebar is open on mobile
+                if (sidebar.classList.contains('sidebar-open')) {
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    document.body.style.overflow = '';
+                }
+            } else {
+                if (overlay) overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+        
+        // Close sidebar when clicking overlay
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const sidebar = document.querySelector('.sidebar');
+                const contentArea = document.querySelector('.content-area');
+                sidebar.classList.remove('sidebar-open');
+                contentArea.classList.remove('sidebar-open');
+                this.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const contentArea = document.querySelector('.content-area');
+            
+            if (window.innerWidth > 768) {
+                // On desktop, keep current sidebar state
+                if (overlay) overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            } else {
+                // On mobile, close sidebar if it was open
+                if (sidebar.classList.contains('sidebar-open')) {
+                    sidebar.classList.remove('sidebar-open');
+                    contentArea.classList.remove('sidebar-open');
+                }
+                if (overlay) overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
         });
 
-        // User profile dropdown
-        document.getElementById('userProfile').addEventListener('click', function() {
-            const dropdown = document.getElementById('userDropdown');
-            dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
+        // User profile dropdown - handle both avatar and name clicks
+        document.getElementById('userProfile').addEventListener('click', function(e) {
+            // Only toggle if clicking on avatar or name, not on dropdown itself
+            if (e.target.closest('.user-avatar-circle') || e.target.closest('#userName') || e.target === this) {
+                const dropdown = document.getElementById('userDropdown');
+                dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
+            }
         });
+        
+        // Also handle avatar click directly
+        const userAvatar = document.getElementById('userAvatarCircle');
+        if (userAvatar) {
+            userAvatar.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const dropdown = document.getElementById('userDropdown');
+                dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
+            });
+        }
 
         // Close dropdown when clicking outside
         document.addEventListener('click', function(event) {

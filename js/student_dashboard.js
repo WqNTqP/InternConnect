@@ -79,7 +79,9 @@ $(document).ready(function() {
         $('.post-category').hide();
         $('#personalSkillsCategory').show();
         renderPersonalSkillsTable();
-        $('#currentCategoryLabel').text('Personal and Interpersonal Skills');
+        // Update dropdown to Personal and Interpersonal Skills (index 4)
+        $('#categoryDropdown').val(4);
+        currentCategoryIdx = 4;
     });
 
     // Listen for rating changes and persist them
@@ -160,7 +162,9 @@ $(document).ready(function() {
         success: function(response) {
             if (response.success && response.submitted) {
                 // Disable all inputs and buttons in the post-assessment form except category navigation
-                $('#postAssessmentForm :input').not('.category-nav-btn').prop('disabled', true);
+                $('#postAssessmentForm :input').not('.category-nav-btn, #categoryDropdown').prop('disabled', true);
+                // Keep dropdown enabled even if form is submitted (for viewing purposes)
+                $('#categoryDropdown').prop('disabled', false);
                 $('#postAssessmentFormMessage').text('You have already submitted your post-assessment. Editing is disabled.').css('color', 'blue');
                 // Change submit button color to gray
                 $('#submitPostAssessmentBtn').css({
@@ -358,6 +362,7 @@ $(document).ready(function() {
     let currentCategoryIdx = 0;
 
     function showPostCategory(idx) {
+        console.log('Showing category index:', idx);
         postCategories.forEach((cat, i) => {
             $('#' + cat.id).css('display', i === idx ? 'block' : 'none');
             // If personalSkillsCategory, render questions when shown
@@ -365,7 +370,11 @@ $(document).ready(function() {
                 renderPersonalSkillsTable();
             }
         });
-        $('#currentCategoryLabel').text(postCategories[idx].label);
+        // Update dropdown value - ensure it exists first
+        if ($('#categoryDropdown').length) {
+            $('#categoryDropdown').val(idx.toString());
+            console.log('Updated dropdown value to:', idx);
+        }
     }
 
     // Initial display for post-assessment
@@ -375,6 +384,24 @@ $(document).ready(function() {
     // Always initialize on tab switch
     $('#postAssessmentTabBtn').on('click', function() {
         currentCategoryIdx = 0;
+        // Ensure dropdown exists and is properly initialized
+        setTimeout(function() {
+            const $dropdown = $('#categoryDropdown');
+            if ($dropdown.length) {
+                // Always ensure dropdown is enabled
+                $dropdown.prop('disabled', false);
+                $dropdown.removeAttr('disabled');
+                $dropdown.val(currentCategoryIdx.toString());
+                $dropdown.css({
+                    'pointer-events': 'auto',
+                    'cursor': 'pointer',
+                    'opacity': '1'
+                });
+                console.log('Initialized dropdown with value:', currentCategoryIdx);
+            } else {
+                console.warn('Category dropdown not found in DOM');
+            }
+        }, 100);
         showPostCategory(currentCategoryIdx);
         // Load saved questions for editing
         const student_id = $('#hiddenStudentId').val();
@@ -431,13 +458,20 @@ $(document).ready(function() {
         });
     });
 
-    $('#prevCategoryBtn').on('click', function() {
-        currentCategoryIdx = (currentCategoryIdx - 1 + postCategories.length) % postCategories.length;
-        showPostCategory(currentCategoryIdx);
+    // Category dropdown change handler - use event delegation to ensure it works
+    $(document).on('change', '#categoryDropdown', function() {
+        const selectedValue = $(this).val();
+        console.log('Category dropdown changed to:', selectedValue);
+        if (selectedValue !== null && selectedValue !== undefined) {
+            currentCategoryIdx = parseInt(selectedValue);
+            showPostCategory(currentCategoryIdx);
+        }
     });
-    $('#nextCategoryBtn').on('click', function() {
-        currentCategoryIdx = (currentCategoryIdx + 1) % postCategories.length;
-        showPostCategory(currentCategoryIdx);
+    
+    // Also handle click event to ensure dropdown is interactive
+    $(document).on('click', '#categoryDropdown', function(e) {
+        e.stopPropagation();
+        console.log('Category dropdown clicked');
     });
     // Top navigation for assessment tabs
     $('#preAssessmentTabBtn').on('click', function() {
@@ -759,22 +793,72 @@ $(function(e) {
         }
     });
 
-    // Sidebar toggle
+    // Initialize sidebar state on page load
+    function initializeSidebar() {
+        const sidebar = $('.sidebar');
+        const overlay = $('#sidebarOverlay');
+        
+        // On desktop, sidebar should be open by default
+        if (window.innerWidth > 768) {
+            sidebar.addClass('sidebar-open');
+        } else {
+            sidebar.removeClass('sidebar-open');
+            overlay.removeClass('active');
+        }
+    }
+    
+    // Initialize on page load
+    initializeSidebar();
+    
+    // Sidebar toggle with overlay support
     $('#sidebarToggle').click(function(e) {
         e.stopPropagation();
-        $('.sidebar').toggleClass('sidebar-open');
-        $('.main-content').toggleClass('sidebar-collapsed');
-        // Content area margin is handled by CSS when sidebar is open
+        const sidebar = $('.sidebar');
+        const overlay = $('#sidebarOverlay');
+        const isMobile = window.innerWidth <= 768;
+        
+        // Toggle sidebar state
+        sidebar.toggleClass('sidebar-open');
+        
+        // Toggle overlay on mobile only
+        if (isMobile) {
+            overlay.toggleClass('active');
+        } else {
+            // On desktop, remove overlay if it exists
+            overlay.removeClass('active');
+        }
+        
+        // Prevent body scroll when sidebar is open on mobile
+        if (sidebar.hasClass('sidebar-open') && isMobile) {
+            $('body').css('overflow', 'hidden');
+        } else {
+            $('body').css('overflow', '');
+        }
     });
 
-    // Close sidebar when clicking outside
+    // Close sidebar when clicking overlay
+    $('#sidebarOverlay').click(function(e) {
+        e.stopPropagation();
+        $('.sidebar').removeClass('sidebar-open');
+        $(this).removeClass('active');
+        $('body').css('overflow', '');
+    });
+
+    // Close sidebar when clicking outside (desktop) - disabled, sidebar stays open on desktop
+    // On desktop, sidebar should remain open. Only mobile uses toggle behavior.
     $(document).click(function(e) {
-        // Check if sidebar is open and click is outside sidebar and not on the toggle button
-        if ($('.sidebar').hasClass('sidebar-open') &&
+        const sidebar = $('.sidebar');
+        const overlay = $('#sidebarOverlay');
+        
+        // Only handle click-outside on mobile
+        if (window.innerWidth <= 768 && 
+            sidebar.hasClass('sidebar-open') &&
             !$(e.target).closest('.sidebar').length &&
-            !$(e.target).closest('#sidebarToggle').length) {
-            $('.sidebar').removeClass('sidebar-open');
-            $('.main-content').removeClass('sidebar-collapsed');
+            !$(e.target).closest('#sidebarToggle').length &&
+            !$(e.target).closest('#sidebarOverlay').length) {
+            sidebar.removeClass('sidebar-open');
+            overlay.removeClass('active');
+            $('body').css('overflow', '');
         }
     });
 
@@ -782,9 +866,35 @@ $(function(e) {
     $('.sidebar').click(function(e) {
         e.stopPropagation();
     });
+    
+    // Handle window resize
+    $(window).resize(function() {
+        const sidebar = $('.sidebar');
+        const overlay = $('#sidebarOverlay');
+        
+        // On resize to desktop, keep current sidebar state (don't force open)
+        if (window.innerWidth > 768) {
+            // Only add sidebar-open if it doesn't exist (first time on desktop)
+            // Otherwise, maintain the current toggle state
+            if (!sidebar.hasClass('sidebar-open') && !sidebar.hasClass('sidebar-closed')) {
+                sidebar.addClass('sidebar-open');
+            }
+            overlay.removeClass('active');
+            $('body').css('overflow', '');
+        } else {
+            // On resize to mobile, close sidebar if it was open
+            if (sidebar.hasClass('sidebar-open')) {
+                // Keep it closed on mobile initially, user can toggle
+                sidebar.removeClass('sidebar-open');
+            }
+            overlay.removeClass('active');
+            $('body').css('overflow', '');
+        }
+    });
 
     // User dropdown toggle
-    $('#userName').click(function(e) {
+    // Handle user name and avatar clicks to toggle dropdown
+    $('#userName, #userAvatarCircle').click(function(e) {
         e.stopPropagation();
         $('#userDropdown').toggle();
     });
@@ -973,8 +1083,12 @@ $(function(e) {
         var draftName = $('#hiddenDraftUserName').val() || '';
         if (draftName) {
             $('#draftUserName').text(draftName).show();
+            $('#userDropdownName').text(draftName);
         } else {
             $('#draftUserName').hide();
+            // Update dropdown name with current user name
+            var userName = $('#userName').text().trim().replace(' ▼', '');
+            $('#userDropdownName').text(userName);
         }
 
         // Handle dropdown username separately
@@ -1373,11 +1487,25 @@ function loadCurrentWeek() {
                 const startDate = new Date(response.data.week_start);
                 const endDate = new Date(response.data.week_end);
 
-                const options = { month: 'long', day: 'numeric', year: 'numeric' };
-                const formattedStartDate = startDate.toLocaleDateString('en-PH', options);
-                const formattedEndDate = endDate.toLocaleDateString('en-PH', options);
-
-                const weekInfo = `${formattedStartDate} - ${formattedEndDate}`;
+                // Format dates more compactly - single line format
+                const startMonth = startDate.toLocaleDateString('en-PH', { month: 'short' });
+                const startDay = startDate.getDate();
+                const startYear = startDate.getFullYear();
+                
+                const endMonth = endDate.toLocaleDateString('en-PH', { month: 'short' });
+                const endDay = endDate.getDate();
+                const endYear = endDate.getFullYear();
+                
+                // Format as single line to match other stat cards
+                let weekInfo;
+                if (startMonth === endMonth && startYear === endYear) {
+                    weekInfo = `${startMonth} ${startDay} - ${endDay}, ${startYear}`;
+                } else if (startYear === endYear) {
+                    weekInfo = `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${startYear}`;
+                } else {
+                    weekInfo = `${startMonth} ${startDay}, ${startYear} - ${endMonth} ${endDay}, ${endYear}`;
+                }
+                
                 $("#currentWeekRange").text(weekInfo);
             } else {
                 // Fallback to current week if no report found
@@ -1390,11 +1518,25 @@ function loadCurrentWeek() {
                 endOfWeek.setDate(startOfWeek.getDate() + 6);
                 endOfWeek.setHours(23, 59, 59, 999);
 
-                const options = { month: 'long', day: 'numeric', year: 'numeric' };
-                const formattedStartDate = startOfWeek.toLocaleDateString('en-PH', options);
-                const formattedEndDate = endOfWeek.toLocaleDateString('en-PH', options);
-
-                const weekInfo = `${formattedStartDate} - ${formattedEndDate}`;
+                // Format dates more compactly - single line format
+                const startMonth = startOfWeek.toLocaleDateString('en-PH', { month: 'short' });
+                const startDay = startOfWeek.getDate();
+                const startYear = startOfWeek.getFullYear();
+                
+                const endMonth = endOfWeek.toLocaleDateString('en-PH', { month: 'short' });
+                const endDay = endOfWeek.getDate();
+                const endYear = endOfWeek.getFullYear();
+                
+                // Format as single line to match other stat cards
+                let weekInfo;
+                if (startMonth === endMonth && startYear === endYear) {
+                    weekInfo = `${startMonth} ${startDay} - ${endDay}, ${startYear}`;
+                } else if (startYear === endYear) {
+                    weekInfo = `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${startYear}`;
+                } else {
+                    weekInfo = `${startMonth} ${startDay}, ${startYear} - ${endMonth} ${endDay}, ${endYear}`;
+                }
+                
                 $("#currentWeekRange").text(weekInfo);
             }
         },
@@ -1410,11 +1552,25 @@ function loadCurrentWeek() {
             endOfWeek.setDate(startOfWeek.getDate() + 6);
             endOfWeek.setHours(23, 59, 59, 999);
 
-            const options = { month: 'long', day: 'numeric', year: 'numeric' };
-            const formattedStartDate = startOfWeek.toLocaleDateString('en-PH', options);
-            const formattedEndDate = endOfWeek.toLocaleDateString('en-PH', options);
-
-            const weekInfo = `${formattedStartDate} - ${formattedEndDate}`;
+            // Format dates more compactly - single line format
+            const startMonth = startOfWeek.toLocaleDateString('en-PH', { month: 'short' });
+            const startDay = startOfWeek.getDate();
+            const startYear = startOfWeek.getFullYear();
+            
+            const endMonth = endOfWeek.toLocaleDateString('en-PH', { month: 'short' });
+            const endDay = endOfWeek.getDate();
+            const endYear = endOfWeek.getFullYear();
+            
+            // Format as single line to match other stat cards
+            let weekInfo;
+            if (startMonth === endMonth && startYear === endYear) {
+                weekInfo = `${startMonth} ${startDay} - ${endDay}, ${startYear}`;
+            } else if (startYear === endYear) {
+                weekInfo = `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${startYear}`;
+            } else {
+                weekInfo = `${startMonth} ${startDay}, ${startYear} - ${endMonth} ${endDay}, ${endYear}`;
+            }
+            
             $("#currentWeekRange").text(weekInfo);
         }
     });

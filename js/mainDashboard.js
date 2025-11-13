@@ -960,13 +960,14 @@ $(function() {
             `;
         });
         // 20/80 layout for Post-Assessment tab
-    let html = `<div class='flex w-full'>`;
-    html += `<div class='left-col w-1/5 max-w-xs pr-4'>`;
+        // On mobile, this will stack vertically with student list on top
+    let html = `<div class='postassessment-main-wrapper flex flex-col md:flex-row w-full'>`;
+    html += `<div class='postassessment-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
     const searchValue = window.postStudentSearchValue || '';
     html += `<div class='mb-4'><input type='text' id='postStudentSearch' value='${searchValue.replace(/'/g, "&#39;").replace(/"/g, '&quot;')}' placeholder='Search student name' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
     html += `<div id='postStudentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'>${studentListHtml}</div>`;
         html += `</div>`;
-        html += `<div class='right-col w-4/5 pl-4'>`;
+        html += `<div class='postassessment-evaluation-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
         if (!selectedPostStudentId) {
             html += `
             <div class="flex flex-col items-center justify-center h-full">
@@ -1034,12 +1035,13 @@ $(function() {
     // Render empty state for post-assessment tab
     function renderEmptyPostAssessmentState(message) {
         // Create the full 20/80 layout with empty state message
-        let html = `<div class='flex w-full'>`;
-        html += `<div class='left-col w-1/5 max-w-xs pr-4'>`;
+        // On mobile, this will stack vertically with student list on top
+        let html = `<div class='postassessment-main-wrapper flex flex-col md:flex-row w-full'>`;
+        html += `<div class='postassessment-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
         html += `<div class='mb-4'><input type='text' id='postStudentSearch' placeholder='Search student name' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200' disabled></div>`;
         html += `<div id='postStudentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'></div>`;
         html += `</div>`;
-        html += `<div class='right-col w-4/5 pl-4'>`;
+        html += `<div class='postassessment-evaluation-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
         html += `
             <div class="flex flex-col items-center justify-center h-full">
                 <div class="bg-blue-50 rounded-full p-6 mb-4">
@@ -1444,30 +1446,30 @@ function loadPostAssessmentEvaluation(studentId) {
             let reasoningHtml = '';
             if (analysis.reasoning) {
                 // Always process reasoning text with highlightGrades
-                reasoningHtml = `<div class="mb-4 p-4 rounded-xl border-2 border-blue-200 bg-blue-50 shadow-sm"><div class="font-bold text-blue-700 mb-2 text-lg">Reasoning</div><div class="text-gray-800 text-base">${highlightGrades(analysis.reasoning)}</div></div>`;
+                reasoningHtml = `<div class="mb-3 md:mb-4 p-3 md:p-4 rounded-lg md:rounded-xl border-2 border-blue-200 bg-blue-50 shadow-sm"><div class="font-bold text-blue-700 mb-2 text-sm md:text-base lg:text-lg">Reasoning</div><div class="text-gray-800 text-sm md:text-base break-words">${highlightGrades(analysis.reasoning)}</div></div>`;
             }
             // Probability section - smaller badges, more spacing
             let probabilityHtml = '';
             if (analysis.probabilities && Object.keys(analysis.probabilities).length > 0) {
-                probabilityHtml = `<div class="mb-4"><div class="font-bold text-gray-700 mb-1">Probability Breakdown</div><div class="grid grid-cols-2 gap-3">${Object.entries(analysis.probabilities).map(([k, v]) => {
+                probabilityHtml = `<div class="mb-3 md:mb-4"><div class="font-bold text-gray-700 mb-2 text-sm md:text-base">Probability Breakdown</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">${Object.entries(analysis.probabilities).map(([k, v]) => {
                     let color = 'bg-gray-200 text-gray-800';
                     if (k === 'Business Operations') color = 'bg-yellow-100 text-yellow-800';
                     else if (k === 'Technical Support') color = 'bg-green-100 text-green-800';
                     else if (k === 'Systems Development') color = 'bg-blue-100 text-blue-800';
                     else if (k === 'Research') color = 'bg-purple-100 text-purple-800';
-                    return `<div class="flex items-center justify-between px-2 py-1 rounded text-sm font-semibold ${color}"><span>${k}</span><span>${v}%</span></div>`;
+                    return `<div class="flex items-center justify-between px-2 md:px-3 py-2 md:py-2 rounded text-xs md:text-sm font-semibold ${color}"><span class="truncate mr-2">${k}</span><span class="flex-shrink-0">${v}%</span></div>`;
                 }).join('')}</div></div>`;
             }
             // Probability explanation
             let probExpHtml = '';
             if (analysis.prob_explanation && analysis.prob_explanation !== 'undefined') {
-                probExpHtml = `<div class="mb-2"><div class="font-bold text-gray-700 mb-1">Probability Explanation</div><div class="text-gray-800 text-base">${analysis.prob_explanation}</div></div>`;
+                probExpHtml = `<div class="mb-2 md:mb-3"><div class="font-bold text-gray-700 mb-1 text-sm md:text-base">Probability Explanation</div><div class="text-gray-800 text-sm md:text-base break-words">${analysis.prob_explanation}</div></div>`;
             }
             html = `
-                <div class="space-y-8">
-                    <div class="flex flex-col items-center mb-4">
-                        <div class="text-2xl font-bold text-gray-700 mb-2">Predicted OJT Placement</div>
-                        ${analysis.placement ? `<span class="inline-block px-6 py-3 rounded-full font-extrabold text-2xl ${placementColors[analysis.placement] || 'bg-gray-100 text-gray-800'}">${analysis.placement}</span>` : ''}
+                <div class="space-y-4 md:space-y-6 lg:space-y-8">
+                    <div class="flex flex-col items-center mb-2 md:mb-4">
+                        <div class="text-base md:text-xl lg:text-2xl font-bold text-gray-700 mb-2 text-center">Predicted OJT Placement</div>
+                        ${analysis.placement ? `<span class="inline-block px-3 py-2 md:px-5 md:py-3 lg:px-6 lg:py-3 rounded-full font-extrabold text-sm md:text-lg lg:text-2xl ${placementColors[analysis.placement] || 'bg-gray-100 text-gray-800'} text-center">${analysis.placement}</span>` : ''}
                     </div>
                     ${reasoningHtml}
                     ${probExpHtml}
@@ -1477,10 +1479,10 @@ function loadPostAssessmentEvaluation(studentId) {
         }
     if ($('#analysisModal').length === 0) {
         $('body').append(`
-            <div id="analysisModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" style="display:none;">
-                <div class="bg-white rounded-3xl shadow-2xl p-16 max-w-6xl w-full relative" style="min-width:900px; overflow-x:auto;">
-                    <button class="absolute top-6 right-6 text-gray-500 hover:text-gray-700 text-2xl font-bold" id="closeAnalysisModal">&times;</button>
-                    <h2 class="text-4xl font-extrabold text-blue-700 mb-8 text-center">Prediction Analysis</h2>
+            <div id="analysisModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" style="display:none; overflow-y:auto;">
+                <div class="bg-white rounded-lg md:rounded-3xl shadow-2xl p-4 md:p-8 lg:p-16 max-w-6xl w-full relative my-auto max-h-[95vh] overflow-y-auto">
+                    <button class="absolute top-2 right-2 md:top-4 md:right-4 lg:top-6 lg:right-6 text-gray-500 hover:text-gray-700 text-xl md:text-2xl font-bold z-10 bg-white rounded-full w-8 h-8 md:w-10 md:h-10 flex items-center justify-center shadow-md" id="closeAnalysisModal">&times;</button>
+                    <h2 class="text-xl md:text-2xl lg:text-4xl font-extrabold text-blue-700 mb-4 md:mb-6 lg:mb-8 text-center pr-8 md:pr-12">Prediction Analysis</h2>
                     <div class="main-dashboard-modal-body" id="analysisModalContent"></div>
                 </div>
             </div>
@@ -1488,10 +1490,23 @@ function loadPostAssessmentEvaluation(studentId) {
     }
     $('#analysisModalContent').html(html);
     $('#analysisModal').fadeIn();
+    // Prevent body scroll when modal is open
+    $('body').css('overflow', 'hidden');
 });
 
 $(document).on('click', '#closeAnalysisModal', function() {
     $('#analysisModal').fadeOut();
+    // Restore body scroll when modal is closed
+    $('body').css('overflow', '');
+});
+
+// Close modal when clicking outside of it
+$(document).on('click', '#analysisModal', function(e) {
+    if ($(e.target).attr('id') === 'analysisModal') {
+        $('#analysisModal').fadeOut();
+        // Restore body scroll when modal is closed
+        $('body').css('overflow', '');
+    }
 });
 });
 // --- End Prediction Tab Logic ---
@@ -3768,9 +3783,10 @@ $(document).ready(function() {
                     const activeQuestions = response.questions.filter(q => q.status === 'active');
                     // Collect unique categories
                     const categories = [...new Set(activeQuestions.map(q => q.category ? q.category.trim() : 'Other'))];
-                    let html = `<div class='flex w-full'>`;
+                    // On mobile, this will stack vertically with categories on top
+                    let html = `<div class='all-questions-wrapper flex flex-col md:flex-row w-full'>`;
                     // Left column (category selector)
-                    html += `<div class='left-col w-1/5 max-w-xs pr-4'>`;
+                    html += `<div class='all-questions-categories-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
                     html += `<h2 class='text-xl font-bold text-gray-800 mb-4'>Categories</h2>`;
                     html += `<div class='mb-4'><label for='questionCategoryDropdown' class='mr-2 text-gray-700 font-medium'>Category:</label><select id='questionCategoryDropdown' class='border border-gray-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 w-full'>`;
                     categories.forEach(cat => {
@@ -3785,7 +3801,7 @@ $(document).ready(function() {
                     </div>`;
                     html += `</div>`;
                     // Right column (questions)
-                    html += `<div class='right-col w-4/5 pl-4'>`;
+                    html += `<div class='all-questions-content-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
                     html += `<h2 class='text-2xl font-bold text-gray-800 mb-4'>All Evaluation Questions</h2>`;
                     html += `<div id='questionsByCategory' style='max-height:calc(100vh - 320px);overflow-y:auto;'></div>`;
                     html += `<div class='flex flex-col items-center mt-6 mb-4'>
@@ -4345,12 +4361,13 @@ $(document).ready(function() {
             `;
         });
         // Build the 20/80 column layout
-        let html = `<div class='flex w-full'>`;
-        html += `<div class='left-col w-1/5 max-w-xs pr-4'>`;
+        // On mobile, this will stack vertically with student list on top
+        let html = `<div class='preassessment-main-wrapper flex flex-col md:flex-row w-full'>`;
+        html += `<div class='preassessment-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
     html += `<div class='mb-4'><input type='text' id='rateStudentSearch' placeholder='Search student' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
     html += `<div id='studentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'>${studentListHtml}</div>`;
         html += `</div>`;
-        html += `<div class='right-col w-4/5 pl-4'>`;
+        html += `<div class='preassessment-content-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
         if (!selectedStudentId) {
             html += `
             <div class="flex flex-col items-center justify-center h-full">
@@ -4438,10 +4455,11 @@ $(document).ready(function() {
             if (completedRequests < 2) return; // Wait for both requests
             
             // Create horizontal layout: Grades (20%) | Evaluation (80%)
-            let html = `<div class="flex gap-4 h-full">`;
+            // On mobile, this will stack vertically with CSS
+            let html = `<div class="preassessment-content-wrapper flex flex-col md:flex-row gap-4 h-full">`;
             
-            // Left Column - Academic Grades (20% of right column)
-            html += `<div class="w-1/5 min-w-0">`;
+            // Left Column - Academic Grades (20% of right column on desktop, full width on mobile)
+            html += `<div class="preassessment-academic-section w-full md:w-1/5 min-w-0 order-2 md:order-1">`;
             
             // Student ID Header
             html += `<div class="bg-blue-50 rounded-lg p-3 border border-blue-200 mb-4">
@@ -4485,8 +4503,8 @@ $(document).ready(function() {
             
             html += `</div>`; // Close left column
             
-            // Right Column - Evaluation Questions (80% of right column)
-            html += `<div class="w-4/5 min-w-0">`;
+            // Right Column - Evaluation Questions (80% of right column on desktop, full width on mobile)
+            html += `<div class="preassessment-evaluation-section w-full md:w-4/5 min-w-0 order-3 md:order-2">`;
             
             if (evaluationData && evaluationData.success) {
                 if (evaluationData.isRated) {
@@ -4714,12 +4732,13 @@ $(document).ready(function() {
             `;
         });
         // 20/80 layout for Review tab
-        let html = `<div class='flex w-full'>`;
-        html += `<div class='left-col w-1/5 max-w-xs pr-4'>`;
+        // On mobile, this will stack vertically with student list on top
+        let html = `<div class='review-main-wrapper flex flex-col md:flex-row w-full'>`;
+        html += `<div class='review-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
         html += `<div class='mb-4'><input type='text' id='reviewStudentSearch' placeholder='Search student' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
         html += `<div id='reviewStudentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'>${studentListHtml}</div>`;
         html += `</div>`;
-        html += `<div class='right-col w-4/5 pl-4'>`;
+        html += `<div class='review-content-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
         if (!selectedReviewStudentId) {
             html += `
             <div class="flex flex-col items-center justify-center h-full">

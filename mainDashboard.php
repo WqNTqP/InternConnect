@@ -23,9 +23,9 @@ function generateStudentFilterOptions($coordinatorId) {
     try {
         $path = $_SERVER['DOCUMENT_ROOT'];
         require_once $path."/database/database.php";
-        $db = new Database();
+        $dbo = new Database();
         
-        $stmt = $db->conn->prepare("
+        $stmt = $dbo->conn->prepare("
             SELECT DISTINCT s.STUDENT_ID, s.NAME, s.SURNAME 
             FROM student s 
             JOIN coordinator c ON s.COORDINATOR_ID = c.COORDINATOR_ID 
@@ -54,8 +54,10 @@ function generateStudentFilterOptions($coordinatorId) {
         $displayName = $_SESSION["current_user_name"];
     } elseif(isset($_SESSION["current_user"])) {
         // For backwards compatibility, fetch name from database
+        // Old code - commented out
         $path=$_SERVER['DOCUMENT_ROOT'];
         require_once $path."/database/database.php";
+        
         try {
             $db = new Database();
             $stmt = $db->conn->prepare("SELECT NAME FROM coordinator WHERE COORDINATOR_ID = ?");
@@ -72,8 +74,12 @@ function generateStudentFilterOptions($coordinatorId) {
         }
     } elseif(isset($_SESSION["student_user"])) {
         // For student users, fetch name from database
-        $path=$_SERVER['DOCUMENT_ROOT'];
-        require_once $path."/database/database.php";
+        // Old code - commented out
+        // $path=$_SERVER['DOCUMENT_ROOT'];
+        // require_once $path."/database/database.php";
+        
+        // New code - using __DIR__ for relative path
+        require_once __DIR__ . '/database/database.php';
         try {
             $db = new Database();
             $stmt = $db->conn->prepare("SELECT NAME FROM student WHERE STUDENT_ID = ?");
@@ -350,21 +356,21 @@ function generateStudentFilterOptions($coordinatorId) {
 <!-- Evaluation Tab Content -->
 <div id="evaluationContent" class="bg-white rounded-lg shadow-md hidden">
     <div class="border-b">
-        <nav class="flex flex-wrap gap-2 md:space-x-4 px-3 md:px-6 py-3 overflow-x-auto">
+        <nav class="flex flex-wrap gap-2 md:space-x-4 px-3 md:px-6 py-3 overflow-x-auto bg-gradient-to-r from-gray-50 to-blue-50 rounded-t-lg">
             <button id="evalQuestionsTabBtn"
-                class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-900 bg-gray-100 rounded-md active whitespace-nowrap">
+                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 whitespace-nowrap active">
                 All Questions
             </button>
             <button id="rateTabBtn"
-                class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md whitespace-nowrap">
+                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-all duration-200 whitespace-nowrap">
                 Pre-Assessment
             </button>
             <button id="postAssessmentTabBtn"
-                class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md whitespace-nowrap">
+                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-all duration-200 whitespace-nowrap">
                 Post-Assessment
             </button>
             <button id="reviewTabBtn"
-                class="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md whitespace-nowrap">
+                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-all duration-200 whitespace-nowrap">
                 Review
             </button>
         </nav>
@@ -373,9 +379,9 @@ function generateStudentFilterOptions($coordinatorId) {
     <div class="p-3 md:p-6">
         <!-- All Questions Tab -->
         <div id="evalQuestionsTabContent" class="space-y-6 active">
-            <div class="flex w-full">
+            <div class="all-questions-wrapper flex flex-col md:flex-row w-full">
                 <!-- Left Column -->
-                <div class="left-col w-1/5 max-w-xs pr-4">
+                <div class="all-questions-categories-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">Categories</h2>
                     <div class="mb-4">
                         <label for="questionCategoryDropdown"
@@ -402,7 +408,7 @@ function generateStudentFilterOptions($coordinatorId) {
                 </div>
 
                 <!-- Right Column -->
-                <div class="right-col w-4/5 pl-4">
+                <div class="all-questions-content-section right-col w-full md:w-4/5 md:pl-4 order-2">
                     <h2 class="text-2xl font-bold text-gray-800 mb-4">All Evaluation Questions</h2>
                     <div id="questionsByCategory" class="max-h-[calc(100vh-320px)] overflow-y-auto">
                         <ul class="space-y-3">
@@ -448,29 +454,13 @@ function generateStudentFilterOptions($coordinatorId) {
 
         <!-- Post-Assessment Tab -->
         <div id="postAssessmentTabContent" class="hidden">
-            <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
-                <div class="w-full lg:w-1/3 bg-gray-50 rounded-lg shadow-md p-3 md:p-4">
-                    <div class="mb-4">
-                        <input type="text" id="postStudentSearch" placeholder="Search student"
-                            class="w-full px-3 md:px-4 py-2 text-sm md:text-base text-gray-700 bg-white border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
-                    </div>
-                    <div id="postStudentListPanel"
-                        class="overflow-y-auto max-h-64 lg:max-h-[calc(100vh-16rem)] divide-y divide-gray-200">
-                        <!-- Student list will be loaded here dynamically -->
-                    </div>
-                </div>
-                <div class="w-full lg:w-2/3 bg-white rounded-lg shadow-md p-3 md:p-4">
-                    <div id="postEvalList" class="space-y-4">
-                        <!-- Post-assessment evaluation cards/messages will be loaded here dynamically -->
-                    </div>
-                </div>
-            </div>
+            <!-- Content will be rendered dynamically by JavaScript -->
         </div>
 
         <!-- Review Tab -->
         <div id="reviewTabContent" class="hidden">
-            <div class="flex w-full">
-                <div class="left-col w-1/5 max-w-xs pr-4">
+            <div class="review-main-wrapper flex flex-col md:flex-row w-full">
+                <div class="review-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0">
                     <div class="mb-4">
                         <input type="text" id="reviewStudentSearch" placeholder="Search student"
                             class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
@@ -480,7 +470,7 @@ function generateStudentFilterOptions($coordinatorId) {
                         <!-- Review list dynamically loaded -->
                     </div>
                 </div>
-                <div class="right-col w-4/5 pl-4">
+                <div class="review-content-section right-col w-full md:w-4/5 md:pl-4 order-2">
                     <div class="flex flex-col items-center justify-center h-full">
                         <div class="bg-blue-50 rounded-full p-6 mb-4">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-400" fill="none"
@@ -2485,6 +2475,505 @@ function generateStudentFilterOptions($coordinatorId) {
     </div>
 
 <style>
+/* Pre-Assessment Evaluation Styling */
+.student-eval-block {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.student-eval-block:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.eval-question-box {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.eval-answer-cell {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    color: #1565c0;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border: 2px solid #90caf9;
+    margin-bottom: 1rem;
+    word-break: break-word;
+    white-space: pre-line;
+}
+
+.eval-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1rem;
+}
+
+.eval-rating-header {
+    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 0.75rem;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
+
+.eval-rating-cell {
+    background: #f8f9fa;
+    padding: 1rem 0.5rem;
+    text-align: center;
+    border-right: 1px solid #e2e8f0;
+    transition: background 0.2s ease;
+}
+
+.eval-rating-cell:last-child {
+    border-right: none;
+}
+
+.eval-rating-cell:hover {
+    background: #e3f2fd;
+}
+
+.eval-rating-cell label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #495057;
+    transition: color 0.2s ease;
+}
+
+.eval-rating-cell label:hover {
+    color: #1976d2;
+}
+
+.eval-rating-cell input[type="radio"] {
+    width: 1.5rem;
+    height: 1.5rem;
+    cursor: pointer;
+    accent-color: #1976d2;
+    transition: transform 0.2s ease;
+}
+
+.eval-rating-cell input[type="radio"]:hover {
+    transform: scale(1.1);
+}
+
+.eval-rating-cell input[type="radio"]:checked {
+    transform: scale(1.2);
+}
+
+.btn-clear-table {
+    background: none;
+    border: none;
+    color: #6c757d;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    font-size: 0.875rem;
+    transition: color 0.2s ease;
+}
+
+.btn-clear-table:hover {
+    color: #dc3545;
+}
+
+.btn-save-all-ratings {
+    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-save-all-ratings::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-save-all-ratings:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn-save-all-ratings:hover {
+    background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+}
+
+.btn-save-all-ratings:active {
+    transform: translateY(0);
+}
+
+.btn-save-all-ratings:disabled {
+    background: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.save-rating-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.625rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    transition: all 0.3s ease;
+}
+
+.save-rating-btn:hover {
+    background: linear-gradient(135deg, #20c997 0%, #1e9e85 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.save-rating-btn:active {
+    transform: translateY(0);
+}
+
+.rate-status {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.rate-status.success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.rate-status.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.preassessment-student-item {
+    transition: all 0.2s ease;
+}
+
+.preassessment-student-item:hover {
+    transform: translateX(4px);
+}
+
+/* Likert Scale Radio Buttons - Enhanced Styling */
+.likert-radio {
+    width: 1.5rem;
+    height: 1.5rem;
+    cursor: pointer;
+    accent-color: #1976d2;
+    transition: transform 0.2s ease;
+}
+
+.likert-radio:hover {
+    transform: scale(1.15);
+}
+
+.likert-radio:checked {
+    transform: scale(1.2);
+}
+
+/* Evaluation Tab Buttons Active State */
+#evalQuestionsTabBtn.active,
+#rateTabBtn.active,
+#postAssessmentTabBtn.active,
+#reviewTabBtn.active {
+    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+    color: white;
+    border-color: #1565c0;
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+#evalQuestionsTabBtn:not(.active),
+#rateTabBtn:not(.active),
+#postAssessmentTabBtn:not(.active),
+#reviewTabBtn:not(.active) {
+    background: white;
+    color: #495057;
+    border: 2px solid #dee2e6;
+}
+
+#evalQuestionsTabBtn:not(.active):hover,
+#rateTabBtn:not(.active):hover,
+#postAssessmentTabBtn:not(.active):hover,
+#reviewTabBtn:not(.active):hover {
+    background: #e3f2fd;
+    border-color: #1976d2;
+    color: #1976d2;
+    transform: translateY(-2px);
+}
+
+/* All Questions Tab Mobile Layout */
+@media (max-width: 768px) {
+    /* All Questions wrapper - stack vertically */
+    .all-questions-wrapper {
+        flex-direction: column !important;
+    }
+    
+    /* Categories section - appears first on mobile */
+    .all-questions-categories-section {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-right: 0 !important;
+        margin-bottom: 1.5rem !important;
+        order: 1 !important;
+    }
+    
+    /* Questions content section - appears second on mobile */
+    .all-questions-content-section {
+        width: 100% !important;
+        padding-left: 0 !important;
+        order: 2 !important;
+    }
+}
+
+/* Review Tab Mobile Layout */
+@media (max-width: 768px) {
+    /* Review wrapper - stack vertically */
+    .review-main-wrapper {
+        flex-direction: column !important;
+    }
+    
+    /* Student list section - appears first on mobile */
+    .review-student-list-section {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-right: 0 !important;
+        margin-bottom: 1.5rem !important;
+        order: 1 !important;
+    }
+    
+    /* Review content section - appears second on mobile */
+    .review-content-section {
+        width: 100% !important;
+        padding-left: 0 !important;
+        order: 2 !important;
+    }
+    
+    /* Review student list panel adjustments */
+    #reviewStudentListPanel {
+        max-height: 300px !important;
+    }
+}
+
+/* Post-Assessment Tab Mobile Layout */
+@media (max-width: 768px) {
+    /* Post-Assessment wrapper - stack vertically */
+    .postassessment-main-wrapper {
+        flex-direction: column !important;
+    }
+    
+    /* Student list section - appears first on mobile */
+    .postassessment-student-list-section {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-right: 0 !important;
+        margin-bottom: 1.5rem !important;
+        order: 1 !important;
+    }
+    
+    /* Evaluation section - appears second on mobile */
+    .postassessment-evaluation-section {
+        width: 100% !important;
+        padding-left: 0 !important;
+        order: 2 !important;
+    }
+    
+    /* Post-Assessment student list panel adjustments */
+    #postStudentListPanel {
+        max-height: 300px !important;
+    }
+}
+
+/* Pre-Assessment Mobile Layout */
+@media (max-width: 768px) {
+    /* Main wrapper - stack vertically */
+    .preassessment-main-wrapper {
+        flex-direction: column !important;
+    }
+    
+    /* Student list section - appears first on mobile */
+    .preassessment-student-list-section {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-right: 0 !important;
+        margin-bottom: 1.5rem !important;
+        order: 1 !important;
+    }
+    
+    /* Content section wrapper - stack vertically */
+    .preassessment-content-wrapper {
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+    
+    /* Academic section - appears second on mobile */
+    .preassessment-academic-section {
+        width: 100% !important;
+        order: 2 !important;
+        margin-bottom: 1.5rem !important;
+    }
+    
+    /* Evaluation section - appears third on mobile */
+    .preassessment-evaluation-section {
+        width: 100% !important;
+        order: 3 !important;
+        padding-left: 0 !important;
+    }
+    
+    /* Student list panel adjustments */
+    #studentListPanel {
+        max-height: 300px !important;
+    }
+    
+    /* Evaluation block adjustments */
+    .student-eval-block {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .eval-question-box {
+        font-size: 0.9rem;
+        padding: 0.75rem 1rem;
+    }
+    
+    .eval-answer-cell {
+        font-size: 0.85rem;
+        padding: 0.75rem 1rem;
+    }
+    
+    .eval-rating-cell {
+        padding: 0.75rem 0.25rem;
+    }
+    
+    .eval-rating-cell label {
+        font-size: 0.75rem;
+        gap: 0.25rem;
+    }
+    
+    .eval-rating-cell input[type="radio"] {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+    
+    .btn-save-all-ratings {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9rem;
+        width: 100%;
+    }
+    
+    .save-rating-btn {
+        width: 100%;
+        padding: 0.75rem 1rem;
+    }
+    
+    .eval-table {
+        font-size: 0.85rem;
+    }
+    
+    /* Academic grades section mobile adjustments */
+    .preassessment-academic-section .bg-white {
+        padding: 1rem !important;
+    }
+    
+    .preassessment-academic-section .max-h-96 {
+        max-height: 250px !important;
+    }
+}
+
+/* Prediction Analysis Modal Responsive Styles */
+#analysisModal {
+    padding: 0.5rem !important;
+}
+
+#analysisModal > div {
+    margin: 0.5rem auto !important;
+    width: calc(100% - 1rem) !important;
+    max-width: 100% !important;
+}
+
+@media (max-width: 640px) {
+    #analysisModal > div {
+        padding: 1rem !important;
+        border-radius: 0.75rem !important;
+    }
+    
+    #analysisModal h2 {
+        font-size: 1.25rem !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    #analysisModalContent .space-y-4 > * {
+        margin-bottom: 0.75rem !important;
+    }
+    
+    #analysisModalContent .text-base {
+        font-size: 0.875rem !important;
+    }
+    
+    #analysisModalContent .text-sm {
+        font-size: 0.75rem !important;
+    }
+    
+    #analysisModalContent .grid {
+        gap: 0.5rem !important;
+    }
+    
+    #analysisModalContent .px-3 {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+    
+    #analysisModalContent .py-2 {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+}
+
 /* Additional Mobile Responsive Styles for Dynamic Content */
 @media (max-width: 768px) {
     /* Modal improvements */

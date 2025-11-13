@@ -89,7 +89,8 @@ $(document).ready(function() {
 
     // Show the modal when the "Add New Coordinator/Admin" button is clicked
     $('#btnAddCoordinator').on('click', function() {
-        $('#addCoordinatorModal').show();
+        $('#addCoordinatorModal').addClass('show').css('display', 'flex');
+        $('body').css('overflow', 'hidden'); // Prevent body scroll when modal is open
         fetchHTEOptions(); // Fetch HTE options when opening the modal
     });
 
@@ -158,7 +159,8 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     alert(response.message);
-                    $('#addCoordinatorModal').hide();
+                    $('#addCoordinatorModal').removeClass('show').css('display', 'none');
+                    $('body').css('overflow', '');
                     $('#addCoordinatorForm')[0].reset();
                     location.reload();
                 } else {
@@ -174,15 +176,27 @@ $(document).ready(function() {
 
     // Close modal functionality
     $('#closeModal').on('click', function() {
-        $('#addCoordinatorModal').hide();
+        $('#addCoordinatorModal').removeClass('show').css('display', 'none');
+        $('body').css('overflow', '');
         $('#addCoordinatorForm')[0].reset();
         $('#hteDropdownContainer').hide();
     });
 
     // Close modal when clicking outside
-    $(window).on('click', function(event) {
-        if (event.target === document.getElementById('addCoordinatorModal')) {
-            $('#addCoordinatorModal').hide();
+    $('#addCoordinatorModal').on('click', function(event) {
+        if (event.target === this) {
+            $(this).removeClass('show').css('display', 'none');
+            $('body').css('overflow', '');
+            $('#addCoordinatorForm')[0].reset();
+            $('#hteDropdownContainer').hide();
+        }
+    });
+    
+    // Close modal with Escape key
+    $(document).on('keydown', function(event) {
+        if (event.key === 'Escape' && $('#addCoordinatorModal').hasClass('show')) {
+            $('#addCoordinatorModal').removeClass('show').css('display', 'none');
+            $('body').css('overflow', '');
             $('#addCoordinatorForm')[0].reset();
             $('#hteDropdownContainer').hide();
         }

@@ -6,7 +6,10 @@ if (!isset($_SESSION['current_user_role']) || $_SESSION['current_user_role'] !==
 }
 
 // Include necessary files for database connection and functions
-require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php";
+// Old code - commented out
+$path = $_SERVER['DOCUMENT_ROOT'];
+require_once $path."/database/database.php";
+
 
 // Initialize database connection
 $dbo = new Database();
@@ -47,6 +50,7 @@ $superadminName = $_SESSION['current_user_name'] ?? 'Super Admin';
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Super Admin Dashboard - InternConnect</title>
     <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/superadmin.css">
     <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
 
@@ -57,14 +61,17 @@ $superadminName = $_SESSION['current_user_name'] ?? 'Super Admin';
 </head>
 <body>
     <div class="page">
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
         <div class="sidebar closed" id="sidebar">
-            <div style="padding: 12px 20px; font-weight:bold; font-size:18px; cursor:pointer;" onclick="window.location.href='superadmin_dashboard.php'">InternConnect</div>
+            <div style="padding: 1rem 1.5rem; font-weight:bold; font-size:1.3rem; cursor:pointer; border-bottom: 1px solid rgba(255,255,255,0.1);" onclick="window.location.href='superadmin_dashboard.php'">InternConnect</div>
             <ul class="sidebar-menu">
-                <li class="sidebar-item active" data-tab="dashboard">Dashboard</li>
-                <li class="sidebar-item" data-tab="users">Users</li>
-                <li class="sidebar-item" data-tab="htes">HTEs</li>
-                <li class="sidebar-item" data-tab="reports">Reports</li>
-                <li class="sidebar-item" data-tab="coordinators">Coordinators/Admins</li>
+                <li class="sidebar-item active" data-tab="dashboard"><span>Dashboard</span></li>
+                <li class="sidebar-item" data-tab="users"><span>Users</span></li>
+                <li class="sidebar-item" data-tab="htes"><span>HTEs</span></li>
+                <li class="sidebar-item" data-tab="reports"><span>Reports</span></li>
+                <li class="sidebar-item" data-tab="coordinators"><span>Coordinators/Admins</span></li>
             </ul>
         </div>
 
@@ -76,8 +83,17 @@ $superadminName = $_SESSION['current_user_name'] ?? 'Super Admin';
                 </div>
 
                 <div class="user-profile" id="userProfile">
-                    <span id="userName"><?php echo htmlspecialchars($superadminName); ?> &#x25BC;</span>
+                    <div class="user-avatar-circle" id="userAvatarCircle">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span id="userName" class="user-name-text"><?php echo htmlspecialchars($superadminName); ?> &#x25BC;</span>
                     <div class="user-dropdown" id="userDropdown" style="display:none;">
+                        <div class="user-dropdown-header">
+                            <div class="user-dropdown-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="user-dropdown-name" id="userDropdownName"><?php echo htmlspecialchars($superadminName); ?></div>
+                        </div>
                         <button id="btnProfile">Profile</button>
                         <button id="logoutBtn">Logout</button>
                     </div>
@@ -129,48 +145,50 @@ $superadminName = $_SESSION['current_user_name'] ?? 'Super Admin';
                     </select>
                 </div>
 
-                <table id="userTable" aria-describedby="user-table-desc">
-                    <caption id="user-table-desc" style="text-align:left; padding:8px 0;">List of users</caption>
-                    <thead>
-                        <tr>
-                            <th>User Type</th>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Contact Number</th>
-                            <th>Role</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($students as $student): ?>
-                            <tr class="user-row" data-user-type="student">
-                                <td>Student</td>
-                                <td><?php echo htmlspecialchars($student['INTERNS_ID'] ?? $student['STUDENT_ID'] ?? ''); ?></td>
-                                <td><?php echo htmlspecialchars($student['NAME'] ?? ''); ?></td>
-                                <td><?php echo htmlspecialchars($student['EMAIL'] ?? ''); ?></td>
-                                <td><?php echo htmlspecialchars($student['CONTACT_NUMBER'] ?? ''); ?></td>
-                                <td>Student</td>
+                <div class="table-wrapper">
+                    <table id="userTable" aria-describedby="user-table-desc">
+                        <caption id="user-table-desc" style="text-align:left; padding:8px 0;">List of users</caption>
+                        <thead>
+                            <tr>
+                                <th>User Type</th>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Contact Number</th>
+                                <th>Role</th>
                             </tr>
-                        <?php endforeach; ?>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($students as $student): ?>
+                                <tr class="user-row" data-user-type="student">
+                                    <td>Student</td>
+                                    <td><?php echo htmlspecialchars($student['INTERNS_ID'] ?? $student['STUDENT_ID'] ?? ''); ?></td>
+                                    <td><?php echo htmlspecialchars($student['NAME'] ?? ''); ?></td>
+                                    <td><?php echo htmlspecialchars($student['EMAIL'] ?? ''); ?></td>
+                                    <td><?php echo htmlspecialchars($student['CONTACT_NUMBER'] ?? ''); ?></td>
+                                    <td>Student</td>
+                                </tr>
+                            <?php endforeach; ?>
 
-                        <?php foreach ($allCoordinators as $user): ?>
-                            <tr class="user-row" data-user-type="<?php echo strtolower(htmlspecialchars($user['ROLE'] ?? 'coordinator')); ?>">
-                                <td>Coordinator/Admin/Superadmin</td>
-                                <td><?php echo htmlspecialchars($user['COORDINATOR_ID'] ?? ''); ?></td>
-                                <td><?php echo htmlspecialchars($user['NAME'] ?? ''); ?></td>
-                                <td><?php echo htmlspecialchars($user['EMAIL'] ?? ''); ?></td>
-                                <td><?php echo htmlspecialchars($user['CONTACT_NUMBER'] ?? ''); ?></td>
-                                <td><?php echo htmlspecialchars($user['ROLE'] ?? ''); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                            <?php foreach ($allCoordinators as $user): ?>
+                                <tr class="user-row" data-user-type="<?php echo strtolower(htmlspecialchars($user['ROLE'] ?? 'coordinator')); ?>">
+                                    <td>Coordinator/Admin/Superadmin</td>
+                                    <td><?php echo htmlspecialchars($user['COORDINATOR_ID'] ?? ''); ?></td>
+                                    <td><?php echo htmlspecialchars($user['NAME'] ?? ''); ?></td>
+                                    <td><?php echo htmlspecialchars($user['EMAIL'] ?? ''); ?></td>
+                                    <td><?php echo htmlspecialchars($user['CONTACT_NUMBER'] ?? ''); ?></td>
+                                    <td><?php echo htmlspecialchars($user['ROLE'] ?? ''); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- HTEs tab -->
             <div class="tab-content" id="htes" style="display:none;">
                 <h3>Host Training Establishments (HTEs)</h3>
-                <div style="overflow-x:auto;">
+                <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr><th>HTE ID</th><th>Name</th><th>Industry</th><th>Address</th><th>Contact Email</th><th>Contact Person</th><th>Contact Number</th></tr>
@@ -225,7 +243,7 @@ $superadminName = $_SESSION['current_user_name'] ?? 'Super Admin';
 
                 <div id="reportTableContainer">
                     <h4 id="reportTableTitle">Attendance Reports</h4>
-                    <div style="overflow-x:auto;">
+                    <div class="table-wrapper">
                         <table id="reportTable">
                             <thead id="reportTableHeader">
                                 <tr>
@@ -250,7 +268,7 @@ $superadminName = $_SESSION['current_user_name'] ?? 'Super Admin';
                 <h3>Coordinators/Admins Management</h3>
                 <button id="btnAddCoordinator" class="btn" style="margin-bottom: 12px;">Add New Coordinator/Admin</button>
 
-                <div style="overflow-x:auto;">
+                <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
@@ -315,20 +333,127 @@ $superadminName = $_SESSION['current_user_name'] ?? 'Super Admin';
                 });
             });
 
-            // Sidebar toggle for small screens
-            document.getElementById('sidebarToggle').addEventListener('click', function() {
-                document.getElementById('sidebar').classList.toggle('sidebar-open');
+            // Initialize sidebar state on page load
+            function initializeSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                const contentArea = document.querySelector('.content-area');
+                
+                // Sidebar should be closed by default on all screen sizes
+                sidebar.classList.remove('sidebar-open');
+                sidebar.classList.add('closed');
+                if (contentArea) contentArea.classList.remove('sidebar-open');
+                if (overlay) overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+            
+            // Initialize on page load
+            initializeSidebar();
+            
+            // Sidebar toggle for all screens
+            document.getElementById('sidebarToggle').addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                const contentArea = document.querySelector('.content-area');
+                const isMobile = window.innerWidth <= 768;
+                
+                // Toggle sidebar-open class (remove closed if present)
+                if (sidebar.classList.contains('sidebar-open')) {
+                    sidebar.classList.remove('sidebar-open');
+                    sidebar.classList.add('closed');
+                    if (contentArea) contentArea.classList.remove('sidebar-open');
+                } else {
+                    sidebar.classList.add('sidebar-open');
+                    sidebar.classList.remove('closed');
+                    if (contentArea) contentArea.classList.add('sidebar-open');
+                }
+                
+                // Toggle overlay on mobile only
+                if (isMobile && overlay) {
+                    if (sidebar.classList.contains('sidebar-open')) {
+                        overlay.classList.add('active');
+                        document.body.style.overflow = 'hidden';
+                    } else {
+                        overlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                } else {
+                    if (overlay) overlay.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+            
+            // Close sidebar when clicking overlay
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const sidebar = document.getElementById('sidebar');
+                    const contentArea = document.querySelector('.content-area');
+                    sidebar.classList.remove('sidebar-open');
+                    sidebar.classList.add('closed');
+                    if (contentArea) contentArea.classList.remove('sidebar-open');
+                    this.classList.remove('active');
+                    document.body.style.overflow = '';
+                });
+            }
+            
+            // Handle window resize
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    const sidebar = document.getElementById('sidebar');
+                    const overlay = document.getElementById('sidebarOverlay');
+                    const contentArea = document.querySelector('.content-area');
+                    
+                    if (window.innerWidth > 768) {
+                        // On desktop, keep current sidebar state but remove overlay
+                        if (overlay) overlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                    } else {
+                        // On mobile, close sidebar if it was open
+                        if (sidebar.classList.contains('sidebar-open')) {
+                            sidebar.classList.remove('sidebar-open');
+                            sidebar.classList.add('closed');
+                            if (contentArea) contentArea.classList.remove('sidebar-open');
+                        }
+                        if (overlay) overlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                }, 100);
             });
 
-            // User profile dropdown
+            // User profile dropdown - handle both avatar and name clicks
             var userProfile = document.getElementById('userProfile');
             var userDropdown = document.getElementById('userDropdown');
-            userProfile.addEventListener('click', function(e) {
-                e.stopPropagation();
-                userDropdown.style.display = userDropdown.style.display === 'flex' ? 'none' : 'flex';
-            });
-            document.addEventListener('click', function() {
-                userDropdown.style.display = 'none';
+            var userAvatar = document.getElementById('userAvatarCircle');
+            
+            if (userProfile) {
+                userProfile.addEventListener('click', function(e) {
+                    // Only toggle if clicking on avatar or name, not on dropdown itself
+                    if (e.target.closest('.user-avatar-circle') || e.target.closest('#userName') || e.target === this) {
+                        e.stopPropagation();
+                        userDropdown.style.display = userDropdown.style.display === 'flex' ? 'none' : 'flex';
+                    }
+                });
+            }
+            
+            // Also handle avatar click directly
+            if (userAvatar) {
+                userAvatar.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userDropdown.style.display = userDropdown.style.display === 'flex' ? 'none' : 'flex';
+                });
+            }
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (userProfile && !userProfile.contains(e.target)) {
+                    userDropdown.style.display = 'none';
+                }
             });
 
             // Logout

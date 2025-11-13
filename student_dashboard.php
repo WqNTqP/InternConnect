@@ -7,7 +7,7 @@ if(!isset($_SESSION["student_user"]))
 }
 $student_id = $_SESSION["student_user"];
 
-$path=$_SERVER['DOCUMENT_ROOT'];
+$path = $_SERVER['DOCUMENT_ROOT'];
 require_once $path."/database/database.php";
 
 try {
@@ -85,9 +85,18 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                     <!-- Notifications will be dynamically added here -->
                 </div>
             </div>
-            <span id="userName"><?php echo htmlspecialchars($studentName); ?></span>
+            <div class="user-avatar-circle" id="userAvatarCircle">
+                <i class="fas fa-user"></i>
+            </div>
+            <span id="userName" class="user-name-text"><?php echo htmlspecialchars($studentName); ?></span>
             <span id="draftUserName" style="display:none;"></span>
             <div class="user-dropdown" id="userDropdown">
+                <div class="user-dropdown-header">
+                    <div class="user-dropdown-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-dropdown-name" id="userDropdownName"><?php echo htmlspecialchars($studentName); ?></div>
+                </div>
                 <button onclick="window.location.href='student_dashboard.php'">
                     <i class="fas fa-tachometer-alt"></i>
                     Dashboard
@@ -104,8 +113,11 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
         </div>
     </div>
 
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- Sidebar Navigation -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo" onclick="window.location.href='student_dashboard.php'">
                 <i class="fas fa-calendar-check"></i>
@@ -319,16 +331,17 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
         <!-- Post-Assessment Form -->
         <div class="assessment-tab" id="postAssessmentTab" style="display:none;">
             <form id="postAssessmentForm">
-                <!-- Category toggle header above the table, centered (moved outside student-eval-unique-container) -->
+                <!-- Category dropdown header above the table, centered (moved outside student-eval-unique-container) -->
                 <div class="category-toggle" style="width: 100%; display: flex; justify-content: center; align-items: center; margin-bottom: 24px;">
-                    <div style="display: flex; align-items: center; gap: 24px;">
-                        <button type="button" id="prevCategoryBtn" class="btn btn-light category-nav-btn" style="font-size: 1.5em;">
-                            &#8592;
-                        </button>
-                        <span id="currentCategoryLabel" style="font-weight: bold; font-size: 1.2em;">System Development</span>
-                        <button type="button" id="nextCategoryBtn" class="btn btn-light category-nav-btn" style="font-size: 1.5em;">
-                            &#8594;
-                        </button>
+                    <div style="display: flex; align-items: center; gap: 16px; width: 100%; max-width: 400px;">
+                        <label for="categoryDropdown" style="font-weight: 600; font-size: 1rem; color: #495057; white-space: nowrap;">Select Category:</label>
+                        <select id="categoryDropdown" name="categoryDropdown" class="category-dropdown-select">
+                            <option value="0">System Development</option>
+                            <option value="1">Research</option>
+                            <option value="2">Technical Support</option>
+                            <option value="3">Business Operation</option>
+                            <option value="4">Personal and Interpersonal Skills</option>
+                        </select>
                     </div>
                 </div>
                 <div class="student-eval-unique-container">
@@ -760,17 +773,17 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                     <div class="card">
                         <div class="card-header">
                             <h3><i class="fas fa-history"></i> Attendance History</h3>
-                    <div class="date-filter" style="display: flex; align-items: center; gap: 10px;">
+                    <div class="date-filter">
                         <button id="clearFiltersBtn" class="btn-clear-filter" style="display: none;" title="Clear all filters">
                             <i class="fas fa-times"></i> Clear
                         </button>
                         <select id="monthFilter" style="display: none;">
                             <option value="">Select Month</option>
                         </select>
-                        <select id="yearFilter" style="display: none; margin: 0 10px;">
+                        <select id="yearFilter" style="display: none;">
                             <option value="">Select Year</option>
                         </select>
-                        <select id="historyFilter" style="margin-left: 10px;">
+                        <select id="historyFilter">
                             <option value="week">This Week</option>
                             <option value="lastweek">Last Week</option>
                             <option value="month">This Month</option>
