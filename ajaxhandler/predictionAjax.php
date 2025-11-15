@@ -219,7 +219,8 @@ try {
             JOIN intern_details idet ON ineed.HTE_ID = idet.HTE_ID
             JOIN interns_details id ON idet.INTERNS_ID = id.INTERNS_ID
             JOIN host_training_establishment hte ON idet.HTE_ID = hte.HTE_ID
-            WHERE ineed.COORDINATOR_ID = ?";
+            WHERE ineed.COORDINATOR_ID = ?
+            ORDER BY id.SURNAME, id.NAME";
     $stmt = $db->conn->prepare($sql);
     $stmt->execute([$coordinator_id]);
     $students = $stmt->fetchAll(PDO::FETCH_ASSOC);

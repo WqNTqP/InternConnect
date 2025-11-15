@@ -1,8 +1,8 @@
 <?php
 session_start();
-$path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . "/database/database.php";
-require_once $path . "/database/attendanceDetails.php";
+require_once __DIR__ . '/../config/path_config.php';
+require_once PathConfig::getDatabasePath();
+require_once PathConfig::getProjectPath('/database/attendanceDetails.php');
 header('Content-Type: text/csv');
 header('Content-Disposition: attachment; filename="students_with_grades.csv"');
 

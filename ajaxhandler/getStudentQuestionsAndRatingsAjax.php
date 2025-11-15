@@ -6,8 +6,15 @@ if (!$student_id) {
     echo json_encode(['error' => 'Missing student_id']);
     exit;
 }
-require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php";
+require_once __DIR__ . '/../config/path_config.php';
+require_once PathConfig::getDatabasePath();
 $dbo = new Database();
+
+// Check if database connection is successful
+if ($dbo->conn === null) {
+    echo json_encode(['error' => 'Database connection failed']);
+    exit;
+}
 
 // Translate STUDENT_ID to INTERN_ID
 $stmt = $dbo->conn->prepare("SELECT INTERNS_ID FROM interns_details WHERE STUDENT_ID = ? LIMIT 1");

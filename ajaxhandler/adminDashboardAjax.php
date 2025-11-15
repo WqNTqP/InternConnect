@@ -7,6 +7,7 @@ header('Content-Type: application/json');
 
 $path = dirname(__FILE__) . '/../';
 require_once $path . "database/database.php";
+require_once $path . "config/safe_upload.php";
 
 function sendResponse($status, $data, $message = '') {
     echo json_encode(array("status" => $status, "data" => $data, "message" => $message));
@@ -103,18 +104,12 @@ switch ($action) {
             $allowedFileTypes = ['image/jpeg', 'image/png', 'image/gif'];
 
             if (in_array($fileType, $allowedFileTypes)) {
-                $uploadFileDir = '../uploads/';
-                if (!file_exists($uploadFileDir)) {
-                    mkdir($uploadFileDir, 0777, true);
-                }
-                $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-                $uniqueFileName = uniqid() . '_' . $adminId . '.' . $fileExtension;
-                $dest_path = $uploadFileDir . $uniqueFileName;
-
-                if (move_uploaded_file($fileTmpPath, $dest_path)) {
-                    $profilePicturePath = $uniqueFileName;
+                // Cloud-first upload; require Cloudinary to avoid local persistence
+                $upload = safeUploadImage($fileTmpPath, $fileName, 'uploads', 'profiles', true);
+                if (!empty($upload['success'])) {
+                    $profilePicturePath = $upload['url'];
                 } else {
-                    sendResponse('error', null, 'Error moving the uploaded file');
+                    sendResponse('error', null, 'Profile image upload failed: ' . ($upload['error'] ?? 'unknown error'));
                 }
             } else {
                 sendResponse('error', null, 'Invalid file type. Only JPEG, PNG, and GIF files are allowed.');

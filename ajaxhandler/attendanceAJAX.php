@@ -119,6 +119,46 @@ function createPDFReport($list, $filename) {
         echo json_encode($rv);
     }
 
+    // Get admin's assigned HTE for admin dashboard with MOA information
+    if($action=="getAllHTEList")
+    {
+        try {
+            $adminId = $_POST['adminId'] ?? null;
+            
+            if (!$adminId) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Admin ID is required'
+                ]);
+                exit;
+            }
+            
+            $dbo = new Database();
+            $hdo = new attendanceDetails();
+            
+            // Get admin's assigned HTE with MOA data
+            $htes = $hdo->getAdminHTEWithMOA($dbo, $adminId);
+            
+            if ($htes) {
+                echo json_encode([
+                    'success' => true,
+                    'htes' => $htes
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => true,
+                    'htes' => []
+                ]);
+            }
+        } catch (Exception $e) {
+            error_log("Error getting admin HTEs: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error loading companies: ' . $e->getMessage()
+            ]);
+        }
+        exit;
+    }
 
     if($action=="getStudentList")
     {
@@ -231,21 +271,24 @@ function createPDFReport($list, $filename) {
 
                 // Collect grades for pre_assessment course columns only
                 $grades = [];
-                $course_columns = [
-                    'CC 102', 'CC 103', 'PF 101', 'CC 104', 'IPT 101', 'IPT 102', 'CC 106', 'CC 105',
-                    'IM 101', 'IM 102', 'HCI 101', 'HCI 102', 'WS 101', 'NET 101', 'NET 102',
-                    'IAS 101', 'IAS 102', 'CAP 101', 'CAP 102', 'SP 101'
+                $course_mapping = [
+                    'cc102' => 'CC 102', 'cc103' => 'CC 103', 'pf101' => 'PF 101', 'cc104' => 'CC 104',
+                    'ipt101' => 'IPT 101', 'ipt102' => 'IPT 102', 'cc106' => 'CC 106', 'cc105' => 'CC 105',
+                    'im101' => 'IM 101', 'im102' => 'IM 102', 'hci101' => 'HCI 101', 'hci102' => 'HCI 102',
+                    'ws101' => 'WS 101', 'net101' => 'NET 101', 'net102' => 'NET 102',
+                    'ias101' => 'IAS 101', 'ias102' => 'IAS 102', 'cap101' => 'CAP 101', 'cap102' => 'CAP 102',
+                    'sp101' => 'SP 101'
                 ];
-                foreach ($course_columns as $course) {
-                    // Replace spaces for HTML form field names, e.g., CC_102
-                    $key = str_replace(' ', '_', $course) . '_grade';
-                    if (isset($_POST[$key])) {
-                        $grades[$course] = $_POST[$key];
+                foreach ($course_mapping as $form_field => $db_column) {
+                    if (isset($_POST[$form_field]) && $_POST[$form_field] !== '') {
+                        $grades[$db_column] = $_POST[$form_field];
                     }
                 }
         
             // Add these lines for debugging
             error_log("Received POST data: " . print_r($_POST, true));
+            error_log("Collected grades: " . print_r($grades, true));
+            error_log("Grades empty check: " . (empty($grades) ? 'TRUE' : 'FALSE'));
             error_log("HTE_ID: " . $hte_id);
             error_log("Coordinator ID: " . $coordinator_id);
         
@@ -345,6 +388,10 @@ function createPDFReport($list, $filename) {
             $contact_number = $_POST['CONTACT_NUMBER'] ?? null;
             $coordinator_id = $_SESSION['current_user'] ?? null;
             $session_id = $_POST['sessionId'] ?? null;
+            
+            // MOA data
+            $moa_start_date = $_POST['MOA_START_DATE'] ?? null;
+            $moa_end_date = $_POST['MOA_END_DATE'] ?? null;
 
             // Handle logo upload with safe fallback
             $logo_filename = null;
@@ -369,14 +416,41 @@ function createPDFReport($list, $filename) {
                     return;
                 }
             }
+            
+            // Handle MOA PDF upload
+            $moa_file_url = null;
+            $moa_public_id = null;
+            if (isset($_FILES['MOA_FILE']) && $_FILES['MOA_FILE']['error'] === UPLOAD_ERR_OK) {
+                // Include Cloudinary configuration
+                require_once $basePath . '/config/cloudinary.php';
+                
+                $cloudinary = new CloudinaryUploader();
+                $moaResult = $cloudinary->uploadDocument(
+                    $_FILES['MOA_FILE']['tmp_name'],
+                    'moa',
+                    'hte_' . uniqid() . '_moa.pdf' // Generate unique filename with .pdf extension
+                );
+                
+                if ($moaResult['success']) {
+                    $moa_file_url = $moaResult['url'];
+                    $moa_public_id = $moaResult['public_id'];
+                    error_log("MOA uploaded to Cloudinary: " . $moa_file_url);
+                } else {
+                    error_log("MOA upload failed: " . ($moaResult['error'] ?? 'Unknown error'));
+                    echo json_encode(['success' => false, 'message' => 'MOA upload failed: ' . ($moaResult['error'] ?? 'Cloud storage unavailable')]);
+                    return;
+                }
+            }
 
             error_log("Received POST data for addHTEControl: " . print_r($_POST, true));
             error_log("Coordinator ID: " . $coordinator_id);
             error_log("Session ID: " . $session_id);
             error_log("Logo filename: " . $logo_filename);
+            error_log("MOA file URL: " . $moa_file_url);
 
-            if (!$name || !$industry || !$address || !$contact_email || !$contact_person || !$contact_number || !$coordinator_id || !$session_id) {
-                echo json_encode(['success' => false, 'message' => 'Error: All fields are required.']);
+            // Validate required fields including MOA data
+            if (!$name || !$industry || !$address || !$contact_email || !$contact_person || !$contact_number || !$coordinator_id || !$session_id || !$moa_start_date || !$moa_end_date || !$moa_file_url) {
+                echo json_encode(['success' => false, 'message' => 'Error: All fields including MOA information are required.']);
                 return;
             }
 
@@ -384,13 +458,13 @@ function createPDFReport($list, $filename) {
             $hdo = new attendanceDetails();
 
             try {
-                $new_hte_id = $hdo->addHTE($dbo, $name, $industry, $address, $contact_email, $contact_person, $contact_number, $coordinator_id, $session_id, $logo_filename);
-                echo json_encode(['success' => true, 'message' => 'HTE added successfully via Control', 'new_hte_id' => $new_hte_id]);
+                $new_hte_id = $hdo->addHTEWithMOA($dbo, $name, $industry, $address, $contact_email, $contact_person, $contact_number, $coordinator_id, $session_id, $logo_filename, $moa_file_url, $moa_public_id, $moa_start_date, $moa_end_date);
+                echo json_encode(['success' => true, 'message' => 'HTE added successfully with MOA', 'new_hte_id' => $new_hte_id]);
             } catch (Exception $e) {
                 error_log("Exception caught in addHTEControl: " . $e->getMessage());
                 echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
             }
-            }
+        }
 
             // --- Update HTE Logo ---
             if ($action == "updateHTELogo") {
@@ -437,6 +511,95 @@ function createPDFReport($list, $filename) {
                     }
                 } catch (Exception $e) {
                     error_log('Exception in updateHTELogo: ' . $e->getMessage());
+                    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+                }
+            }
+
+            // --- Get HTE Details ---
+            if ($action == "getHTEDetails") {
+                $hteId = $_POST['hteId'] ?? null;
+                if (!$hteId) {
+                    echo json_encode(['success' => false, 'message' => 'HTE ID is required.']);
+                    return;
+                }
+
+                $dbo = new Database();
+                $hdo = new attendanceDetails();
+                
+                try {
+                    $hte = $hdo->getHTEById($dbo, $hteId);
+                    if ($hte) {
+                        echo json_encode(['success' => true, 'hte' => $hte]);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'HTE not found.']);
+                    }
+                } catch (Exception $e) {
+                    error_log('Exception in getHTEDetails: ' . $e->getMessage());
+                    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+                }
+            }
+
+            // --- Update HTE Details ---
+            if ($action == "updateHTEDetails") {
+                $hteId = $_POST['hteId'] ?? null;
+                if (!$hteId) {
+                    echo json_encode(['success' => false, 'message' => 'HTE ID is required.']);
+                    return;
+                }
+
+                // Collect form data
+                $name = $_POST['NAME'] ?? null;
+                $industry = $_POST['INDUSTRY'] ?? null;
+                $address = $_POST['ADDRESS'] ?? null;
+                $contact_email = $_POST['CONTACT_EMAIL'] ?? null;
+                $contact_person = $_POST['CONTACT_PERSON'] ?? null;
+                $contact_number = $_POST['CONTACT_NUMBER'] ?? null;
+                $moa_start_date = $_POST['MOA_START_DATE'] ?? null;
+                $moa_end_date = $_POST['MOA_END_DATE'] ?? null;
+
+                // Validate required fields
+                if (!$name || !$industry || !$address || !$contact_email || !$contact_person || !$contact_number || !$moa_start_date || !$moa_end_date) {
+                    echo json_encode(['success' => false, 'message' => 'All fields are required.']);
+                    return;
+                }
+
+                // Handle MOA PDF upload (optional for updates)
+                $moa_file_url = null;
+                $moa_public_id = null;
+                if (isset($_FILES['MOA_FILE']) && $_FILES['MOA_FILE']['error'] === UPLOAD_ERR_OK) {
+                    // Include Cloudinary configuration
+                    require_once $basePath . '/config/cloudinary.php';
+                    
+                    $cloudinary = new CloudinaryUploader();
+                    $moaResult = $cloudinary->uploadDocument(
+                        $_FILES['MOA_FILE']['tmp_name'],
+                        'moa',
+                        'hte_' . $hteId . '_moa_' . time() . '.pdf' // Use HTE ID in filename with .pdf extension
+                    );
+                    
+                    if ($moaResult['success']) {
+                        $moa_file_url = $moaResult['url'];
+                        $moa_public_id = $moaResult['public_id'];
+                        error_log("MOA updated to Cloudinary: " . $moa_file_url);
+                    } else {
+                        error_log("MOA update failed: " . ($moaResult['error'] ?? 'Unknown error'));
+                        echo json_encode(['success' => false, 'message' => 'MOA upload failed: ' . ($moaResult['error'] ?? 'Cloud storage unavailable')]);
+                        return;
+                    }
+                }
+
+                $dbo = new Database();
+                $hdo = new attendanceDetails();
+                
+                try {
+                    $result = $hdo->updateHTEDetails($dbo, $hteId, $name, $industry, $address, $contact_email, $contact_person, $contact_number, $moa_start_date, $moa_end_date, $moa_file_url, $moa_public_id);
+                    if ($result) {
+                        echo json_encode(['success' => true, 'message' => 'HTE updated successfully.']);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Failed to update HTE.']);
+                    }
+                } catch (Exception $e) {
+                    error_log('Exception in updateHTEDetails: ' . $e->getMessage());
                     echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
                 }
             }
@@ -596,8 +759,9 @@ if ($action == "deleteStudents") {
                 exit;
             }
 
-            // Get HTEs assigned to the current coordinator with all relevant columns for the companies table
-            $c = "SELECT DISTINCT hte.HTE_ID, hte.NAME, hte.INDUSTRY, hte.ADDRESS, hte.CONTACT_PERSON, hte.CONTACT_NUMBER, hte.LOGO
+            // Get HTEs assigned to the current coordinator with all relevant columns including MOA data
+            $c = "SELECT DISTINCT hte.HTE_ID, hte.NAME, hte.INDUSTRY, hte.ADDRESS, hte.CONTACT_PERSON, hte.CONTACT_NUMBER, hte.LOGO,
+                         hte.moa_file_url, hte.moa_public_id, hte.moa_start_date, hte.moa_end_date, hte.moa_upload_date
                   FROM host_training_establishment hte
                   JOIN internship_needs itn ON hte.HTE_ID = itn.HTE_ID
                   WHERE itn.COORDINATOR_ID = :cdrid

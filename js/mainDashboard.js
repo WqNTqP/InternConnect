@@ -1,4 +1,39 @@
 
+// MOA Status Calculation Utility
+function calculateMOAStatus(startDate, endDate) {
+    if (!startDate || !endDate) {
+        return { status: 'N/A', class: 'text-gray-500', icon: '' };
+    }
+    
+    const today = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    today.setHours(0, 0, 0, 0);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    
+    if (today > end) {
+        return { 
+            status: 'Expired', 
+            class: 'px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs',
+            icon: '🔴'
+        };
+    } else if (today >= start && today <= end) {
+        return { 
+            status: 'Active', 
+            class: 'px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs',
+            icon: '🟢'
+        };
+    } else {
+        return { 
+            status: 'Future', 
+            class: 'px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs',
+            icon: '⏳'
+        };
+    }
+}
+
 // Dynamic base URL function to handle different environments
 function getBaseUrl() {
     const protocol = window.location.protocol;
@@ -24,6 +59,17 @@ function getBaseUrl() {
     console.log('getBaseUrl() returning:', fullUrl);
     
     return fullUrl;
+}
+
+// Helper function to get proper image URL (Cloudinary, absolute, or local)
+function getImageUrl(filename) {
+    if (!filename) return '';
+    const f = String(filename).trim();
+    if (/^https?:\/\//i.test(f)) return f;                    // Full URL
+    if (f.startsWith('//')) return window.location.protocol + f; // Protocol-relative
+    if (f.startsWith('/')) return window.location.protocol + '//' + window.location.host + f; // Absolute path
+    if (f.includes('uploads/') || f.includes('/')) return getBaseUrl() + f; // Relative path
+    return getBaseUrl() + 'uploads/reports/' + f;               // Bare filename fallback
 }
 
 // Fetch and render coordinator-specific companies (HTEs) in the companies table
@@ -61,21 +107,39 @@ function loadAllCompaniesData() {
 function renderCompaniesList(companies) {
     let html = '';
     companies.forEach(function(company) {
-        // For "View All Companies" tab: Show only "Update Logo" button, no logo image
-        let logoHtml = `<button class='update-logo-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs' data-hteid='${company.HTE_ID}'>Update Logo</button>`;
+        // Calculate MOA status using utility function
+        const moaStatus = calculateMOAStatus(company.moa_start_date, company.moa_end_date);
+        let moaStatusHtml = moaStatus.status === 'N/A' ? 'N/A' : 
+            `<span class="${moaStatus.class}">${moaStatus.icon} ${moaStatus.status}</span>`;
+        
+        // Add MOA view button if file exists
+        let moaViewBtn = '';
+        if (company.moa_file_url) {
+            moaViewBtn = ` <button class='view-moa-btn bg-purple-500 hover:bg-purple-600 text-white px-2 py-1 rounded text-xs ml-1' data-moa='${company.moa_file_url}' title='View MOA'>📄</button>`;
+        }
+        
+        // Action buttons
+        let actionHtml = `
+            <div class="flex gap-1">
+                <button class='edit-hte-btn bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs' data-hteid='${company.HTE_ID}'>Edit</button>
+                <button class='update-logo-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs' data-hteid='${company.HTE_ID}'>Logo</button>${moaViewBtn}
+            </div>
+        `;
+        
         html += `<tr>
             <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-900\">${company.NAME || '-'}<\/td>
             <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.INDUSTRY || '-'}<\/td>
             <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.ADDRESS || '-'}<\/td>
             <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.CONTACT_PERSON || '-'}<\/td>
             <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.CONTACT_NUMBER || '-'}<\/td>
-            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${logoHtml}<\/td>
+            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${moaStatusHtml}<\/td>
+            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${actionHtml}<\/td>
         <\/tr>`;
     });
     $('#allCompaniesTableBody').html(html);
 }
 
-// Handle MOA view button click (show modal or download)
+// Handle MOA view button click (direct PDF viewing)
 $(document).on('click', '.view-moa-btn', function() {
     const moaPath = $(this).data('moa');
     if (moaPath) {
@@ -472,13 +536,15 @@ $(document).on('click', '.postanalysis-student-item', function() {
                     const selfAvg = count ? (selfTotal / count).toFixed(2) : '-';
                     html += `<div class="mb-8 p-5 rounded-xl border-2 border-purple-200 bg-purple-50 shadow-sm">
                         <div class="font-bold text-purple-700 mb-2 text-lg">Post-Assessment Averages</div>
-                        <table class="w-full text-left rounded-lg overflow-hidden">
-                            <thead><tr class="bg-purple-100 text-purple-800"><th class="px-4 py-2">Category</th><th class="px-4 py-2">Supervisor Avg</th><th class="px-4 py-2">Self Avg</th></tr></thead>
-                            <tbody>
-                            ${summary.averages.map(row => `<tr><td class="px-4 py-2">${row.category}</td><td class="px-4 py-2">${row.supervisor_avg !== null ? row.supervisor_avg : '-'}</td><td class="px-4 py-2">${row.self_avg !== null ? row.self_avg : '-'}</td></tr>`).join('')}
-                            <tr class="bg-purple-200 font-bold"><td class="px-4 py-2">Total Average</td><td class="px-4 py-2">${supervisorAvg}</td><td class="px-4 py-2">${selfAvg}</td></tr>
-                            </tbody>
-                        </table>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left rounded-lg overflow-hidden min-w-max">
+                                <thead><tr class="bg-purple-100 text-purple-800"><th class="px-4 py-2 whitespace-nowrap">Category</th><th class="px-4 py-2 whitespace-nowrap">Supervisor Avg</th><th class="px-4 py-2 whitespace-nowrap">Self Avg</th></tr></thead>
+                                <tbody>
+                                ${summary.averages.map(row => `<tr><td class="px-4 py-2 whitespace-nowrap">${row.category}</td><td class="px-4 py-2 whitespace-nowrap">${row.supervisor_avg !== null ? row.supervisor_avg : '-'}</td><td class="px-4 py-2 whitespace-nowrap">${row.self_avg !== null ? row.self_avg : '-'}</td></tr>`).join('')}
+                                <tr class="bg-purple-200 font-bold"><td class="px-4 py-2 whitespace-nowrap">Total Average</td><td class="px-4 py-2 whitespace-nowrap">${supervisorAvg}</td><td class="px-4 py-2 whitespace-nowrap">${selfAvg}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>`;
                 }
                 // Supervisor Comment
@@ -519,7 +585,34 @@ $(document).on('click', '.postanalysis-student-item', function() {
                 html += `</div>`;
                 $('#postAnalysisContentArea').html(html);
             } else {
-                $('#postAnalysisContentArea').html('<div class="error">No post-analysis data found for this student.</div>');
+                // Show detailed message for incomplete post-assessment data
+                $('#postAnalysisContentArea').html(`
+                    <div class="text-center py-8">
+                        <div class="mb-4">
+                            <svg class="mx-auto h-16 w-16 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-orange-600 mb-2">Post-Assessment Not Completed</h3>
+                        <p class="text-gray-600 text-sm max-w-md mx-auto leading-relaxed mb-6">
+                            This student has not completed their post-assessment evaluation yet. Post-analysis requires supervisor and self-evaluation ratings from the completed OJT experience.
+                        </p>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                            <p class="text-blue-800 text-sm font-medium mb-2">📋 Post-assessment includes:</p>
+                            <ul class="text-blue-700 text-sm text-left list-disc list-inside space-y-1">
+                                <li>Supervisor evaluation ratings</li>
+                                <li>Student self-evaluation ratings</li>
+                                <li>Supervisor comments and feedback</li>
+                                <li>OJT performance assessment</li>
+                            </ul>
+                        </div>
+                        <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3 max-w-md mx-auto">
+                            <p class="text-yellow-800 text-xs">
+                                💡 Post-analysis will be available after the student completes their OJT period and both evaluations are submitted.
+                            </p>
+                        </div>
+                    </div>
+                `);
             }
         },
         error: function(xhr, status, error) {
@@ -702,6 +795,168 @@ $(document).on('submit', '#updateCompanyLogoForm', function(e) {
         },
         error: function() {
             alert('An error occurred while uploading the logo.');
+        }
+    });
+});
+
+// --- Edit HTE Modal Logic ---
+$(document).on('click', '.edit-hte-btn', function() {
+    const hteId = $(this).data('hteid');
+    
+    // Fetch HTE details and show edit modal
+    $.ajax({
+        url: 'ajaxhandler/attendanceAJAX.php',
+        type: 'POST',
+        dataType: 'json',
+        data: { action: 'getHTEDetails', hteId: hteId },
+        success: function(response) {
+            if (response.success && response.hte) {
+                populateEditHTEForm(response.hte);
+                $('#editHTEModal').removeClass('hidden');
+            } else {
+                alert('Failed to load HTE details: ' + (response.message || 'Unknown error'));
+            }
+        },
+        error: function() {
+            alert('Error loading HTE details. Please try again.');
+        }
+    });
+});
+
+// Function to populate edit HTE form with data
+function populateEditHTEForm(hte) {
+    $('#editHteId').val(hte.HTE_ID);
+    $('#editHteName').val(hte.NAME);
+    $('#editHteIndustry').val(hte.INDUSTRY);
+    $('#editHteAddress').val(hte.ADDRESS);
+    $('#editHteEmail').val(hte.CONTACT_EMAIL);
+    $('#editHteContactPerson').val(hte.CONTACT_PERSON);
+    $('#editHteContactNumber').val(hte.CONTACT_NUMBER);
+    
+    // MOA information
+    if (hte.moa_start_date) {
+        $('#editMoaStartDate').val(hte.moa_start_date);
+        $('#currentMOAStartDate').text(hte.moa_start_date);
+    } else {
+        $('#currentMOAStartDate').text('Not set');
+    }
+    
+    if (hte.moa_end_date) {
+        $('#editMoaEndDate').val(hte.moa_end_date);
+        $('#currentMOAEndDate').text(hte.moa_end_date);
+    } else {
+        $('#currentMOAEndDate').text('Not set');
+    }
+    
+    // Calculate and display current MOA status using utility function
+    const currentMoaStatus = calculateMOAStatus(hte.moa_start_date, hte.moa_end_date);
+    if (currentMoaStatus.status !== 'N/A') {
+        const statusHtml = `<span class="${currentMoaStatus.class}">${currentMoaStatus.icon} ${currentMoaStatus.status}</span>`;
+        $('#currentMOAStatus').html(statusHtml);
+        
+        // Show MOA file view button if exists
+        if (hte.moa_file_url) {
+            $('#currentMOAFileSection').show();
+            $('#viewCurrentMOA').data('moa', hte.moa_file_url);
+        } else {
+            $('#currentMOAFileSection').hide();
+        }
+    } else {
+        $('#currentMOAStatus').html('<span class="text-gray-500">No MOA data</span>');
+        $('#currentMOAFileSection').hide();
+    }
+    
+    // Update status preview
+    updateEditMOAStatus();
+}
+
+// MOA Date validation and status preview for edit form
+function updateEditMOAStatus() {
+    const startDate = $('#editMoaStartDate').val();
+    const endDate = $('#editMoaEndDate').val();
+    const statusPreview = $('#editMoaStatusPreview');
+    
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        if (end < start) {
+            statusPreview.html('<span class="text-red-600">❌ Invalid: End date must be after start date</span>');
+            return false;
+        }
+        
+        const moaStatus = calculateMOAStatus(startDate, endDate);
+        const statusHtml = `<span class="text-${moaStatus.status === 'Active' ? 'green' : moaStatus.status === 'Expired' ? 'red' : 'blue'}-600">${moaStatus.icon} ${moaStatus.status}${moaStatus.status === 'Future' ? ' (Will be active on start date)' : ''}</span>`;
+        statusPreview.html(statusHtml);
+        return true;
+    } else {
+        statusPreview.html('<span class="text-gray-600">Select both dates to see status</span>');
+        return startDate !== '' && endDate !== '';
+    }
+}
+
+// Edit MOA date change handlers
+$(document).on('change', '#editMoaStartDate, #editMoaEndDate', updateEditMOAStatus);
+
+// View current MOA button
+$(document).on('click', '#viewCurrentMOA', function() {
+    const moaPath = $(this).data('moa');
+    if (moaPath) {
+        window.open(moaPath, '_blank');
+    }
+});
+
+// Close edit HTE modal
+$(document).on('click', '#closeEditHTEModal, #cancelEditHTE', function() {
+    $('#editHTEModal').addClass('hidden');
+    $('#editHTEForm')[0].reset();
+    $('#editMoaStatusPreview').text('Select dates to see status');
+});
+
+// Handle edit HTE form submission
+$(document).on('submit', '#editHTEForm', function(e) {
+    e.preventDefault();
+    
+    // Validate MOA dates first
+    if (!updateEditMOAStatus()) {
+        alert('Please check MOA dates. End date must be after start date.');
+        return;
+    }
+    
+    // Create FormData object to handle file uploads
+    let formData = new FormData(this);
+    formData.append('action', 'updateHTEDetails');
+    
+    // Disable submit button to prevent double submission
+    const submitBtn = $(this).find('button[type="submit"]');
+    const originalText = submitBtn.text();
+    submitBtn.prop('disabled', true).text('Saving...');
+
+    $.ajax({
+        url: 'ajaxhandler/attendanceAJAX.php',
+        type: 'POST',
+        dataType: 'json',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success) {
+                alert('HTE updated successfully!');
+                $('#editHTEModal').addClass('hidden');
+                $('#editHTEForm')[0].reset();
+                $('#editMoaStatusPreview').text('Select dates to see status');
+                loadAllCompaniesData(); // Refresh the companies list
+            } else {
+                alert('Error updating HTE: ' + response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('Error updating HTE. Please try again.');
+            console.error('HTE update error:', xhr.responseText);
+        },
+        complete: function() {
+            // Re-enable submit button
+            submitBtn.prop('disabled', false).text(originalText);
         }
     });
 });
@@ -1161,13 +1416,11 @@ function loadPostAssessmentEvaluation(studentId) {
     });
     // Evaluation tab bar navigation
     $('#evalQuestionsTabBtn, #rateTabBtn, #postAssessmentTabBtn, #reviewTabBtn').click(function() {
-        // Update button styles
-        $(this).removeClass('text-gray-500 hover:text-gray-700 hover:bg-gray-50')
-               .addClass('text-gray-900 bg-gray-100');
+        // Remove active class from all tab buttons
+        $('#evalQuestionsTabBtn, #rateTabBtn, #postAssessmentTabBtn, #reviewTabBtn').removeClass('active');
         
-        // Update other buttons
-        $(this).siblings('button').removeClass('text-gray-900 bg-gray-100')
-               .addClass('text-gray-500 hover:text-gray-700 hover:bg-gray-50');
+        // Add active class to clicked button
+        $(this).addClass('active');
 
         // Hide all tab contents first
     $('#evalQuestionsTabContent, #rateTabContent, #postAssessmentTabContent, #reviewTabContent').hide();
@@ -1175,6 +1428,13 @@ function loadPostAssessmentEvaluation(studentId) {
         // Show the selected tab content
         if (this.id === 'evalQuestionsTabBtn') {
             $('#evalQuestionsTabContent').show();
+            // Ensure evaluation questions are loaded when All Questions tab is clicked
+            if ($('#questionsByCategory ul').children().length === 0 || $('#questionsByCategory ul').find('.text-center').length > 0) {
+                // Questions not loaded yet or showing loading/error state, load them
+                if (typeof loadEvaluationQuestions === 'function') {
+                    loadEvaluationQuestions();
+                }
+            }
         } else if (this.id === 'rateTabBtn') {
             $('#rateTabContent').show();
             // Pre-assessment content already loaded on page load, just show it
@@ -1206,13 +1466,22 @@ function loadPostAssessmentEvaluation(studentId) {
     
     // --- Prediction Tab Logic ---
     // Load students for prediction tab on tab switch or page load
+    let predictionLoading = false; // Flag to prevent duplicate loading
+    
     function loadPredictionStudents() {
+        if (predictionLoading) {
+            console.log('[PREDICTION] Already loading, skipping duplicate request');
+            return;
+        }
+        
+        predictionLoading = true;
         $('#predictionSpinner').show();
         $.ajax({
             url: 'ajaxhandler/predictionAjax.php',
             type: 'POST',
             dataType: 'json',
             success: function(response) {
+                predictionLoading = false; // Reset loading flag
                 $('#predictionSpinner').hide();
                 if (!response.success) {
                     alert('Error: ' + response.error);
@@ -1229,8 +1498,10 @@ function loadPostAssessmentEvaluation(studentId) {
                 
                 let tbody = '';
                 students.forEach(function(student, idx) {
-                        let statusIcon = student.valid ? '<span class="ml-1">✔️</span>' : '<span class="ml-1" style="color:red;" title="Missing: ' + student.missing.join(', ') + '">❌</span>';
-                            let statusText = student.STATUS;
+                        // Color-coded status text instead of icons
+                        let statusDisplay = student.STATUS === 'Rated' 
+                            ? '<span class="font-semibold text-green-600">Rated</span>'
+                            : '<span class="font-semibold text-red-600" title="Missing: ' + student.missing.join(', ') + '">Not Rated</span>';
                         let hasPrediction = student.pre_assessment && student.pre_assessment.ojt_placement;
                         let placementText = hasPrediction
                             ? `<span class="inline-block bg-green-100 text-green-700 font-bold px-2 md:px-3 py-1 rounded-full text-xs">
@@ -1248,16 +1519,30 @@ function loadPostAssessmentEvaluation(studentId) {
                                 confidence: student.pre_assessment.prediction_confidence
                             };
                         } else {
-                            // For consistency with page load version, use empty array for non-rated students
-                            analysisData = [];
+                            // For incomplete data, provide proper error message for analysis modal
+                            analysisData = {
+                                error: "Incomplete Data",
+                                message: "This student has not completed their pre-assessment or is missing required academic grades. Please ensure all required data is available before running predictions."
+                            };
                         }
-                        let statusClass = student.valid ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold';
-                        let analysisBtnClass = hasPrediction ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700';
+                        
+                        // Set button colors based on student status and data completeness
+                        let analysisBtnClass;
+                        if (!student.valid) {
+                            // Incomplete data - gray button
+                            analysisBtnClass = 'bg-gray-400 hover:bg-gray-500';
+                        } else if (hasPrediction) {
+                            // Has prediction - green button
+                            analysisBtnClass = 'bg-green-600 hover:bg-green-700';
+                        } else {
+                            // Ready for prediction - blue button
+                            analysisBtnClass = 'bg-blue-600 hover:bg-blue-700';
+                        }
                         tbody += `<tr data-row="${idx}" class="hover:bg-blue-50 transition">
                             <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900">${student.NAME}</td>
                             <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-700">${student.HTE_ASSIGNED}</td>
-                            <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm ${statusClass}">
-                                ${statusText} ${statusIcon}
+                            <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm">
+                                ${statusDisplay}
                             </td>
                             <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm">${placementText}</td>
                             <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm">
@@ -1272,21 +1557,17 @@ function loadPostAssessmentEvaluation(studentId) {
                 window.predictionStudents = students;
             },
             error: function() {
+                predictionLoading = false; // Reset loading flag
                 $('#predictionSpinner').hide();
                 alert('Failed to fetch students for prediction.');
             }
         });
     }
 
-    // Load students when prediction tab is shown
-    $(document).on('click', '#predictionTab', function() {
+    // Load students when prediction tab is shown (use .off() to prevent duplicate bindings)
+    $('#predictionTab').off('click.predictionLoader').on('click.predictionLoader', function() {
+        console.log('[PREDICTION] Tab clicked, loading students...');
         loadPredictionStudents();
-    });
-    // Also load on page ready if prediction tab is default
-    $(document).ready(function() {
-        if ($('#predictionContent').hasClass('active')) {
-            loadPredictionStudents();
-        }
     });
 
     // Run prediction and update database
@@ -1296,8 +1577,22 @@ function loadPostAssessmentEvaluation(studentId) {
         let totalStudents = window.predictionStudents.length;
         let processedCount = 0;
 
+        // Count students who need predictions
+        let studentsNeedingPrediction = window.predictionStudents.filter(student => {
+            let hasPrediction = student.pre_assessment && student.pre_assessment.ojt_placement;
+            return student.valid && !hasPrediction;
+        }).length;
+        
+        if (studentsNeedingPrediction === 0) {
+            $('#predictionSpinner').hide();
+            alert('All eligible students already have predictions.');
+            return;
+        }
+
         window.predictionStudents.forEach(function(student, idx) {
-            if (student.valid) {
+            // Only run predictions for students who are valid AND don't already have predictions
+            let hasPrediction = student.pre_assessment && student.pre_assessment.ojt_placement;
+            if (student.valid && !hasPrediction) {
                 // Get grades and skills from pre_assessment
                 const grades = student.pre_assessment;
                 
@@ -1373,8 +1668,8 @@ function loadPostAssessmentEvaluation(studentId) {
                                 if (!resp.success) {
                                     console.error("Failed to save prediction for student", student.STUDENT_ID, ":", resp.error);
                                 }
-                                // Hide spinner when all students are processed
-                                if (processedCount === totalStudents) {
+                                // Hide spinner when all students needing prediction are processed
+                                if (processedCount === studentsNeedingPrediction) {
                                     $('#predictionSpinner').hide();
                                     // Reload the student list to refresh the data
                                     loadPredictionStudents();
@@ -1383,8 +1678,8 @@ function loadPostAssessmentEvaluation(studentId) {
                             error: function(xhr, status, error) {
                                 processedCount++;
                                 console.error("Error saving prediction for student", student.STUDENT_ID, ":", error);
-                                // Hide spinner when all students are processed
-                                if (processedCount === totalStudents) {
+                                // Hide spinner when all students needing prediction are processed
+                                if (processedCount === studentsNeedingPrediction) {
                                     $('#predictionSpinner').hide();
                                     // Reload the student list to refresh the data
                                     loadPredictionStudents();
@@ -1424,7 +1719,29 @@ function loadPostAssessmentEvaluation(studentId) {
         }
         let html = '';
         if (!analysis || analysis.error) {
-            html = `<div class="text-center py-6 text-red-500 text-lg font-semibold">${(analysis && analysis.error ? analysis.error : 'No analysis available.')}</div>`;
+            // Show detailed error message for incomplete data
+            let errorTitle = analysis && analysis.error ? analysis.error : 'No Analysis Available';
+            let errorMessage = analysis && analysis.message ? analysis.message : 'Unable to generate prediction analysis.';
+            
+            html = `
+                <div class="text-center py-8">
+                    <div class="mb-4">
+                        <svg class="mx-auto h-16 w-16 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-red-600 mb-2">${errorTitle}</h3>
+                    <p class="text-gray-600 text-sm max-w-md mx-auto leading-relaxed">${errorMessage}</p>
+                    <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md mx-auto">
+                        <p class="text-yellow-800 text-sm font-medium">💡 To enable prediction analysis:</p>
+                        <ul class="text-yellow-700 text-sm mt-2 text-left list-disc list-inside space-y-1">
+                            <li>Complete the pre-assessment evaluation</li>
+                            <li>Ensure all academic grades are available</li>
+                            <li>Verify soft skills and communication ratings</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
         } else {
             // Highlight grades in reasoning text (more prominent)
             function highlightGrades(text) {
@@ -1691,7 +2008,7 @@ function loadApprovedReportsWithFilters() {
                                                 imageUrl = img.filename;
                                             } else {
                                                 // Legacy local path
-                                                imageUrl = `${getBaseUrl()}uploads/reports/${img.filename}`;
+                                                imageUrl = getImageUrl(img.filename);
                                             }
                                             imagesHtml += `<img src='${imageUrl}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow-sm w-full h-24 object-cover mb-2 hover:scale-105 transition'>`;
                                         });
@@ -1737,7 +2054,7 @@ function loadApprovedReportsWithFilters() {
                         let imagesHtml = "";
                         if (report.imagesPerDay && report.imagesPerDay[day] && report.imagesPerDay[day].length > 0) {
                             report.imagesPerDay[day].forEach(function(img) {
-                                imagesHtml += `<img src='${getBaseUrl()}uploads/reports/${img.filename}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow w-full h-56 object-cover mb-4'>`;
+                                imagesHtml += `<img src='${getImageUrl(img.filename)}' alt='${capitalize(day)} activity' class='rounded-lg border border-gray-200 shadow w-full h-56 object-cover mb-4'>`;
                             });
                         } else {
                             imagesHtml = `<div class='flex items-center justify-center h-56 bg-gray-50 text-gray-400 rounded-lg border border-dashed border-gray-200'><i class='fas fa-image text-4xl'></i></div>`;
@@ -1843,7 +2160,7 @@ function loadApprovedReportsWithFilters() {
                     
                     // Handle profile picture
                     if (coordinator.PROFILE) {
-                        const imgPath = 'uploads/' + coordinator.PROFILE;
+                        const imgPath = getImageUrl(coordinator.PROFILE);
                         $('#coordinatorProfilePicture img').attr('src', imgPath).show();
                         $('#coordinatorProfilePicture div').hide();
                     } else {
@@ -1877,7 +2194,7 @@ function loadApprovedReportsWithFilters() {
                 <div class="profile-header">
                     <div class="profile-avatar">
                         ${coordinatorData.PROFILE 
-                            ? `<img src="${coordinatorData.PROFILE.startsWith('http') ? coordinatorData.PROFILE : getBaseUrl() + 'uploads/' + coordinatorData.PROFILE}" alt="Profile" class="profile-image">` 
+                            ? `<img src="${getImageUrl(coordinatorData.PROFILE)}" alt="Profile" class="profile-image">` 
                             : `<div class="avatar-placeholder">${coordinatorData.NAME.charAt(0)}</div>`
                         }
                     </div>
@@ -1981,7 +2298,7 @@ function loadApprovedReportsWithFilters() {
                             <div class="profile-picture-section">
                                 <div class="current-profile-picture">
                                     ${coordinatorData.PROFILE_PICTURE ? 
-                                        `<img src="${coordinatorData.PROFILE_PICTURE.startsWith('http') ? coordinatorData.PROFILE_PICTURE : getBaseUrl() + 'uploads/' + coordinatorData.PROFILE_PICTURE}" alt="Current Profile" class="current-image">` :
+                                        `<img src="${getImageUrl(coordinatorData.PROFILE_PICTURE)}" alt="Current Profile" class="current-image">` :
                                         `<div class="avatar-placeholder">
                                             <i class="fas fa-user"></i>
                                         </div>`
@@ -4512,14 +4829,34 @@ $(document).ready(function() {
                         <p class="text-green-800 font-semibold">✓ This student has been rated. Check the Review tab for details.</p>
                     </div>`;
                 } else if (evaluationData.evaluations && evaluationData.evaluations.length > 0) {
+                    // Group evaluations by category
+                    const evaluationsByCategory = {
+                        'soft': evaluationData.evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('soft')),
+                        'comm': evaluationData.evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('comm')),
+                        'tech': evaluationData.evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('technical'))
+                    };
+                    
                     html += `<div class="bg-white rounded-xl shadow p-6 border border-gray-200">
                         <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
                             <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 mr-2 text-purple-600' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' /></svg>
                             Pre-Assessment Evaluation (Rate Student Answers)
                         </h3>
-                        <div class="max-h-96 overflow-y-auto space-y-4">`;
+                        <!-- Category Dropdown -->
+                        <div class="category-filter-section mb-4 flex justify-center">
+                            <div class="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border">
+                                <label for="mainDashboardCategoryDropdown" class="text-sm font-semibold text-gray-700 whitespace-nowrap">Filter by Category:</label>
+                                <select id="mainDashboardCategoryDropdown" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white">
+                                    <option value="soft" selected>Soft Skills (${evaluationsByCategory.soft.length})</option>
+                                    <option value="comm">Communication Skills (${evaluationsByCategory.comm.length})</option>
+                                    <option value="tech">Technical Skills (${evaluationsByCategory.tech.length})</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Category Content Containers -->
+                        <div id="softSkillsEvalContainer" class="category-eval-container max-h-96 overflow-y-auto space-y-4">`;
                     
-                    evaluationData.evaluations.forEach(function(ev) {
+                    // Render Soft Skills by default
+                    evaluationsByCategory.soft.forEach(function(ev) {
                         html += `
                         <div class="student-eval-block bg-gray-50 rounded-lg p-4 border border-gray-200">
                             <div class="mb-3">
@@ -4560,13 +4897,113 @@ $(document).ready(function() {
                                     </label>
                                 </div>
                             </div>
-                            <div class="text-right">
-                                <button class="save-rating-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium" data-eval-id="${ev.id}" data-student-id="${studentDbId}">Save Rating</button>
+                        </div>`;
+                    });
+                    
+                    html += `</div>
+                        <!-- Communication Skills Container (hidden initially) -->
+                        <div id="commSkillsEvalContainer" class="category-eval-container max-h-96 overflow-y-auto space-y-4" style="display:none;">`;
+                    
+                    evaluationsByCategory.comm.forEach(function(ev) {
+                        html += `
+                        <div class="student-eval-block bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="mb-3">
+                                <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-1">Question</div>
+                                <div class="text-sm font-medium text-gray-900 bg-white rounded p-2 border">${ev.question_text}</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Student Answer</div>
+                                <div class="text-sm text-gray-800 bg-blue-50 rounded p-2 border border-blue-200">${ev.answer}</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Likert Scale Rating (5=Excellent, 1=Poor)</div>
+                                <div class="flex items-center justify-center gap-2 bg-white rounded p-3 border">
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-green-600 mb-1">5</span>
+                                        <span class="text-xs text-gray-600 mb-1">Excellent</span>
+                                        <input type="radio" name="likert_${ev.id}" value="5" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-blue-600 mb-1">4</span>
+                                        <span class="text-xs text-gray-600 mb-1">Good</span>
+                                        <input type="radio" name="likert_${ev.id}" value="4" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-yellow-600 mb-1">3</span>
+                                        <span class="text-xs text-gray-600 mb-1">Average</span>
+                                        <input type="radio" name="likert_${ev.id}" value="3" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-orange-600 mb-1">2</span>
+                                        <span class="text-xs text-gray-600 mb-1">Poor</span>
+                                        <input type="radio" name="likert_${ev.id}" value="2" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-red-600 mb-1">1</span>
+                                        <span class="text-xs text-gray-600 mb-1">Very Poor</span>
+                                        <input type="radio" name="likert_${ev.id}" value="1" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                </div>
                             </div>
                         </div>`;
                     });
                     
-                    html += `</div></div>`;
+                    html += `</div>
+                        <!-- Technical Skills Container (hidden initially) -->
+                        <div id="techSkillsEvalContainer" class="category-eval-container max-h-96 overflow-y-auto space-y-4" style="display:none;">`;
+                    
+                    evaluationsByCategory.tech.forEach(function(ev) {
+                        html += `
+                        <div class="student-eval-block bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="mb-3">
+                                <div class="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-1">Question</div>
+                                <div class="text-sm font-medium text-gray-900 bg-white rounded p-2 border">${ev.question_text}</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Student Answer</div>
+                                <div class="text-sm text-gray-800 bg-blue-50 rounded p-2 border border-blue-200">${ev.answer}</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Likert Scale Rating (5=Excellent, 1=Poor)</div>
+                                <div class="flex items-center justify-center gap-2 bg-white rounded p-3 border">
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-green-600 mb-1">5</span>
+                                        <span class="text-xs text-gray-600 mb-1">Excellent</span>
+                                        <input type="radio" name="likert_${ev.id}" value="5" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-blue-600 mb-1">4</span>
+                                        <span class="text-xs text-gray-600 mb-1">Good</span>
+                                        <input type="radio" name="likert_${ev.id}" value="4" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-yellow-600 mb-1">3</span>
+                                        <span class="text-xs text-gray-600 mb-1">Average</span>
+                                        <input type="radio" name="likert_${ev.id}" value="3" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-orange-600 mb-1">2</span>
+                                        <span class="text-xs text-gray-600 mb-1">Poor</span>
+                                        <input type="radio" name="likert_${ev.id}" value="2" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                    <label class="flex flex-col items-center cursor-pointer">
+                                        <span class="text-xs font-semibold text-red-600 mb-1">1</span>
+                                        <span class="text-xs text-gray-600 mb-1">Very Poor</span>
+                                        <input type="radio" name="likert_${ev.id}" value="1" class="likert-radio" data-eval-id="${ev.id}">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                    
+                    html += `</div>
+                        <!-- Universal Save Button -->
+                        <div class="mt-6 flex justify-end">
+                            <button id="saveAllRatingsBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded text-sm font-medium" data-student-id="${studentDbId}">
+                                Save All Ratings
+                            </button>
+                        </div>
+                    </div>`;
                 } else {
                     html += `<div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                         <p class="text-gray-600">No evaluation questions found for this student.</p>
@@ -4620,48 +5057,175 @@ $(document).ready(function() {
         });
     }
 
-    // Event handlers for rating functionality
-    $(document).on('click', '.save-rating-btn', function() {
-        const evalId = $(this).data('eval-id');
+    // Universal Save All Ratings button handler
+    $(document).on('click', '#saveAllRatingsBtn', function() {
         const studentId = $(this).data('student-id');
-        const rating = $(`input[name="likert_${evalId}"]:checked`).val();
+        const $button = $(this);
         
-        if (!rating) {
-            alert('Please select a rating before saving.');
+        // Get all selected ratings from ALL categories, not just visible one
+        const selectedRatings = [];
+        let totalQuestions = 0;
+        let hasUnrated = false;
+        
+        // Check all category containers (soft, comm, tech)
+        $('.category-eval-container').each(function() {
+            const $container = $(this);
+            
+            // Count total questions in this category
+            const categoryQuestions = $container.find('input[type="radio"][value="5"]').length;
+            totalQuestions += categoryQuestions;
+            
+            // Get selected ratings in this category
+            let categoryRatings = 0;
+            $container.find('.likert-radio:checked').each(function() {
+                const evalId = $(this).data('eval-id');
+                const rating = $(this).val();
+                selectedRatings.push({
+                    evaluationId: evalId,
+                    rating: rating
+                });
+                categoryRatings++;
+            });
+            
+            // Check if this category is complete
+            if (categoryRatings < categoryQuestions && categoryQuestions > 0) {
+                hasUnrated = true;
+                console.log(`Category ${$container.attr('id')} incomplete: ${categoryRatings}/${categoryQuestions} rated`);
+            }
+        });
+        
+        // Ensure all categories are completed before saving
+        if (hasUnrated || selectedRatings.length < totalQuestions) {
+            alert(`Please rate all questions in ALL categories before saving. Currently rated: ${selectedRatings.length}/${totalQuestions} questions.\n\nMake sure to complete Soft Skills, Communication Skills, AND Technical Skills.`);
             return;
         }
         
-        const $button = $(this);
-        $button.prop('disabled', true).text('Saving...');
+        $button.prop('disabled', true).text('Saving All Categories...');
         
+        // Save all ratings with multiple AJAX calls
+        let completedSaves = 0;
+        let totalSaves = selectedRatings.length;
+        let hasError = false;
+        
+        // Prepare data for batch save
+        const ratingsData = {
+            coordinator_id: COORDINATOR_ID, // Get from global variable set by PHP session
+            ratings: selectedRatings.map(function(rating) {
+                return {
+                    student_evaluation_id: rating.evaluationId,
+                    student_id: studentId,
+                    rating: rating.rating
+                };
+            })
+        };
+        
+        // Single AJAX call to save all ratings
         $.ajax({
-            url: 'ajaxhandler/studentDashboardAjax.php',
+            url: 'ajaxhandler/coordinatorRateStudentAnswersAjax.php',
             type: 'POST',
             dataType: 'json',
-            data: {
-                action: 'saveEvaluationRating',
-                evaluationId: evalId,
-                studentId: studentId,
-                rating: rating
-            },
+            data: ratingsData,
             success: function(response) {
                 if (response.success) {
-                    $button.removeClass('bg-blue-600 hover:bg-blue-700')
-                           .addClass('bg-green-600 hover:bg-green-700')
-                           .text('✓ Saved')
+                    $button.removeClass('bg-green-600 hover:bg-green-700')
+                           .addClass('bg-green-800 hover:bg-green-900')
+                           .text('✓ All Ratings Saved')
                            .prop('disabled', true);
-                    // Disable all radio buttons for this evaluation
-                    $(`input[name="likert_${evalId}"]`).prop('disabled', true);
+                    
+                    // Disable all radio buttons in the visible container
+                    visibleContainer.find('.likert-radio').prop('disabled', true);
+                    
+                    // Refresh the reviewed students list and evaluation data so future selections show the correct message
+                    $.ajax({
+                        url: 'ajaxhandler/coordinatorRateStudentAnswersAjax.php',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ action: 'getReviewedStudents' }),
+                        success: function(reviewedResp) {
+                            if (reviewedResp.success) {
+                                // Update the global reviewed students cache if it exists
+                                if (window.reviewedStudentIds) {
+                                    window.reviewedStudentIds = reviewedResp.reviewedIds || [];
+                                }
+                                console.log('[REFRESH] Updated reviewed students after save:', reviewedResp.reviewedIds);
+                                
+                                // Also refresh evaluation data for current student to show "already rated" message
+                                const currentStudentId = studentId; // studentId from the save operation
+                                if (currentStudentId) {
+                                    $.ajax({
+                                        url: 'ajaxhandler/studentDashboardAjax.php',
+                                        type: 'POST',
+                                        dataType: 'json',
+                                        data: { action: 'getPreassessmentEvaluation', studentId: currentStudentId },
+                                        success: function(evalResp) {
+                                            if (evalResp.success && evalResp.isRated) {
+                                                // Trigger a refresh of the student view to show "already rated" message
+                                                console.log('[REFRESH] Student is now marked as rated, triggering UI refresh');
+                                                // You could trigger a student selection refresh here if needed
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    });
+                    
+                    alert(`All ${selectedRatings.length} ratings saved successfully across all categories! Pre-assessment averages updated for Soft Skills, Communication Skills, and Technical Skills.`);
                 } else {
-                    alert('Error saving rating: ' + (response.message || 'Unknown error'));
-                    $button.prop('disabled', false).text('Save Rating');
+                    alert('Error saving ratings: ' + (response.message || 'Unknown error'));
+                    $button.removeClass('bg-green-800 hover:bg-green-900')
+                           .addClass('bg-green-600 hover:bg-green-700')
+                           .prop('disabled', false).text('Save All Ratings');
                 }
             },
             error: function() {
-                alert('Error saving rating. Please try again.');
-                $button.prop('disabled', false).text('Save Rating');
+                alert('Network error saving ratings. Please try again.');
+                $button.removeClass('bg-green-800 hover:bg-green-900')
+                       .addClass('bg-green-600 hover:bg-green-700')
+                       .prop('disabled', false).text('Save All Ratings');
             }
         });
+    });
+
+    // Category dropdown handler for main dashboard evaluation
+    $(document).on('change', '#mainDashboardCategoryDropdown', function() {
+        const selectedCategory = $(this).val();
+        
+        // Hide all category containers
+        $('.category-eval-container').hide();
+        
+        // Show the selected category container
+        const containerMap = {
+            'soft': '#softSkillsEvalContainer',
+            'comm': '#commSkillsEvalContainer', 
+            'tech': '#techSkillsEvalContainer'
+        };
+        
+        const targetContainer = containerMap[selectedCategory];
+        if (targetContainer) {
+            $(targetContainer).show();
+            
+            // Reset the Save All Ratings button for the new category
+            const $saveButton = $('#saveAllRatingsBtn');
+            const visibleContainer = $(targetContainer);
+            const hasRatedQuestions = visibleContainer.find('.likert-radio:disabled').length > 0;
+            
+            if (hasRatedQuestions) {
+                // Some questions already rated in this category
+                $saveButton.removeClass('bg-green-600 hover:bg-green-700')
+                          .addClass('bg-green-800 hover:bg-green-900')
+                          .text('✓ All Ratings Saved')
+                          .prop('disabled', true);
+            } else {
+                // Reset to default state for new category
+                $saveButton.removeClass('bg-green-800 hover:bg-green-900')
+                          .addClass('bg-green-600 hover:bg-green-700')
+                          .text('Save All Ratings')
+                          .prop('disabled', false);
+            }
+        } else {
+            console.warn('[WARNING] No container found for category:', selectedCategory);
+        }
     });
 
     function loadStudentEvaluation(studentId) {
@@ -4750,6 +5314,16 @@ $(document).ready(function() {
             </div>
             `;
         } else {
+            // Add category dropdown for review tab
+            html += `<div class="mb-4">
+                <label for="reviewCategoryDropdown" class="block text-sm font-medium text-gray-700 mb-2">Filter by Category:</label>
+                <select id="reviewCategoryDropdown" class="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <option value="all">All Categories</option>
+                    <option value="soft">Soft Skills</option>
+                    <option value="comm">Communication Skills</option>
+                    <option value="tech">Technical Skills</option>
+                </select>
+            </div>`;
             html += `<div id='reviewedEvalList' class='space-y-4 max-h-[700px] overflow-y-auto pr-2'></div>`;
         }
         html += `</div>`;
@@ -4839,39 +5413,63 @@ $(document).ready(function() {
             contentType: 'application/json',
             success: function(response) {
                 if (response.success && response.evaluations && response.evaluations.length > 0) {
-                    // Render reviewed evaluation cards
+                    // Group evaluations by category
+                    const evalsByCategory = {
+                        'Soft Skills': response.evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('soft')),
+                        'Communication Skills': response.evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('comm')),
+                        'Technical Skills': response.evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('technical'))
+                    };
+                    
+                    // Store evaluations globally for filtering
+                    window.reviewEvaluationsByCategory = evalsByCategory;
+                    
+                    // Generate HTML for all categories
                     let evalHtml = '';
-                    response.evaluations.forEach(function(ev) {
-                        evalHtml += `
-                        <div class="bg-white rounded-lg shadow border border-gray-200 p-6 mb-6">
-                            <div class="font-semibold text-blue-700 text-lg mb-2">${ev.question_text}</div>
-                            <div class="flex flex-col md:flex-row gap-4">
-                                <div class="bg-blue-50 rounded-md p-4 flex-1 mb-2 md:mb-0">
-                                    <div class="text-gray-700 text-base font-medium mb-1">Answer:</div>
-                                    <div class="text-gray-900 text-base">${ev.answer}</div>
+                    Object.keys(evalsByCategory).forEach(function(categoryName) {
+                        if (evalsByCategory[categoryName].length > 0) {
+                            const categoryClass = categoryName.toLowerCase().replace(/\s+/g, '-');
+                            const categoryId = categoryName.toLowerCase().includes('soft') ? 'soft' : 
+                                             categoryName.toLowerCase().includes('comm') ? 'comm' : 'tech';
+                            
+                            evalHtml += `<div class="review-category-container" data-category="${categoryId}">`;
+                            evalHtml += `<div class="bg-blue-50 rounded-lg p-3 mb-4 border-l-4 border-blue-500">`;
+                            evalHtml += `<h3 class="text-lg font-semibold text-blue-700">${categoryName}</h3>`;
+                            evalHtml += `</div>`;
+                            
+                            evalsByCategory[categoryName].forEach(function(ev) {
+                                evalHtml += `
+                                <div class="bg-white rounded-lg shadow border border-gray-200 p-6 mb-6">
+                                    <div class="font-semibold text-blue-700 text-lg mb-2">${ev.question_text}</div>
+                                    <div class="flex flex-col md:flex-row gap-4">
+                                        <div class="bg-blue-50 rounded-md p-4 flex-1 mb-2 md:mb-0">
+                                            <div class="text-gray-700 text-base font-medium mb-1">Answer:</div>
+                                            <div class="text-gray-900 text-base">${ev.answer}</div>
+                                        </div>
+                                        <div class="flex-1">
+                                            <table class="min-w-full bg-white rounded-lg border border-gray-200">
+                                                <thead>
+                                                    <tr>
+                                                        <th colspan="5" class="bg-blue-50 text-blue-700 text-sm font-bold px-4 py-2 text-center rounded-t">Rating Given</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        ${[5,4,3,2,1].map(i => `
+                                                            <td class="px-4 py-2 text-center">
+                                                                <span class="block text-sm font-semibold text-gray-700">${i}</span>
+                                                                <span class="reviewed-rating text-2xl" style="color:${ev.rating == i ? '#3182ce' : '#a0aec0'};">${ev.rating == i ? '&#9733;' : '&#9734;'}</span>
+                                                            </td>
+                                                        `).join('')}
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="flex-1">
-                                    <table class="min-w-full bg-white rounded-lg border border-gray-200">
-                                        <thead>
-                                            <tr>
-                                                <th colspan="5" class="bg-blue-50 text-blue-700 text-sm font-bold px-4 py-2 text-center rounded-t">Table Rating</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                ${[5,4,3,2,1].map(i => `
-                                                    <td class="px-4 py-2 text-center">
-                                                        <span class="block text-sm font-semibold text-gray-700">${i}</span>
-                                                        <span class="reviewed-rating text-2xl" style="color:${ev.rating == i ? '#3182ce' : '#a0aec0'};">${ev.rating == i ? '&#9733;' : '&#9734;'}</span>
-                                                    </td>
-                                                `).join('')}
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                        `;
+                                `;
+                            });
+                            evalHtml += `</div>`; // Close category container
+                        }
                     });
                     $('#reviewedEvalList').html(evalHtml);
                 } else {
@@ -4885,6 +5483,21 @@ $(document).ready(function() {
     }
 
     // Initial load for Review tab student list is now handled by unified evaluation loading
+
+    // Category dropdown handler for Review tab
+    $(document).on('change', '#reviewCategoryDropdown', function() {
+        const selectedCategory = $(this).val();
+        
+        if (selectedCategory === 'all') {
+            // Show all categories
+            $('.review-category-container').show();
+        } else {
+            // Hide all categories first
+            $('.review-category-container').hide();
+            // Show only selected category
+            $(`.review-category-container[data-category="${selectedCategory}"]`).show();
+        }
+    });
 
     // Handle click on autocomplete suggestion in Review tab
     $(document).on('mousedown', '.autocomplete-item-review', function(e) {

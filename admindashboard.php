@@ -1,9 +1,16 @@
 <?php 
 // Include the database and session handling
 // Old code - commented out
-$path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path."/database/database.php";
+require_once __DIR__ . '/config/path_config.php';
+require_once PathConfig::getDatabasePath();
 
+// Initialize database connection
+$dbo = new Database();
+
+// Check if database connection is successful
+if ($dbo->conn === null) {
+    die("Database connection failed. Please check your connection settings.");
+}
 
 // Fetch pending attendance records with student details
 $stmt = $dbo->conn->prepare("
@@ -15,8 +22,78 @@ $stmt = $dbo->conn->prepare("
 $stmt->execute();
 $pendingRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Check if admin is logged in and get coordinator ID
+session_start();
+$coordinatorId = $_SESSION["admin_user"] ?? null;
+if (!$coordinatorId) {
+    header("Location: admin.php");
+    exit();
+}
+
+// Set adminId for use in the template
+$adminId = $coordinatorId;
+
 // Get admin details for display
-$adminName = $name ?? 'Admin';
+try {
+    $stmt = $dbo->conn->prepare("
+        SELECT c.*, h.NAME as HTE_NAME 
+        FROM coordinator c 
+        LEFT JOIN host_training_establishment h ON c.HTE_ID = h.HTE_ID 
+        WHERE c.COORDINATOR_ID = ?
+    ");
+    $stmt->execute([$coordinatorId]);
+    $adminDetails = $stmt->fetch(PDO::FETCH_ASSOC);
+    $adminName = $adminDetails ? ($adminDetails['NAME'] ?? 'Admin') : 'Admin';
+    $name = $adminName;
+} catch (Exception $e) {
+    error_log("Error loading admin details: " . $e->getMessage());
+    $adminName = 'Admin';
+    $name = 'Admin';
+}
+
+// Initialize dashboard variables with default values
+$name = $name ?? 'Admin';
+$attendanceStats = ['present' => 0, 'on_time' => 0, 'late' => 0];
+$presentList = [];
+$onTimeList = [];
+$lateList = [];
+
+// Get coordinator's HTE_ID and then get students assigned to that HTE
+try {
+    // First, get the coordinator's HTE_ID
+    $stmt = $dbo->conn->prepare("SELECT HTE_ID FROM coordinator WHERE COORDINATOR_ID = ?");
+    $stmt->execute([$coordinatorId]);
+    $coordinatorData = $stmt->fetch(PDO::FETCH_ASSOC);
+    $coordinatorHteId = $coordinatorData['HTE_ID'] ?? null;
+    
+    if ($coordinatorHteId) {
+        // Get students assigned to this coordinator's HTE
+        $stmt = $dbo->conn->prepare("
+            SELECT
+                id.STUDENT_ID,
+                id.INTERNS_ID,
+                id.NAME,
+                id.SURNAME,
+                id.EMAIL,
+                id.CONTACT_NUMBER
+            FROM interns_details id
+            JOIN intern_details itd ON id.INTERNS_ID = itd.INTERNS_ID
+            WHERE itd.HTE_ID = ?
+            ORDER BY id.SURNAME ASC, id.NAME ASC
+        ");
+        $stmt->execute([$coordinatorHteId]);
+        $allStudents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        error_log("Coordinator $coordinatorId has no HTE_ID assigned");
+        $allStudents = [];
+    }
+} catch (Exception $e) {
+    error_log("Error loading students for evaluation: " . $e->getMessage());
+    $allStudents = [];
+}
+
+// Set total students count from the query result
+$totalStudents = count($allStudents);
 ?>
 
 <!DOCTYPE html>
@@ -64,7 +141,7 @@ $adminName = $name ?? 'Admin';
                 <li class="sidebar-item" id="historyTab"><i class="fas fa-history"></i> <span>History</span></li>
                 <li class="sidebar-item" id="reportsTab"><i class="fas fa-file-alt"></i> <span>Reports</span></li>
                 <li class="sidebar-item" id="evaluationTab"><i class="fas fa-star"></i> <span>Evaluation</span></li>
-                <li class="sidebar-item" id="contralTab"><i class="fas fa-cogs"></i> <span>Contral</span></li>
+                <li class="sidebar-item" id="contralTab"><i class="fas fa-cogs"></i> <span>Control</span></li>
             </ul>
         </div>
 
@@ -161,25 +238,37 @@ $adminName = $name ?? 'Admin';
                         <div class="list present-list">
                             <h4>Present</h4>
                             <ul id="presentList">
-                                <?php foreach ($presentList as $student): ?>
-                                    <li><?php echo htmlspecialchars($student['SURNAME']); ?></li>
-                                <?php endforeach; ?>
+                                <?php if (!empty($presentList)): ?>
+                                    <?php foreach ($presentList as $student): ?>
+                                        <li><?php echo htmlspecialchars($student['SURNAME']); ?></li>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <li>No students present</li>
+                                <?php endif; ?>
                             </ul>
                         </div>
                         <div class="list on-time-list">
                             <h4>On Time</h4>
                             <ul id="onTimeList">
-                                <?php foreach ($onTimeList as $student): ?>
-                                    <li><?php echo htmlspecialchars($student['SURNAME']); ?></li>
-                                <?php endforeach; ?>
+                                <?php if (!empty($onTimeList)): ?>
+                                    <?php foreach ($onTimeList as $student): ?>
+                                        <li><?php echo htmlspecialchars($student['SURNAME']); ?></li>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <li>No students on time</li>
+                                <?php endif; ?>
                             </ul>
                         </div>
                         <div class="list late-list">
                             <h4>Late</h4>
                             <ul id="lateList">
-                                <?php foreach ($lateList as $student): ?>
-                                    <li><?php echo htmlspecialchars($student['SURNAME']); ?></li>
-                                <?php endforeach; ?>
+                                <?php if (!empty($lateList)): ?>
+                                    <?php foreach ($lateList as $student): ?>
+                                        <li><?php echo htmlspecialchars($student['SURNAME']); ?></li>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <li>No late students</li>
+                                <?php endif; ?>
                             </ul>
                         </div>
 
@@ -483,6 +572,80 @@ $adminName = $name ?? 'Admin';
                     </div>
                     <div id="noReports" style="display: none; text-align: center; padding: 20px;">
                         No weekly reports found matching your criteria.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Tab Content -->
+            <div id="contralTabContent" class="tab-content" style="display: none;">
+                <div class="dashboard-header">
+                    <h2>Control Panel</h2>
+                    <p>Manage company MOAs (Memorandums of Agreement) and view system information</p>
+                </div>
+
+                <!-- MOA Management Section -->
+                <div class="section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-file-contract"></i> My Assigned Company MOA</h3>
+                        <p>View Memorandum of Agreement for your assigned company</p>
+                    </div>
+
+                    <!-- Refresh Button -->
+                    <div class="action-container" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                            <div style="flex: 1;">
+                                <p style="margin: 0; color: #555; font-style: italic;">Viewing MOA information for your assigned company</p>
+                            </div>
+                            <button id="refreshCompaniesBtn" class="btn" style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                <i class="fas fa-refresh"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Companies MOA Table -->
+                    <div class="table-container" style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
+                        <table class="companies-table" style="width: 100%; border-collapse: collapse;">
+                            <thead style="background: #f1f3f4;">
+                                <tr>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-bottom: 1px solid #ddd;">Company Name</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-bottom: 1px solid #ddd;">Industry</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-bottom: 1px solid #ddd;">Contact Person</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-bottom: 1px solid #ddd;">MOA Status</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-bottom: 1px solid #ddd;">MOA Dates</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-bottom: 1px solid #ddd;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="companiesMOATableBody">
+                                <tr>
+                                    <td colspan="6" style="padding: 40px; text-align: center; color: #666;">
+                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                            <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #007bff;"></i>
+                                            <p>Loading your assigned company...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- MOA Statistics -->
+                    <div class="moa-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;">
+                        <div class="stat-card" style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #28a745;">
+                            <div style="font-size: 24px; font-weight: bold; color: #28a745;" id="activeMOAs">0</div>
+                            <div style="font-size: 14px; color: #666;">Active MOAs</div>
+                        </div>
+                        <div class="stat-card" style="background: #fff3cd; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #ffc107;">
+                            <div style="font-size: 24px; font-weight: bold; color: #ffc107;" id="expiringSoonMOAs">0</div>
+                            <div style="font-size: 14px; color: #666;">Expiring Soon</div>
+                        </div>
+                        <div class="stat-card" style="background: #f8d7da; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #dc3545;">
+                            <div style="font-size: 24px; font-weight: bold; color: #dc3545;" id="expiredMOAs">0</div>
+                            <div style="font-size: 14px; color: #666;">Expired MOAs</div>
+                        </div>
+                        <div class="stat-card" style="background: #d1ecf1; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #17a2b8;">
+                            <div style="font-size: 24px; font-weight: bold; color: #17a2b8;" id="noMOACompanies">0</div>
+                            <div style="font-size: 14px; color: #666;">No MOA</div>
+                        </div>
                     </div>
                 </div>
             </div>

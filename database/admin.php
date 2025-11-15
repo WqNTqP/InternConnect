@@ -4,6 +4,12 @@ class admin
 {
     public function verifyUser  ($dbo, $un, $pw) {
         $rv = ["id" => -1, "status" => "ERROR", "role" => ""]; // Include role in the response
+        
+        // Check if database connection exists
+        if ($dbo->conn === null) {
+            return ["id" => -1, "status" => "Database Connection Failed", "role" => ""];
+        }
+        
         $c = "SELECT COORDINATOR_ID, NAME, username, password, ROLE FROM coordinator WHERE username = :un";
         $s = $dbo->conn->prepare($c);
         try {

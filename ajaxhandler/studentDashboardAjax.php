@@ -74,7 +74,7 @@ switch ($action) {
             $studentId = $row['STUDENT_ID'];
 
             // Get all evaluation answers for this student with LEFT JOIN to handle missing questions
-            $stmt = $dbo->conn->prepare("SELECT se.id as id, se.id as student_evaluation_id, COALESCE(eq.question_text, CONCAT('Question ', se.question_id)) as question_text, se.answer, se.question_id FROM student_evaluation se LEFT JOIN evaluation_questions eq ON se.question_id = eq.question_id WHERE se.STUDENT_ID = ? ORDER BY se.question_id");
+            $stmt = $dbo->conn->prepare("SELECT se.id as id, se.id as student_evaluation_id, COALESCE(eq.question_text, CONCAT('Question ', se.question_id)) as question_text, eq.category, se.answer, se.question_id FROM student_evaluation se LEFT JOIN evaluation_questions eq ON se.question_id = eq.question_id WHERE se.STUDENT_ID = ? ORDER BY se.question_id");
             $stmt->execute([$studentId]);
             $evaluations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -303,7 +303,7 @@ switch ($action) {
             // Validate file type
             if (in_array($fileType, $allowedFileTypes)) {
                 // Include safe upload configuration
-                require_once $basePath . '/config/safe_upload.php';
+                require_once $path . 'config/safe_upload.php';
                 
                 $uploadResult = safeUploadImage(
                     $fileTmpPath,
@@ -316,6 +316,16 @@ switch ($action) {
                 if ($uploadResult['success']) {
                     $profilePicturePath = $uploadResult['url']; // Always URL since we require Cloudinary
                     error_log("Profile picture uploaded to Cloudinary: " . $profilePicturePath);
+                    
+                    // Update database with new profile picture URL
+                    try {
+                        $stmt = $dbo->conn->prepare("UPDATE interns_details SET profile_picture = ? WHERE INTERNS_ID = ?");
+                        $stmt->execute([$profilePicturePath, $studentId]);
+                        sendResponse('success', null, 'Profile picture updated successfully');
+                    } catch (Exception $e) {
+                        logError("Error updating student profile picture: " . $e->getMessage());
+                        sendResponse('error', null, 'Error updating profile picture');
+                    }
                 } else {
                     error_log("Profile picture upload failed (Cloudinary required): " . ($uploadResult['error'] ?? 'Unknown error'));
                     sendResponse('error', null, 'Profile picture upload failed: ' . ($uploadResult['error'] ?? 'Cloud storage unavailable'));
@@ -325,15 +335,6 @@ switch ($action) {
             }
         } else {
             sendResponse('error', null, 'No profile picture file uploaded or file upload error');
-        }
-
-        try {
-            $stmt = $dbo->conn->prepare("UPDATE interns_details SET profile_picture = ? WHERE INTERNS_ID = ?");
-            $stmt->execute([$profilePicturePath, $studentId]);
-            sendResponse('success', null, 'Profile picture updated successfully');
-        } catch (Exception $e) {
-            logError("Error updating student profile picture: " . $e->getMessage());
-            sendResponse('error', null, 'Error updating profile picture');
         }
         break;
 

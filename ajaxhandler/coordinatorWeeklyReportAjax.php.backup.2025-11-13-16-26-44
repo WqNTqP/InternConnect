@@ -9,7 +9,6 @@ ini_set('session.use_only_cookies', true);
 
 session_start();
 require_once '../database/database.php';
-require_once '../config/safe_upload.php';
 
 header('Content-Type: application/json');
 
@@ -234,7 +233,7 @@ function getWeeklyReports() {
             $day = $row['day_of_week'] ?: 'monday'; // Default to monday if no day specified
             $imageData = [
                 'filename' => $row['image_filename'],
-                'url' => getImageUrl($row['image_filename'], $baseUrl)
+                'url' => $baseUrl . 'uploads/reports/' . $row['image_filename']
             ];
 
             if (isset($currentReport['imagesPerDay'][$day])) {
@@ -363,7 +362,7 @@ function getReportByWeekDates($studentId, $weekStart, $weekEnd) {
     foreach ($rows as $row) {
         if (!empty($row['image_filename'])) {
             $day = $row['day_of_week'] ?: 'monday'; // Default to monday if no day specified
-            $imageUrl = getImageUrl($row['image_filename'], $baseUrl);
+            $imageUrl = $baseUrl . 'uploads/reports/' . $row['image_filename'];
             $imagesPerDay[$day][] = [
                 'filename' => $row['image_filename'],
                 'url' => $imageUrl
@@ -686,7 +685,7 @@ function getReportByWeek($studentId, $week) {
     foreach ($rows as $row) {
         if (!empty($row['image_filename'])) {
             $day = $row['day_of_week'] ?: 'monday'; // Default to monday if no day specified
-            $imageUrl = getImageUrl($row['image_filename'], $baseUrl);
+            $imageUrl = $baseUrl . 'uploads/reports/' . $row['image_filename'];
             $imagesPerDay[$day][] = [
                 'filename' => $row['image_filename'],
                 'url' => $imageUrl
@@ -783,7 +782,7 @@ function getSubmittedReports($studentId) {
             $day = $row['day_of_week'] ?: 'monday'; // Default to monday if no day specified
             $imageData = [
                 'filename' => $row['image_filename'],
-                'url' => getImageUrl($row['image_filename'], $baseUrl)
+                'url' => $baseUrl . 'uploads/reports/' . $row['image_filename']
             ];
 
             if (isset($currentReport['imagesPerDay'][$day])) {
@@ -884,35 +883,44 @@ function insertReportImages($reportId, $images) {
 
 function handleImageUploads($files) {
     $uploadedImages = [];
+    $uploadDir = '../uploads/reports/';
+    
+    // Create upload directory if it doesn't exist
+    if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+    
     foreach ($files['name'] as $index => $name) {
         if ($files['error'][$index] === UPLOAD_ERR_OK) {
             $tmpName = $files['tmp_name'][$index];
             $fileSize = $files['size'][$index];
             $fileType = $files['type'][$index];
-
+            
             // Validate file type
             $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
             if (!in_array($fileType, $allowedTypes)) {
                 continue;
             }
-
+            
             // Validate file size (5MB max)
             if ($fileSize > 5 * 1024 * 1024) {
                 continue;
             }
-
-            // Cloud-first upload
-            $uploadResult = safeUploadImage($tmpName, $name, 'uploads', 'reports', true);
-            if (!empty($uploadResult['success'])) {
+            
+            // Generate unique filename
+            $extension = pathinfo($name, PATHINFO_EXTENSION);
+            $uniqueName = uniqid() . '_' . time() . '.' . $extension;
+            
+            // Move uploaded file
+            if (move_uploaded_file($tmpName, $uploadDir . $uniqueName)) {
                 $uploadedImages[] = [
-                    'filename' => $uploadResult['url'],
+                    'filename' => $uniqueName,
                     'original_name' => $name
                 ];
-            } else {
-                error_log('Cloud upload failed (handleImageUploads): ' . ($uploadResult['error'] ?? 'unknown error'));
             }
         }
     }
+    
     return $uploadedImages;
 }
 
@@ -927,7 +935,11 @@ function handleImageUploadsPerDay($files) {
     // Debug: Log the entire $_FILES structure
     error_log("handleImageUploadsPerDay called with files: " . print_r($files, true));
 
-    // Cloud-first uploads handled via safeUploadImage; no local directory needed
+    $uploadDir = '../uploads/reports/';
+    if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+        error_log("Created upload directory: $uploadDir");
+    }
 
     foreach ($days as $day) {
         $uploadedImagesPerDay[$day] = [];
@@ -962,16 +974,23 @@ function handleImageUploadsPerDay($files) {
                         continue;
                     }
 
-                    // Cloud-first upload per day
-                    $uploadResult = safeUploadImage($tmpName, $name, 'uploads', 'reports', true);
-                    if (!empty($uploadResult['success'])) {
+                    // Generate unique filename
+                    $extension = pathinfo($name, PATHINFO_EXTENSION);
+                    if (empty($extension)) {
+                        $extension = 'jpg'; // Default extension
+                    }
+                    $uniqueName = uniqid() . '_' . time() . '_' . $day . '.' . $extension;
+
+                    // Move uploaded file to permanent location
+                    $destinationPath = $uploadDir . $uniqueName;
+                    if (move_uploaded_file($tmpName, $destinationPath)) {
                         $uploadedImagesPerDay[$day][] = [
-                            'filename' => $uploadResult['url'],
+                            'filename' => $uniqueName,
                             'original_name' => $name
                         ];
-                        error_log("Cloud upload successful for $day - URL: {$uploadResult['url']}");
+                        error_log("Successfully moved uploaded file to: $destinationPath for day: $day");
                     } else {
-                        error_log("Cloud upload failed for $day: " . ($uploadResult['error'] ?? 'unknown error'));
+                        error_log("Failed to move uploaded file from $tmpName to $destinationPath");
                     }
                 } else {
                     error_log("File upload error code: " . $files['images']['error'][$dayKey][$index] . " for file $name");
@@ -1064,7 +1083,12 @@ function insertReportImagesPerDay($reportId, $imagesPerDay) {
         VALUES (?, ?, ?, CURRENT_TIMESTAMP)
     ");
 
-    // Cloud-first uploads handled via safeUploadImage; no local directory needed
+    // Create upload directory if it doesn't exist
+    $uploadDir = '../uploads/reports/';
+    if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+        error_log("Created upload directory: $uploadDir");
+    }
 
     $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
@@ -1081,17 +1105,25 @@ function insertReportImagesPerDay($reportId, $imagesPerDay) {
                 // Handle new uploads (with tmp_name)
                 if (isset($image['tmp_name']) && !empty($image['tmp_name'])) {
                     try {
-                        $originalName = $image['original_name'] ?? ($image['name'] ?? 'image.jpg');
-                        $uploadResult = safeUploadImage($image['tmp_name'], $originalName, 'uploads', 'reports', true);
-                        if (!empty($uploadResult['success'])) {
-                            $filename = $uploadResult['url']; // Store Cloud URL
-                            error_log("Cloud upload successful for day: $day - URL: {$filename}");
+                        // Generate unique filename
+                        $originalName = $image['original_name'] ?? 'image.jpg';
+                        $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+                        if (empty($extension)) {
+                            $extension = 'jpg'; // Default extension
+                        }
+                        $uniqueName = uniqid() . '_' . $reportId . '_' . $day . '.' . $extension;
+
+                        // Move uploaded file to permanent location
+                        $destinationPath = $uploadDir . $uniqueName;
+                        if (move_uploaded_file($image['tmp_name'], $destinationPath)) {
+                            $filename = $uniqueName;
+                            error_log("Successfully moved uploaded file to: $destinationPath for day: $day");
                         } else {
-                            error_log("Cloud upload failed for day: $day - " . ($uploadResult['error'] ?? 'unknown error'));
+                            error_log("Failed to move uploaded file from {$image['tmp_name']} to $destinationPath");
                             continue;
                         }
                     } catch (Exception $e) {
-                        error_log("Failed to process uploaded file (cloud): " . $e->getMessage());
+                        error_log("Failed to process uploaded file: " . $e->getMessage());
                         continue;
                     }
                 }

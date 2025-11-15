@@ -3,9 +3,9 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json'); // Ensure the response is in JSON format
 
-$path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . "/database/database.php"; // Include your database connection
-require_once $path . "/database/attendanceDetails.php"; // Include attendanceDetails.php
+require_once __DIR__ . '/../config/path_config.php';
+require_once PathConfig::getDatabasePath(); // Include your database connection
+require_once PathConfig::getProjectPath('/database/attendanceDetails.php'); // Include attendanceDetails.php
 
 // Log the request method and request URI
 error_log("Request Method: " . $_SERVER['REQUEST_METHOD']);

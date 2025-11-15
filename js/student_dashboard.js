@@ -20,6 +20,22 @@ function getBaseUrl() {
     return protocol + '//' + host + basePath;
 }
 
+// Helper function to get proper image URL (Cloudinary, absolute, or local)
+function getImageUrl(filename) {
+    if (!filename) return '';
+    const f = String(filename).trim();
+    // Full URL (Cloudinary or any external)
+    if (/^https?:\/\//i.test(f)) return f;
+    // Protocol-relative URL
+    if (f.startsWith('//')) return window.location.protocol + f;
+    // Absolute path on same host
+    if (f.startsWith('/')) return window.location.protocol + '//' + window.location.host + f;
+    // Already a relative path under uploads or any subfolder
+    if (f.includes('uploads/') || f.includes('/')) return getBaseUrl() + f;
+    // Bare filename: default to reports folder for backward compatibility
+    return getBaseUrl() + 'uploads/reports/' + f;
+}
+
 // Function to manage shown notifications using sessionStorage
 // Day navigation logic for report editor
 $(document).ready(function() {
@@ -359,7 +375,7 @@ $(document).ready(function() {
             label: 'Personal and Interpersonal Skills'
         }
     ];
-    let currentCategoryIdx = 0;
+    let currentCategoryIdx = 4; // Start with Personal and Interpersonal Skills (selected by default)
 
     function showPostCategory(idx) {
         console.log('Showing category index:', idx);
@@ -383,7 +399,7 @@ $(document).ready(function() {
     }
     // Always initialize on tab switch
     $('#postAssessmentTabBtn').on('click', function() {
-        currentCategoryIdx = 0;
+        currentCategoryIdx = 4; // Start with Personal and Interpersonal Skills
         // Ensure dropdown exists and is properly initialized
         setTimeout(function() {
             const $dropdown = $('#categoryDropdown');
@@ -485,6 +501,30 @@ $(document).ready(function() {
         $('#preAssessmentTabBtn').removeClass('active');
         $('#preAssessmentTab').hide();
         $('#postAssessmentTab').show();
+    });
+
+    // Pre-assessment category dropdown functionality
+    $('#preAssessmentCategoryDropdown').on('change', function() {
+        const selectedCategory = $(this).val();
+        console.log('Pre-assessment category changed to:', selectedCategory);
+        
+        // Hide all category sections
+        $('.pre-category').hide();
+        
+        // Show the selected category section
+        switch(selectedCategory) {
+            case 'soft':
+                $('#softSkillsCategory').show();
+                break;
+            case 'comm':
+                $('#commSkillsCategory').show();
+                break;
+            case 'tech':
+                $('#techSkillsCategory').show();
+                break;
+            default:
+                $('#softSkillsCategory').show(); // Default to soft skills
+        }
     });
 
     // Add custom question logic for post-assessment
@@ -1160,16 +1200,46 @@ $(function(e) {
                             }
                             let softAnswers = response.answers.filter(a => a.category.toLowerCase().includes('soft'));
                             let commAnswers = response.answers.filter(a => a.category.toLowerCase().includes('comm'));
+                            let techAnswers = response.answers.filter(a => a.category.toLowerCase().includes('technical'));
                             let softTable = `<div class='evaluation-table-wrapper'><table class='evaluation-table'><tbody>${buildRows(softAnswers)}</tbody></table></div>`;
                             let commTable = `<div class='evaluation-table-wrapper'><table class='evaluation-table'><tbody>${buildRows(commAnswers)}</tbody></table></div>`;
+                            let techTable = `<div class='evaluation-table-wrapper'><table class='evaluation-table'><tbody>${buildRows(techAnswers)}</tbody></table></div>`;
                             $('#softSkillQuestions').html(softTable);
                             $('#commSkillQuestions').html(commTable);
+                            $('#techSkillQuestions').html(techTable);
+                            
+                            // Enable category dropdown in view mode
+                            $('#preAssessmentCategoryDropdown').prop('disabled', false);
+                            
+                            // Show the currently selected category (default to soft skills)
+                            const currentCategory = $('#preAssessmentCategoryDropdown').val() || 'soft';
+                            $('.pre-category').hide();
+                            switch(currentCategory) {
+                                case 'soft':
+                                    $('#softSkillsCategory').show();
+                                    break;
+                                case 'comm':
+                                    $('#commSkillsCategory').show();
+                                    break;
+                                case 'tech':
+                                    $('#techSkillsCategory').show();
+                                    break;
+                                default:
+                                    $('#softSkillsCategory').show();
+                            }
+                            
                             // Hide submit button in view mode
                             $('#submitEvaluationBtn, #submitAnswersBtn, #submitBtn, #submitAnswers').hide();
                         },
                         error: function() {
                             $('#softSkillQuestions').html('<p>Error loading ratings.</p>');
                             $('#commSkillQuestions').html('<p>Error loading ratings.</p>');
+                            $('#techSkillQuestions').html('<p>Error loading ratings.</p>');
+                            
+                            // Enable dropdown even on error and show default category
+                            $('#preAssessmentCategoryDropdown').prop('disabled', false);
+                            $('.pre-category').hide();
+                            $('#softSkillsCategory').show();
                         }
                     });
                 } else {
@@ -1181,21 +1251,51 @@ $(function(e) {
                         success: function(qResp) {
                             let softHtml = '';
                             let commHtml = '';
+                            let techHtml = '';
                             if (qResp.success && qResp.questions) {
                                 qResp.questions.forEach(function(q) {
                                     if (q.category.toLowerCase().includes('soft')) {
                                         softHtml += `<div class='question-unique-block'><label class='question-unique-label'>${q.question_text}</label><textarea class='question-unique-input' name='question_${q.question_id}' rows='2' required></textarea></div>`;
                                     } else if (q.category.toLowerCase().includes('comm')) {
                                         commHtml += `<div class='question-unique-block'><label class='question-unique-label'>${q.question_text}</label><textarea class='question-unique-input' name='question_${q.question_id}' rows='2' required></textarea></div>`;
+                                    } else if (q.category.toLowerCase().includes('technical')) {
+                                        techHtml += `<div class='question-unique-block'><label class='question-unique-label'>${q.question_text}</label><textarea class='question-unique-input' name='question_${q.question_id}' rows='2' required></textarea></div>`;
                                     }
                                 });
                             }
                             $('#softSkillQuestions').html(softHtml || '<p>No soft skill questions found.</p>');
                             $('#commSkillQuestions').html(commHtml || '<p>No communication skill questions found.</p>');
+                            $('#techSkillQuestions').html(techHtml || '<p>No technical skill questions found.</p>');
+                            
+                            // Enable category dropdown in edit mode
+                            $('#preAssessmentCategoryDropdown').prop('disabled', false);
+                            
+                            // Show the currently selected category (default to soft skills)
+                            const currentCategory = $('#preAssessmentCategoryDropdown').val() || 'soft';
+                            $('.pre-category').hide();
+                            switch(currentCategory) {
+                                case 'soft':
+                                    $('#softSkillsCategory').show();
+                                    break;
+                                case 'comm':
+                                    $('#commSkillsCategory').show();
+                                    break;
+                                case 'tech':
+                                    $('#techSkillsCategory').show();
+                                    break;
+                                default:
+                                    $('#softSkillsCategory').show();
+                            }
                         },
                         error: function() {
                             $('#softSkillQuestions').html('<p>Error loading soft skill questions.</p>');
                             $('#commSkillQuestions').html('<p>Error loading communication skill questions.</p>');
+                            $('#techSkillQuestions').html('<p>Error loading technical skill questions.</p>');
+                            
+                            // Enable dropdown even on error and show default category
+                            $('#preAssessmentCategoryDropdown').prop('disabled', false);
+                            $('.pre-category').hide();
+                            $('#softSkillsCategory').show();
                         }
                     });
                 }
@@ -1203,6 +1303,12 @@ $(function(e) {
             error: function() {
                 $('#softSkillQuestions').html('<p>Error loading evaluation answers.</p>');
                 $('#commSkillQuestions').html('<p>Error loading evaluation answers.</p>');
+                $('#techSkillQuestions').html('<p>Error loading evaluation answers.</p>');
+                
+                // Enable dropdown even on error and show default category
+                $('#preAssessmentCategoryDropdown').prop('disabled', false);
+                $('.pre-category').hide();
+                $('#softSkillsCategory').show();
             }
         });
     }
@@ -1805,7 +1911,7 @@ function displayProfileDetails(data) {
         <div class="profile-card">
             <div class="profile-header">
                 <div class="profile-avatar">
-                    ${data.profile_picture ? `<img src="${getBaseUrl()}uploads/${data.profile_picture}" alt="Profile Picture" class="avatar-placeholder">` : `<div class="avatar-placeholder"><i class="fas fa-user"></i></div>`}
+                    ${data.profile_picture ? `<img src="${getImageUrl(data.profile_picture)}" alt="Profile Picture" class="avatar-placeholder">` : `<div class="avatar-placeholder"><i class="fas fa-user"></i></div>`}
                 </div>
                 <h2>${fullName}</h2>
                 <p class="profile-subtitle">Student Profile</p>
@@ -2972,6 +3078,11 @@ $(document).ready(function() {
             if (questionIdMatch) {
                 const question_id = questionIdMatch[1];
                 const answer = $(this).val();
+                // Debug: log which questions are being collected
+                const categoryContainer = $(this).closest('.pre-category');
+                const categoryName = categoryContainer.attr('id') || 'unknown';
+                console.log(`Collecting question ${question_id} from ${categoryName}, answer: "${answer}"`);
+                
                 // Accept numeric answers like '1', only treat truly empty (null/empty string) as missing
                 if (answer === null || answer.trim() === '') {
                     missing.push(question_id);
@@ -3084,16 +3195,46 @@ function loadStudentEvaluationAnswersAndRatings() {
                         }
                         let softAnswers = response.answers.filter(a => a.category.toLowerCase().includes('soft'));
                         let commAnswers = response.answers.filter(a => a.category.toLowerCase().includes('comm'));
+                        let techAnswers = response.answers.filter(a => a.category.toLowerCase().includes('technical'));
                         let softTable = `<div class='evaluation-table-wrapper'><table class='evaluation-table'><tbody>${buildRows(softAnswers)}</tbody></table></div>`;
                         let commTable = `<div class='evaluation-table-wrapper'><table class='evaluation-table'><tbody>${buildRows(commAnswers)}</tbody></table></div>`;
+                        let techTable = `<div class='evaluation-table-wrapper'><table class='evaluation-table'><tbody>${buildRows(techAnswers)}</tbody></table></div>`;
                         $('#softSkillQuestions').html(softTable);
                         $('#commSkillQuestions').html(commTable);
+                        $('#techSkillQuestions').html(techTable);
+                        
+                        // Enable category dropdown in view mode
+                        $('#preAssessmentCategoryDropdown').prop('disabled', false);
+                        
+                        // Show the currently selected category (default to soft skills)
+                        const currentCategory = $('#preAssessmentCategoryDropdown').val() || 'soft';
+                        $('.pre-category').hide();
+                        switch(currentCategory) {
+                            case 'soft':
+                                $('#softSkillsCategory').show();
+                                break;
+                            case 'comm':
+                                $('#commSkillsCategory').show();
+                                break;
+                            case 'tech':
+                                $('#techSkillsCategory').show();
+                                break;
+                            default:
+                                $('#softSkillsCategory').show();
+                        }
+                        
                         // Hide submit button in view mode
                         $('#submitEvaluationBtn, #submitAnswersBtn, #submitBtn, #submitAnswers').hide();
                     },
                     error: function() {
                         $('#softSkillQuestions').html('<p>Error loading ratings.</p>');
                         $('#commSkillQuestions').html('<p>Error loading ratings.</p>');
+                        $('#techSkillQuestions').html('<p>Error loading ratings.</p>');
+                        
+                        // Enable dropdown even on error and show default category
+                        $('#preAssessmentCategoryDropdown').prop('disabled', false);
+                        $('.pre-category').hide();
+                        $('#softSkillsCategory').show();
                     }
                 });
             } else {
@@ -3103,6 +3244,12 @@ function loadStudentEvaluationAnswersAndRatings() {
         error: function() {
             $('#softSkillQuestions').html('<p>Error loading ratings.</p>');
             $('#commSkillQuestions').html('<p>Error loading ratings.</p>');
+            $('#techSkillQuestions').html('<p>Error loading ratings.</p>');
+            
+            // Enable dropdown even on error and show default category
+            $('#preAssessmentCategoryDropdown').prop('disabled', false);
+            $('.pre-category').hide();
+            $('#softSkillsCategory').show();
         }
     });
 }

@@ -7,12 +7,17 @@ if (!isset($_SESSION['current_user_role']) || $_SESSION['current_user_role'] !==
 
 // Include necessary files for database connection and functions
 // Old code - commented out
-$path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path."/database/database.php";
+require_once __DIR__ . '/config/path_config.php';
+require_once PathConfig::getDatabasePath();
 
 
 // Initialize database connection
 $dbo = new Database();
+
+// Check if database connection is successful
+if ($dbo->conn === null) {
+    die("Database connection failed. Please check your connection settings.");
+}
 
 // Dashboard stats (wrap queries in try/catch to avoid unhandled exceptions)
 try {

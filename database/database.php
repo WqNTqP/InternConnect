@@ -6,6 +6,7 @@ private $servername;
 private $username;
 private $password;
 private $dbname;
+private $fallbackConfig;
 public $conn = null;
 
 public function __construct() {
@@ -23,12 +24,20 @@ public function __construct() {
         $this->password = getenv('DB_PASSWORD') ?: 'DAl9FGjxvF';
         $this->dbname = getenv('DB_NAME') ?: 'sql3806785';
     } else {
-        // Local development: Use .env file or localhost
+        // Local development: Try localhost first, fallback to live DB if needed
         $this->servername = $_ENV['DB_HOST'] ?? 'localhost:3306';
         $this->username = $_ENV['DB_USERNAME'] ?? 'root';
         $this->password = $_ENV['DB_PASSWORD'] ?? '';
         $this->dbname = $_ENV['DB_NAME'] ?? 'attendancetrackernp';
     }
+    
+    // Store fallback credentials for local development
+    $this->fallbackConfig = [
+        'servername' => 'sql3.freesqldatabase.com:3306',
+        'username' => 'sql3806785',
+        'password' => 'DAl9FGjxvF',
+        'dbname' => 'sql3806785'
+    ];
     
     // Connection established using environment variables
     
@@ -51,10 +60,27 @@ public function __construct() {
         
         //echo "connected successfully";
       } catch(PDOException $e) {
-        error_log("Database connection failed: " . $e->getMessage());
+        error_log("Primary database connection failed: " . $e->getMessage());
         error_log("Host: $hostname:$port, Database: " . $this->dbname . ", Username: " . $this->username);
-        // Don't echo here as it interferes with session_start()
-        $this->conn = null;
+        
+        // If local connection fails and we have fallback config, try live database
+        if (!$isProduction && $this->fallbackConfig) {
+            try {
+                error_log("Attempting fallback to live database...");
+                $fallbackParts = explode(':', $this->fallbackConfig['servername']);
+                $fallbackHost = $fallbackParts[0];
+                $fallbackPort = isset($fallbackParts[1]) ? $fallbackParts[1] : 3306;
+                
+                $fallbackDsn = "mysql:host=$fallbackHost;port=$fallbackPort;dbname={$this->fallbackConfig['dbname']};charset=utf8";
+                $this->conn = new PDO($fallbackDsn, $this->fallbackConfig['username'], $this->fallbackConfig['password'], $options);
+                error_log("Successfully connected to live database as fallback");
+            } catch(PDOException $fallbackError) {
+                error_log("Fallback connection also failed: " . $fallbackError->getMessage());
+                $this->conn = null;
+            }
+        } else {
+            $this->conn = null;
+        }
       }
 }
 

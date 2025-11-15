@@ -7,8 +7,8 @@ if(!isset($_SESSION["student_user"]))
 }
 $student_id = $_SESSION["student_user"];
 
-$path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path."/database/database.php";
+require_once __DIR__ . '/config/path_config.php';
+require_once PathConfig::getDatabasePath();
 
 try {
     $db = new Database();
@@ -308,17 +308,40 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
         <!-- Pre-Assessment Form -->
         <div class="assessment-tab" id="preAssessmentTab">
             <form id="evaluationForm">
-                <div class="student-eval-unique-container">
-                    <div class="eval-card">
-                        <h2 class="student-eval-unique-title">Soft Skills</h2>
-                        <div id="softSkillQuestions">
-                            <!-- Soft skill questions will be loaded here dynamically -->
-                        </div>
+                <!-- Category dropdown header above the content, centered -->
+                <div class="category-toggle" style="width: 100%; display: flex; justify-content: center; align-items: center; margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 16px; width: 100%; max-width: 400px;">
+                        <label for="preAssessmentCategoryDropdown" style="font-weight: 600; font-size: 1rem; color: #495057; white-space: nowrap;">Select Category:</label>
+                        <select id="preAssessmentCategoryDropdown" name="preAssessmentCategoryDropdown" class="category-dropdown-select">
+                            <option value="soft" selected>Soft Skills</option>
+                            <option value="comm">Communication Skills</option>
+                            <option value="tech">Technical Skills</option>
+                        </select>
                     </div>
-                    <div class="eval-card">
-                        <h2 class="student-eval-unique-title">Communication Skills</h2>
-                        <div id="commSkillQuestions">
-                            <!-- Communication skill questions will be loaded here dynamically -->
+                </div>
+                <div class="student-eval-unique-container">
+                    <!-- Category content below header -->
+                    <div id="preAssessmentCategoryContent" style="width: 100%; display: flex; justify-content: center;">
+                        <!-- Soft Skills Category -->
+                        <div class="eval-card pre-category" id="softSkillsCategory">
+                            <h2 class="student-eval-unique-title">Soft Skills</h2>
+                            <div id="softSkillQuestions">
+                                <!-- Soft skill questions will be loaded here dynamically -->
+                            </div>
+                        </div>
+                        <!-- Communication Skills Category -->
+                        <div class="eval-card pre-category" id="commSkillsCategory" style="display:none;">
+                            <h2 class="student-eval-unique-title">Communication Skills</h2>
+                            <div id="commSkillQuestions">
+                                <!-- Communication skill questions will be loaded here dynamically -->
+                            </div>
+                        </div>
+                        <!-- Technical Skills Category -->
+                        <div class="eval-card pre-category" id="techSkillsCategory" style="display:none;">
+                            <h2 class="student-eval-unique-title">Technical Skills</h2>
+                            <div id="techSkillQuestions">
+                                <!-- Technical skill questions will be loaded here dynamically -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -334,13 +357,13 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                 <!-- Category dropdown header above the table, centered (moved outside student-eval-unique-container) -->
                 <div class="category-toggle" style="width: 100%; display: flex; justify-content: center; align-items: center; margin-bottom: 24px;">
                     <div style="display: flex; align-items: center; gap: 16px; width: 100%; max-width: 400px;">
-                        <label for="categoryDropdown" style="font-weight: 600; font-size: 1rem; color: #495057; white-space: nowrap;">Select Category:</label>
+                        <label for="categoryDropdown" style="font-weight: 600; font-size: 1rem; color: #495057; white-space: nowrap;">Category:</label>
                         <select id="categoryDropdown" name="categoryDropdown" class="category-dropdown-select">
-                            <option value="0">System Development</option>
-                            <option value="1">Research</option>
-                            <option value="2">Technical Support</option>
-                            <option value="3">Business Operation</option>
-                            <option value="4">Personal and Interpersonal Skills</option>
+                            <option value="0">Competency on System Development</option>
+                            <option value="1">Competency on Research</option>
+                            <option value="2">Competency on Technical Support</option>
+                            <option value="3">Competency on Business Operation</option>
+                            <option value="4" selected>Personal and Interpersonal Skills</option>
                         </select>
                     </div>
                 </div>

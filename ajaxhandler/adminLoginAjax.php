@@ -4,11 +4,9 @@
 
 
 
-$path=$_SERVER['DOCUMENT_ROOT'];
-// Check if we're in a subdirectory (local development) or root (production)
-$basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
-require_once $basePath."/database/database.php";
-require_once $basePath."/database/admin.php";
+require_once __DIR__ . '/../config/path_config.php';
+require_once PathConfig::getDatabasePath();
+require_once PathConfig::getProjectPath('/database/admin.php');
 $action=$_REQUEST["action"];
 if(!empty($action))
 {

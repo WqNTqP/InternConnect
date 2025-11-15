@@ -8,7 +8,7 @@ if (!isset($_SESSION["student_user"])) {
 $student_id = $_SESSION["student_user"];
 
 header('Content-Type: application/json');
-require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/InternConnect/database/database.php";
 
 try {
     $db = new Database();

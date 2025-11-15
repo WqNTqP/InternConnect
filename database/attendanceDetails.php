@@ -525,6 +525,111 @@ class attendanceDetails
         }
     }
 
+    public function addHTEWithMOA($dbo, $name, $industry, $address, $contact_email, $contact_person, $contact_number, $coordinator_id, $session_id, $logo_filename = null, $moa_file_url = null, $moa_public_id = null, $moa_start_date = null, $moa_end_date = null) {
+        try {
+            $dbo->conn->beginTransaction();
+            
+            // Check if the HTE already exists
+            $stmt = $dbo->conn->prepare("SELECT HTE_ID FROM host_training_establishment WHERE NAME = ? AND CONTACT_EMAIL = ?");
+            $stmt->execute([$name, $contact_email]);
+            $existing_hte = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing_hte) {
+                $hte_id = $existing_hte['HTE_ID'];
+                // Update existing HTE with MOA data
+                $sql = "UPDATE host_training_establishment SET 
+                        INDUSTRY = ?, ADDRESS = ?, CONTACT_PERSON = ?, CONTACT_NUMBER = ?, 
+                        moa_file_url = ?, moa_public_id = ?, moa_start_date = ?, moa_end_date = ?, 
+                        moa_upload_date = NOW()";
+                $params = [$industry, $address, $contact_person, $contact_number, 
+                          $moa_file_url, $moa_public_id, $moa_start_date, $moa_end_date];
+                          
+                if ($logo_filename) {
+                    $sql .= ", LOGO = ?";
+                    $params[] = $logo_filename;
+                }
+                $sql .= " WHERE HTE_ID = ?";
+                $params[] = $hte_id;
+                
+                $stmt = $dbo->conn->prepare($sql);
+                $stmt->execute($params);
+            } else {
+                // Insert new HTE with MOA data
+                $sql = "INSERT INTO host_training_establishment 
+                        (NAME, INDUSTRY, ADDRESS, CONTACT_EMAIL, CONTACT_PERSON, CONTACT_NUMBER, LOGO,
+                         moa_file_url, moa_public_id, moa_start_date, moa_end_date, moa_upload_date) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                $stmt = $dbo->conn->prepare($sql);
+                $stmt->execute([$name, $industry, $address, $contact_email, $contact_person, $contact_number, 
+                               $logo_filename, $moa_file_url, $moa_public_id, $moa_start_date, $moa_end_date]);
+                $hte_id = $dbo->conn->lastInsertId();
+            }
+
+            // Check if the association already exists
+            $stmt = $dbo->conn->prepare("SELECT COUNT(*) FROM internship_needs WHERE HTE_ID = ? AND COORDINATOR_ID = ? AND SESSION_ID = ?");
+            $stmt->execute([$hte_id, $coordinator_id, $session_id]);
+            $exists = $stmt->fetchColumn();
+
+            if (!$exists) {
+                // Insert into internship_needs only if the association doesn't exist
+                $stmt = $dbo->conn->prepare("INSERT INTO internship_needs (HTE_ID, COORDINATOR_ID, SESSION_ID) VALUES (?, ?, ?)");
+                $stmt->execute([$hte_id, $coordinator_id, $session_id]);
+            }
+
+            $dbo->conn->commit();
+            return $hte_id;
+        } catch (Exception $e) {
+            $dbo->conn->rollBack();
+            throw $e;
+        }
+    }
+
+    public function getHTEById($dbo, $hte_id) {
+        try {
+            $stmt = $dbo->conn->prepare("SELECT * FROM host_training_establishment WHERE HTE_ID = ?");
+            $stmt->execute([$hte_id]);
+            $hte = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $hte;
+        } catch (Exception $e) {
+            error_log("Error fetching HTE details: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function updateHTEDetails($dbo, $hte_id, $name, $industry, $address, $contact_email, $contact_person, $contact_number, $moa_start_date, $moa_end_date, $moa_file_url = null, $moa_public_id = null) {
+        try {
+            $dbo->conn->beginTransaction();
+            
+            // Base SQL and parameters
+            $sql = "UPDATE host_training_establishment SET 
+                    NAME = ?, INDUSTRY = ?, ADDRESS = ?, CONTACT_EMAIL = ?, 
+                    CONTACT_PERSON = ?, CONTACT_NUMBER = ?, 
+                    moa_start_date = ?, moa_end_date = ?";
+            $params = [$name, $industry, $address, $contact_email, $contact_person, $contact_number, 
+                      $moa_start_date, $moa_end_date];
+            
+            // Add MOA file update if provided
+            if ($moa_file_url && $moa_public_id) {
+                $sql .= ", moa_file_url = ?, moa_public_id = ?, moa_upload_date = NOW()";
+                $params[] = $moa_file_url;
+                $params[] = $moa_public_id;
+            }
+            
+            $sql .= " WHERE HTE_ID = ?";
+            $params[] = $hte_id;
+            
+            $stmt = $dbo->conn->prepare($sql);
+            $result = $stmt->execute($params);
+            
+            $dbo->conn->commit();
+            return $result;
+        } catch (Exception $e) {
+            $dbo->conn->rollBack();
+            error_log("Error updating HTE details: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
     public function getCoordinatorDetails($dbo, $coordinator_id) {
         try {
             $stmt = $dbo->conn->prepare("SELECT COORDINATOR_ID, NAME, EMAIL, CONTACT_NUMBER, DEPARTMENT, PROFILE 
@@ -884,6 +989,42 @@ class attendanceDetails
             $dbo->conn->rollBack();
             error_log("Error deleting students: " . $e->getMessage());
             return false;
+        }
+    }
+
+    // Get HTE assigned to admin with MOA information for admin dashboard
+    public function getAdminHTEWithMOA($dbo, $adminId) {
+        try {
+            $sql = "SELECT 
+                        hte.HTE_ID,
+                        hte.NAME,
+                        hte.INDUSTRY,
+                        hte.ADDRESS,
+                        hte.CONTACT_EMAIL,
+                        hte.CONTACT_PERSON,
+                        hte.CONTACT_NUMBER,
+                        hte.LOGO,
+                        hte.MOA_FILE_URL,
+                        hte.MOA_PUBLIC_ID,
+                        hte.MOA_START_DATE,
+                        hte.MOA_END_DATE,
+                        hte.MOA_UPLOAD_DATE,
+                        c.NAME as COORDINATOR_NAME
+                    FROM coordinator c
+                    JOIN host_training_establishment hte ON c.HTE_ID = hte.HTE_ID
+                    WHERE c.COORDINATOR_ID = :adminId AND c.ROLE = 'ADMIN'
+                    ORDER BY hte.NAME ASC";
+            
+            $stmt = $dbo->conn->prepare($sql);
+            $stmt->execute([':adminId' => $adminId]);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            error_log("getAdminHTEWithMOA: Retrieved " . count($result) . " HTEs for admin ID: " . $adminId);
+            return $result;
+            
+        } catch (PDOException $e) {
+            error_log("Error in getAllHTEsWithMOA: " . $e->getMessage());
+            throw new Exception("Database error: " . $e->getMessage());
         }
     }
 

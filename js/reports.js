@@ -23,6 +23,19 @@ function getBaseUrl() {
     return protocol + '//' + host + basePath;
 }
 
+// Helper function to get proper image URL (Cloudinary, absolute, or local)
+function getImageUrl(filename) {
+    if (!filename) return '';
+    const f = String(filename).trim();
+    if (/^https?:\/\//i.test(f)) return f;                    // Full URL
+    if (f.startsWith('//')) return window.location.protocol + f; // Protocol-relative
+    if (f.startsWith('/')) return window.location.protocol + '//' + window.location.host + f; // Absolute path
+    if (f.includes('uploads/') || f.includes('/')) return getBaseUrl() + f; // Relative path
+    return getBaseUrl() + 'uploads/reports/' + f;               // Bare filename fallback
+}
+
+function openImagePreview(src) {
+
 $(document).ready(function() {
     // Initialize reports when the tab is clicked
     $('#reportsTab').click(function() {
@@ -192,7 +205,7 @@ function displayReportPreview(report) {
                 ${images.length > 0 ? `
                     <div class="day-images">
                         ${images.map(img => `
-                            <img src="${getBaseUrl()}uploads/reports/${img.filename}" alt="Activity image" onclick="openImagePreview(this.src)">
+                            <img src="${getImageUrl(img.filename)}" alt="Activity image" onclick="openImagePreview(this.src)">
                         `).join('')}
                     </div>
                 ` : ''}

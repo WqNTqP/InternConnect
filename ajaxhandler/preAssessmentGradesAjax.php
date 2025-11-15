@@ -1,7 +1,8 @@
 <?php
 session_start();
 header('Content-Type: application/json');
-require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php";
+require_once __DIR__ . '/../config/path_config.php';
+require_once PathConfig::getDatabasePath();
 
 $student_id = isset($_POST['student_id']) ? intval($_POST['student_id']) : 0;
 if (!$student_id) {

@@ -8,8 +8,18 @@
 </head>
 <body>
     <div class="container">
-        <h1>OJT Placement Predictor</h1>
-        <form id="predictForm">
+        <div class="header-section">
+            <h1>🎯 AI Assessment Testing Suite</h1>
+            <div class="tab-navigation">
+                <button class="tab-btn active" data-tab="prediction">🔮 Pre-Assessment Testing</button>
+                <button class="tab-btn" data-tab="postanalysis">📊 Post-Analysis Testing</button>
+            </div>
+        </div>
+
+        <!-- PREDICTION TESTING SECTION -->
+        <div id="prediction-tab" class="tab-content active">
+            <h2>Pre-Assessment & Prediction Testing</h2>
+            <form id="predictForm">
             <div class="form-section">
                 <h2>Enter Student Grades</h2>
                 <div class="grid">
@@ -33,37 +43,800 @@
                     <input type="number" name="CAP 101" placeholder="CAP 101" min="0" max="100" required>
                     <input type="number" name="CAP 102" placeholder="CAP 102" min="0" max="100" required>
                     <input type="number" name="SP 101" placeholder="SP 101" min="0" max="100" required>
-                    <input type="number" step="0.01" name="Soft Skill" placeholder="Soft Skill (1-5)" min="1" max="5" required>
-                    <input type="number" step="0.01" name="Communication Skill" placeholder="Communication Skill (1-5)" min="1" max="5" required>
+                    <input type="number" step="0.01" name="soft_skill" placeholder="Soft Skill (1-5)" min="1" max="5" required>
+                    <input type="number" step="0.01" name="communication_skill" placeholder="Communication Skill (1-5)" min="1" max="5" required>
+                    <input type="number" step="0.01" name="technical_skill" placeholder="Technical Skill (1-5)" min="1" max="5" required>
                 </div>
             </div>
-            <button type="button" id="randomizeBtn">Randomize Grades</button>
-            <button type="submit">Predict OJT Placement</button>
+            <div class="button-group">
+                <button type="button" id="randomizeBtn">🎲 Randomize All</button>
+                <button type="button" id="presetBtn">📋 Load Preset</button>
+                <button type="button" id="multiTestBtn">🔄 Multi-Test (5x)</button>
+                <button type="submit">🔮 Predict Placement</button>
+            </div>
         </form>
-    <div id="counter" style="margin-bottom:10px;"></div>
-    <div id="result" class="result"></div>
+            
+            <div class="test-controls">
+                <div id="counter" class="counter">Predictions made: <span id="count">0</span></div>
+                <button type="button" id="clearResultsBtn">🗑️ Clear Results</button>
+            </div>
+            
+            <div id="result" class="result"></div>
+        </div>
+
+        <!-- POST-ANALYSIS TESTING SECTION -->
+        <div id="postanalysis-tab" class="tab-content">
+            <h2>Post-Analysis Response Testing</h2>
+            
+            <form id="postAnalysisForm">
+                <div class="form-section">
+                    <h3>Student Information</h3>
+                    <div class="student-info-grid">
+                        <input type="text" id="postStudentId" name="student_id" placeholder="Student ID" required>
+                        <select name="ojt_placement" required>
+                            <option value="">Select OJT Placement</option>
+                            <option value="Systems Development">Systems Development</option>
+                            <option value="Technical Support">Technical Support</option>
+                            <option value="Business Operations">Business Operations</option>
+                            <option value="Research">Research</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Post-Assessment Ratings (Supervisor)</h3>
+                    <div class="rating-grid">
+                        <input type="number" step="0.01" name="post_systems_development_avg" placeholder="Systems Development (1-5)" min="1" max="5">
+                        <input type="number" step="0.01" name="post_technical_support_avg" placeholder="Technical Support (1-5)" min="1" max="5">
+                        <input type="number" step="0.01" name="post_business_operations_avg" placeholder="Business Operations (1-5)" min="1" max="5">
+                        <input type="number" step="0.01" name="post_research_avg" placeholder="Research (1-5)" min="1" max="5">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Self-Assessment Ratings (Student)</h3>
+                    <div class="rating-grid">
+                        <input type="number" step="0.01" name="self_systems_development_avg" placeholder="Systems Development (1-5)" min="1" max="5">
+                        <input type="number" step="0.01" name="self_technical_support_avg" placeholder="Technical Support (1-5)" min="1" max="5">
+                        <input type="number" step="0.01" name="self_business_operations_avg" placeholder="Business Operations (1-5)" min="1" max="5">
+                        <input type="number" step="0.01" name="self_research_avg" placeholder="Research (1-5)" min="1" max="5">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Prediction Data (Optional)</h3>
+                    <div class="prediction-grid">
+                        <textarea name="prediction_reasoning" placeholder="Original prediction reasoning..."></textarea>
+                        <textarea name="prediction_probabilities" placeholder='{"Systems Development": 45.2, "Technical Support": 30.1, "Business Operations": 15.3, "Research": 9.4}'></textarea>
+                        <textarea name="supervisor_comment" placeholder="Supervisor feedback comments..."></textarea>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" id="randomizePostBtn">🎲 Random Data</button>
+                    <button type="button" id="randomPostStudentBtn">🎯 Random Student</button>
+                    <button type="button" id="showPostScenarios">📋 Load Scenario</button>
+                    <button type="button" id="multiPostTestBtn">🔄 Multi-Test (3x)</button>
+                    <button type="button" id="testPostAnalysisBtn">📊 Generate Post-Analysis</button>
+                </div>
+            </form>
+
+            <div class="test-controls">
+                <div id="postCounter" class="counter">Post-analyses made: <span id="postCount">0</span></div>
+                <button type="button" id="clearPostResultsBtn">🗑️ Clear Results</button>
+            </div>
+
+            <div id="postResult" class="result"></div>
+        </div>
+        
+        <!-- Test Presets for prediction scenarios -->
+        <div class="presets" id="predictionPresets" style="display:none;">
+            <h3>Pre-Assessment Test Scenarios</h3>
+            <div class="preset-grid">
+                <button class="preset-btn" data-preset="high-performer">🌟 High Performer</button>
+                <button class="preset-btn" data-preset="balanced">⚖️ Balanced Student</button>
+                <button class="preset-btn" data-preset="tech-focused">💻 Tech Focused</button>
+                <button class="preset-btn" data-preset="comm-strong">💬 Communication Strong</button>
+                <button class="preset-btn" data-preset="developing">📈 Developing Skills</button>
+                <button class="preset-btn" data-preset="competitive">🏆 Competitive Scores</button>
+            </div>
+        </div>
+
+        <!-- Test Scenarios for post-analysis -->
+        <div class="scenarios" id="postScenarios" style="display:none;">
+            <h3>Post-Analysis Test Scenarios</h3>
+            <div class="scenario-grid">
+                <button class="scenario-btn" data-scenario="perfect-match">✅ Perfect Prediction Match</button>
+                <button class="scenario-btn" data-scenario="partial-match">⚡ Partial Match</button>
+                <button class="scenario-btn" data-scenario="supervisor-high">👨‍💼 Supervisor Favors Different</button>
+                <button class="scenario-btn" data-scenario="student-high">👨‍🎓 Student Self-Rates Different</button>
+                <button class="scenario-btn" data-scenario="mixed-results">🔄 Mixed Correlation</button>
+                <button class="scenario-btn" data-scenario="low-performance">📉 Below Expectations</button>
+            </div>
+        </div>
     </div>
     <script src="script.js"></script>
     <script>
     let predictCount = 0;
-    document.getElementById('predictForm').addEventListener('submit', function(e) {
-        predictCount++;
-        document.getElementById('counter').innerHTML = `Prediction count: <b>${predictCount}</b>`;
+    let postCount = 0;
+    
+    // Tab switching functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.getAttribute('data-tab');
+                
+                // Remove active class from all tabs and contents
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                btn.classList.add('active');
+                document.getElementById(`${targetTab}-tab`).classList.add('active');
+            });
+        });
     });
-    </script>
-    <script>
+    
+    // Test presets for different student profiles
+    const presets = {
+        'high-performer': {
+            grades: () => Math.floor(Math.random() * (98 - 90 + 1)) + 90,
+            skills: () => (Math.random() * (5 - 4.5) + 4.5).toFixed(2)
+        },
+        'balanced': {
+            grades: () => Math.floor(Math.random() * (87 - 80 + 1)) + 80,
+            skills: () => (Math.random() * (4.2 - 3.8) + 3.8).toFixed(2)
+        },
+        'tech-focused': {
+            grades: () => Math.floor(Math.random() * (92 - 85 + 1)) + 85,
+            skills: () => {
+                // Technical skill higher, others moderate
+                return Math.random() < 0.33 ? 
+                    (Math.random() * (4.8 - 4.2) + 4.2).toFixed(2) : 
+                    (Math.random() * (4.0 - 3.5) + 3.5).toFixed(2);
+            }
+        },
+        'comm-strong': {
+            grades: () => Math.floor(Math.random() * (85 - 78 + 1)) + 78,
+            skills: () => {
+                // Communication skill higher, others moderate
+                return Math.random() < 0.33 ? 
+                    (Math.random() * (4.7 - 4.1) + 4.1).toFixed(2) : 
+                    (Math.random() * (3.9 - 3.4) + 3.4).toFixed(2);
+            }
+        },
+        'developing': {
+            grades: () => Math.floor(Math.random() * (78 - 70 + 1)) + 70,
+            skills: () => (Math.random() * (3.5 - 2.8) + 2.8).toFixed(2)
+        },
+        'competitive': {
+            grades: () => Math.floor(Math.random() * (88 - 82 + 1)) + 82,
+            skills: () => (Math.random() * (4.3 - 3.9) + 3.9).toFixed(2)
+        }
+    };
+
+    // Post-analysis test scenarios
+    const postScenarios = {
+        'perfect-match': {
+            student_id: () => Math.floor(Math.random() * 1000) + 1,
+            placement: 'Systems Development',
+            ratings: {
+                predicted_high: () => (Math.random() * (4.8 - 4.2) + 4.2).toFixed(2),
+                others_lower: () => (Math.random() * (3.8 - 3.0) + 3.0).toFixed(2)
+            }
+        },
+        'partial-match': {
+            student_id: () => Math.floor(Math.random() * 1000) + 1,
+            placement: 'Technical Support',
+            ratings: {
+                one_high: () => (Math.random() * (4.5 - 4.0) + 4.0).toFixed(2),
+                one_moderate: () => (Math.random() * (3.8 - 3.2) + 3.2).toFixed(2),
+                others_lower: () => (Math.random() * (3.5 - 2.8) + 2.8).toFixed(2)
+            }
+        },
+        'supervisor-high': {
+            student_id: () => Math.floor(Math.random() * 1000) + 1,
+            placement: 'Business Operations',
+            ratings: {
+                supervisor_different: () => (Math.random() * (4.7 - 4.1) + 4.1).toFixed(2),
+                student_predicted: () => (Math.random() * (4.5 - 3.8) + 3.8).toFixed(2),
+                others: () => (Math.random() * (3.6 - 3.0) + 3.0).toFixed(2)
+            }
+        },
+        'student-high': {
+            student_id: () => Math.floor(Math.random() * 1000) + 1,
+            placement: 'Research',
+            ratings: {
+                student_different: () => (Math.random() * (4.6 - 4.0) + 4.0).toFixed(2),
+                supervisor_predicted: () => (Math.random() * (4.3 - 3.7) + 3.7).toFixed(2),
+                others: () => (Math.random() * (3.4 - 2.9) + 2.9).toFixed(2)
+            }
+        },
+        'mixed-results': {
+            student_id: () => Math.floor(Math.random() * 1000) + 1,
+            placement: 'Systems Development',
+            ratings: {
+                varied: () => (Math.random() * (4.2 - 3.5) + 3.5).toFixed(2)
+            }
+        },
+        'low-performance': {
+            student_id: () => Math.floor(Math.random() * 1000) + 1,
+            placement: 'Technical Support',
+            ratings: {
+                low: () => (Math.random() * (3.2 - 2.5) + 2.5).toFixed(2),
+                higher_elsewhere: () => (Math.random() * (4.1 - 3.7) + 3.7).toFixed(2)
+            }
+        }
+    };
+    
+    // Form submission handlers
+    document.getElementById('predictForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        predictCount++;
+        document.getElementById('count').textContent = predictCount;
+        
+        // Submit prediction form via AJAX
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        
+        fetch('/predict', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            const resultDiv = document.getElementById('result');
+            if (result.error) {
+                resultDiv.innerHTML += `<div class="error">❌ Error: ${result.error}</div>`;
+            } else {
+                resultDiv.innerHTML += `
+                    <div class="prediction-result">
+                        <h3>🎯 Prediction Result #${predictCount}</h3>
+                        <p><strong>Placement:</strong> ${result.placement}</p>
+                        <p><strong>Reasoning:</strong> ${result.reasoning}</p>
+                        <p><strong>Probability Analysis:</strong> ${result.prob_explanation}</p>
+                        <div class="probabilities">
+                            ${Object.entries(result.probabilities).map(([key, value]) => 
+                                `<span class="prob-item">${key}: ${value}%</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            document.getElementById('result').innerHTML += `<div class="error">❌ Network Error: ${error}</div>`;
+        });
+    });
+
+    document.getElementById('postAnalysisForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        postCount++;
+        document.getElementById('postCount').textContent = postCount;
+        
+        // Get form data and construct query string
+        const formData = new FormData(this);
+        const studentId = formData.get('student_id');
+        
+        if (!studentId) {
+            document.getElementById('postResult').innerHTML += `<div class="error">❌ Student ID is required</div>`;
+            return;
+        }
+        
+        fetch(`/post_analysis?student_id=${encodeURIComponent(studentId)}`, {
+            method: 'GET'
+        })
+        .then(response => response.json())
+        .then(result => {
+            const resultDiv = document.getElementById('postResult');
+            if (result.error) {
+                resultDiv.innerHTML += `<div class="error">❌ Error: ${result.error}</div>`;
+            } else {
+                resultDiv.innerHTML += `
+                    <div class="post-analysis-result">
+                        <h3>📊 Post-Analysis Result #${postCount}</h3>
+                        <p><strong>Student ID:</strong> ${studentId}</p>
+                        <p><strong>Predicted Placement:</strong> ${result.placement || 'N/A'}</p>
+                        <div class="analysis-section">
+                            <h4>🎯 Probability Analysis</h4>
+                            <p>${result.prob_explanation || 'No probability data available'}</p>
+                        </div>
+                        <div class="analysis-section">
+                            <h4>📈 Comparative Analysis</h4>
+                            <p>${result.comparative_analysis || 'No comparative analysis available'}</p>
+                        </div>
+                        <div class="analysis-section">
+                            <h4>🔗 Correlation Analysis</h4>
+                            <p>${result.correlation_analysis || 'No correlation analysis available'}</p>
+                        </div>
+                        <div class="analysis-section">
+                            <h4>💼 Career Recommendations</h4>
+                            <p>${result.conclusion_recommendation || 'No recommendations available'}</p>
+                        </div>
+                        ${result.supervisor_comment ? `
+                        <div class="analysis-section">
+                            <h4>👨‍💼 Supervisor Feedback</h4>
+                            <p>${result.supervisor_comment}</p>
+                        </div>` : ''}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            document.getElementById('postResult').innerHTML += `<div class="error">❌ Network Error: ${error}</div>`;
+        });
+    });
+    
+    // Randomize all fields
     document.getElementById('randomizeBtn').addEventListener('click', function() {
         const form = document.getElementById('predictForm');
         Array.from(form.elements).forEach(el => {
             if (el.type === 'number') {
-                if (el.name === 'Soft Skill' || el.name === 'Communication Skill') {
-                    el.value = (Math.random() * (5 - 4) + 4).toFixed(2);
+                if (el.name.includes('skill')) {
+                    el.value = (Math.random() * (5 - 3) + 3).toFixed(2);
                 } else {
-                    el.value = Math.floor(Math.random() * (99 - 75 + 1)) + 75;
+                    el.value = Math.floor(Math.random() * (95 - 70 + 1)) + 70;
                 }
             }
         });
     });
+    
+    // Load preset data for predictions
+    document.getElementById('presetBtn').addEventListener('click', function() {
+        const presetsDiv = document.getElementById('predictionPresets');
+        presetsDiv.style.display = presetsDiv.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Load scenario data for post-analysis
+    document.getElementById('scenarioBtn').addEventListener('click', function() {
+        const scenariosDiv = document.getElementById('postScenarios');
+        scenariosDiv.style.display = scenariosDiv.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    // Preset button handlers
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('preset-btn')) {
+            const presetType = e.target.getAttribute('data-preset');
+            const preset = presets[presetType];
+            const form = document.getElementById('predictForm');
+            
+            Array.from(form.elements).forEach(el => {
+                if (el.type === 'number') {
+                    if (el.name.includes('skill')) {
+                        el.value = preset.skills();
+                    } else {
+                        el.value = preset.grades();
+                    }
+                }
+            });
+            
+            // Hide presets after selection
+            document.getElementById('predictionPresets').style.display = 'none';
+        }
+    });
+
+    // Scenario button handlers for post-analysis
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('scenario-btn')) {
+            const scenarioType = e.target.getAttribute('data-scenario');
+            const scenario = postScenarios[scenarioType];
+            const form = document.getElementById('postAnalysisForm');
+            
+            // Set student ID
+            form.querySelector('[name="student_id"]').value = scenario.student_id();
+            form.querySelector('[name="ojt_placement"]').value = scenario.placement;
+            
+            // Set ratings based on scenario type
+            const placements = ['systems_development', 'technical_support', 'business_operations', 'research'];
+            
+            if (scenarioType === 'perfect-match') {
+                const predictedPlacement = scenario.placement.toLowerCase().replace(' ', '_');
+                placements.forEach(p => {
+                    const isTarget = p === predictedPlacement;
+                    const supRating = isTarget ? scenario.ratings.predicted_high() : scenario.ratings.others_lower();
+                    const selfRating = isTarget ? scenario.ratings.predicted_high() : scenario.ratings.others_lower();
+                    
+                    form.querySelector(`[name="post_${p}_avg"]`).value = supRating;
+                    form.querySelector(`[name="self_${p}_avg"]`).value = selfRating;
+                });
+            } else if (scenarioType === 'supervisor-high') {
+                const predictedPlacement = scenario.placement.toLowerCase().replace(' ', '_');
+                const differentPlacement = placements.find(p => p !== predictedPlacement);
+                
+                placements.forEach(p => {
+                    let supRating, selfRating;
+                    if (p === differentPlacement) {
+                        supRating = scenario.ratings.supervisor_different();
+                        selfRating = scenario.ratings.others();
+                    } else if (p === predictedPlacement) {
+                        supRating = scenario.ratings.others();
+                        selfRating = scenario.ratings.student_predicted();
+                    } else {
+                        supRating = scenario.ratings.others();
+                        selfRating = scenario.ratings.others();
+                    }
+                    
+                    form.querySelector(`[name="post_${p}_avg"]`).value = supRating;
+                    form.querySelector(`[name="self_${p}_avg"]`).value = selfRating;
+                });
+            } else {
+                // Default random generation for other scenarios
+                placements.forEach(p => {
+                    const supRating = scenario.ratings.varied ? scenario.ratings.varied() : (Math.random() * 2 + 3).toFixed(2);
+                    const selfRating = scenario.ratings.varied ? scenario.ratings.varied() : (Math.random() * 2 + 3).toFixed(2);
+                    
+                    form.querySelector(`[name="post_${p}_avg"]`).value = supRating;
+                    form.querySelector(`[name="self_${p}_avg"]`).value = selfRating;
+                });
+            }
+            
+            // Set prediction data
+            const sampleProbabilities = {
+                "Systems Development": (Math.random() * 30 + 25).toFixed(1),
+                "Technical Support": (Math.random() * 30 + 20).toFixed(1),
+                "Business Operations": (Math.random() * 25 + 15).toFixed(1),
+                "Research": (Math.random() * 20 + 10).toFixed(1)
+            };
+            
+            form.querySelector('[name="prediction_probabilities"]').value = JSON.stringify(sampleProbabilities);
+            form.querySelector('[name="prediction_reasoning"]').value = `Recommended for ${scenario.placement} based on academic performance and skill assessment.`;
+            form.querySelector('[name="supervisor_comment"]').value = `Supervisor feedback for ${scenarioType.replace('-', ' ')} scenario testing.`;
+            
+            // Hide scenarios after selection
+            document.getElementById('postScenarios').style.display = 'none';
+        }
+    });
+    
+    // Multi-test functionality (5 predictions with different data)
+    document.getElementById('multiTestBtn').addEventListener('click', async function() {
+        const button = this;
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = '🔄 Running Tests...';
+        
+        for (let i = 1; i <= 5; i++) {
+            // Randomize data
+            document.getElementById('randomizeBtn').click();
+            
+            // Add test identifier to result
+            const resultDiv = document.getElementById('result');
+            const testHeader = document.createElement('div');
+            testHeader.innerHTML = `<h3 style="color: #2563eb; margin: 20px 0 10px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">📊 Test ${i}/5</h3>`;
+            resultDiv.appendChild(testHeader);
+            
+            // Submit form
+            document.getElementById('predictForm').dispatchEvent(new Event('submit'));
+            
+            // Wait a bit between tests
+            if (i < 5) await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        button.disabled = false;
+        button.textContent = originalText;
+    });
+    
+    // Clear results
+    document.getElementById('clearResultsBtn').addEventListener('click', function() {
+        document.getElementById('result').innerHTML = '';
+        predictCount = 0;
+        document.getElementById('count').textContent = '0';
+    });
+    
+    // Post-Analysis Testing Functions
+    async function testPostAnalysis(studentId = null, showHeader = true) {
+        if (!studentId) {
+            studentId = document.getElementById('postStudentId').value || 'demo_' + Math.floor(Math.random() * 1000);
+        }
+        
+        try {
+            const response = await fetch(`http://localhost:5000/post_analysis?student_id=${studentId}&demo=true`);
+            const data = await response.json();
+            
+            const resultDiv = document.getElementById('result');
+            
+            if (showHeader) {
+                const testHeader = document.createElement('div');
+                testHeader.innerHTML = `<h3 style="color: #16a34a; margin: 20px 0 10px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">📊 Post-Analysis Result for ${studentId}</h3>`;
+                resultDiv.appendChild(testHeader);
+            }
+            
+            const analysisResult = document.createElement('div');
+            analysisResult.style.cssText = 'background: #f0fdf4; border: 1px solid #16a34a; padding: 20px; margin: 10px 0; border-radius: 8px;';
+            
+            analysisResult.innerHTML = `
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #15803d;">🎯 Predicted Placement:</strong> ${data.placement}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #15803d;">📊 Academic Reasoning:</strong><br>
+                    ${data.reasoning}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #15803d;">📈 Probability Analysis:</strong><br>
+                    ${data.prob_explanation}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #15803d;">🔍 Performance Correlation:</strong><br>
+                    ${data.correlation_analysis}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #15803d;">📋 Comparative Analysis:</strong><br>
+                    ${data.comparative_analysis}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #15803d;">🎓 Strengths Identified:</strong><br>
+                    ${data.strengths_post_assessment}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #15803d;">💼 Career Recommendation:</strong><br>
+                    ${data.conclusion_recommendation}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #15803d;">👨‍💼 Supervisor Comment:</strong><br>
+                    <em>${data.supervisor_comment}</em>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #15803d;">📊 Post-Assessment Averages:</strong><br>
+                    ${data.post_assessment_averages.map(avg => 
+                        `${avg.category}: Supervisor ${avg.supervisor_avg}/5, Self ${avg.self_avg}/5`
+                    ).join('<br>')}
+                </div>
+                <div style="font-size: 0.9em; color: #059669; margin-top: 10px;">
+                    ✨ Demo Mode: Generated realistic sample data for testing
+                </div>
+            `;
+            
+            resultDiv.appendChild(analysisResult);
+        } catch (error) {
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'background: #fef2f2; border: 1px solid #f87171; padding: 15px; margin: 10px 0; border-radius: 6px; color: #dc2626;';
+            errorDiv.innerHTML = `❌ Error testing post-analysis: ${error.message}`;
+            resultDiv.appendChild(errorDiv);
+        }
+    }
+    
+    // Post-Analysis Event Handlers
+    document.getElementById('testPostAnalysisBtn').addEventListener('click', function() {
+        testPostAnalysis();
+    });
+    
+    document.getElementById('multiPostTestBtn').addEventListener('click', async function() {
+        const button = this;
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = '🔄 Running Post-Analysis Tests...';
+        
+        for (let i = 1; i <= 3; i++) {
+            const testId = 'demo_' + Math.floor(Math.random() * 1000);
+            
+            const resultDiv = document.getElementById('result');
+            const testHeader = document.createElement('div');
+            testHeader.innerHTML = `<h3 style="color: #16a34a; margin: 20px 0 10px 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">📊 Post-Analysis Test ${i}/3</h3>`;
+            resultDiv.appendChild(testHeader);
+            
+            await testPostAnalysis(testId, false);
+            
+            if (i < 3) await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        button.disabled = false;
+        button.textContent = originalText;
+    });
+    
+    document.getElementById('randomPostStudentBtn').addEventListener('click', function() {
+        const randomId = 'demo_' + Math.floor(Math.random() * 10000);
+        document.getElementById('postStudentId').value = randomId;
+    });
+    
+    document.getElementById('randomizePostBtn').addEventListener('click', function() {
+        const form = document.getElementById('postAnalysisForm');
+        const elements = form.elements;
+        
+        // Generate random student ID
+        elements['student_id'].value = 'demo_' + Math.floor(Math.random() * 10000);
+        
+        // Random placement
+        const placements = ['Systems Development', 'Technical Support', 'Business Operations', 'Research'];
+        elements['ojt_placement'].value = placements[Math.floor(Math.random() * placements.length)];
+        
+        // Random supervisor ratings
+        elements['post_systems_development_avg'].value = (Math.random() * (5 - 2) + 2).toFixed(2);
+        elements['post_technical_support_avg'].value = (Math.random() * (5 - 2) + 2).toFixed(2);
+        elements['post_business_operations_avg'].value = (Math.random() * (5 - 2) + 2).toFixed(2);
+        elements['post_research_avg'].value = (Math.random() * (5 - 2) + 2).toFixed(2);
+        
+        // Random self ratings  
+        elements['self_systems_development_avg'].value = (Math.random() * (5 - 2) + 2).toFixed(2);
+        elements['self_technical_support_avg'].value = (Math.random() * (5 - 2) + 2).toFixed(2);
+        elements['self_business_operations_avg'].value = (Math.random() * (5 - 2) + 2).toFixed(2);
+        elements['self_research_avg'].value = (Math.random() * (5 - 2) + 2).toFixed(2);
+        
+        // Sample prediction data
+        elements['prediction_reasoning'].value = "Sample prediction reasoning for testing purposes.";
+        elements['prediction_probabilities'].value = '{"Systems Development": 45.2, "Technical Support": 30.1, "Business Operations": 15.3, "Research": 9.4}';
+        elements['supervisor_comment'].value = "Sample supervisor feedback for testing.";
+    });
+    
+    document.getElementById('testPostAnalysisBtn').addEventListener('click', function() {
+        const form = document.getElementById('postAnalysisForm');
+        const formData = new FormData(form);
+        const studentId = formData.get('student_id') || 'demo_' + Math.floor(Math.random() * 10000);
+        
+        // Add demo=true to use demo mode
+        const url = `/post_analysis?student_id=${studentId}&demo=true`;
+        
+        fetch(url)
+        .then(response => response.json())
+        .then(result => {
+            postCount++;
+            document.getElementById('postCount').textContent = postCount;
+            
+            const resultDiv = document.getElementById('postResult');
+            if (result.error) {
+                resultDiv.innerHTML += `<div class="error">❌ Error: ${result.error}</div>`;
+            } else {
+                resultDiv.innerHTML += `
+                    <div class="post-analysis-result">
+                        <h3>📊 Post-Analysis Result #${postCount}</h3>
+                        <div class="analysis-content">
+                            <h4>📈 Probability Analysis</h4>
+                            <p>${result.prob_explanation || 'No probability data available'}</p>
+                            
+                            <h4>🔄 Correlation Analysis</h4>
+                            <p>${result.correlation_analysis || 'No correlation analysis available'}</p>
+                            
+                            <h4>⚖️ Comparative Analysis</h4>
+                            <p>${result.comparative_analysis || 'No comparative analysis available'}</p>
+                            
+                            <h4>🎯 Conclusion & Recommendation</h4>
+                            <div>${result.conclusion_recommendation || 'No recommendation available'}</div>
+                            
+                            ${result.supervisor_comment ? `<h4>💼 Supervisor Comment</h4><p>${result.supervisor_comment}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            document.getElementById('postResult').innerHTML += `<div class="error">❌ Network Error: ${error}</div>`;
+        });
+    });
+    
+    document.getElementById('multiPostTestBtn').addEventListener('click', async function() {
+        const button = this;
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = '🔄 Running Tests...';
+        
+        for (let i = 1; i <= 3; i++) {
+            // Randomize data
+            document.getElementById('randomizePostBtn').click();
+            
+            // Add test identifier
+            const resultDiv = document.getElementById('postResult');
+            const testHeader = document.createElement('div');
+            testHeader.innerHTML = `<h3 style="color: #2563eb; margin: 20px 0 10px 0;">📊 Post-Analysis Test ${i}/3</h3>`;
+            resultDiv.appendChild(testHeader);
+            
+            // Submit form
+            document.getElementById('testPostAnalysisBtn').click();
+            
+            // Wait between tests
+            if (i < 3) await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        button.disabled = false;
+        button.textContent = originalText;
+    });
+    
+    document.getElementById('showPostScenarios').addEventListener('click', function() {
+        const scenarios = [
+            {
+                name: "High Performance Student",
+                ojt_placement: "Systems Development",
+                post_systems_development_avg: 4.8,
+                post_technical_support_avg: 4.5,
+                post_business_operations_avg: 4.2,
+                post_research_avg: 4.0,
+                self_systems_development_avg: 4.7,
+                self_technical_support_avg: 4.3,
+                self_business_operations_avg: 4.0,
+                self_research_avg: 3.8,
+                prediction_reasoning: "Strong technical foundation with excellent problem-solving skills.",
+                prediction_probabilities: '{"Systems Development": 85.5, "Technical Support": 10.2, "Business Operations": 3.1, "Research": 1.2}',
+                supervisor_comment: "Exceptional performance, demonstrates leadership potential and technical excellence."
+            },
+            {
+                name: "Average Performance Student", 
+                ojt_placement: "Technical Support",
+                post_systems_development_avg: 3.2,
+                post_technical_support_avg: 3.8,
+                post_business_operations_avg: 3.5,
+                post_research_avg: 3.1,
+                self_systems_development_avg: 3.4,
+                self_technical_support_avg: 3.9,
+                self_business_operations_avg: 3.6,
+                self_research_avg: 3.2,
+                prediction_reasoning: "Solid foundational skills with room for growth in specialized areas.",
+                prediction_probabilities: '{"Systems Development": 25.3, "Technical Support": 45.7, "Business Operations": 20.1, "Research": 8.9}',
+                supervisor_comment: "Good work ethic and willingness to learn, meets expectations consistently."
+            },
+            {
+                name: "Improvement Needed Student",
+                ojt_placement: "Business Operations", 
+                post_systems_development_avg: 2.5,
+                post_technical_support_avg: 2.8,
+                post_business_operations_avg: 3.1,
+                post_research_avg: 2.3,
+                self_systems_development_avg: 3.0,
+                self_technical_support_avg: 3.2,
+                self_business_operations_avg: 3.4,
+                self_research_avg: 2.8,
+                prediction_reasoning: "Basic competency established, requires additional support and development.",
+                prediction_probabilities: '{"Systems Development": 12.1, "Technical Support": 18.3, "Business Operations": 55.4, "Research": 14.2}',
+                supervisor_comment: "Shows effort and improvement over time, needs continued mentoring and skill development."
+            }
+        ];
+        
+        let scenarioHtml = '<div class="scenario-selector"><h3>📋 Select a Testing Scenario:</h3>';
+        scenarios.forEach((scenario, index) => {
+            scenarioHtml += `
+                <div class="scenario-item" onclick="loadPostScenario(${index})">
+                    <h4>${scenario.name}</h4>
+                    <p>Placement: ${scenario.ojt_placement}</p>
+                    <p>Avg Performance: ${((scenario.post_systems_development_avg + scenario.post_technical_support_avg + scenario.post_business_operations_avg + scenario.post_research_avg) / 4).toFixed(2)}</p>
+                </div>
+            `;
+        });
+        scenarioHtml += '</div>';
+        
+        document.getElementById('postResult').innerHTML = scenarioHtml;
+        
+        // Store scenarios globally
+        window.postScenarios = scenarios;
+    });
+    
+    // Initialize preset and scenario handlers
+    document.getElementById('showPresets').addEventListener('click', function() {
+        const presets = document.getElementById('predictionPresets');
+        presets.style.display = presets.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    // Global function for loading post-analysis scenarios
+    window.loadPostScenario = function(index) {
+        const scenario = window.postScenarios[index];
+        const form = document.getElementById('postAnalysisForm');
+        const elements = form.elements;
+        
+        // Load scenario data into form
+        elements['student_id'].value = 'demo_scenario_' + (index + 1);
+        elements['ojt_placement'].value = scenario.ojt_placement;
+        
+        // Supervisor ratings
+        elements['post_systems_development_avg'].value = scenario.post_systems_development_avg;
+        elements['post_technical_support_avg'].value = scenario.post_technical_support_avg;
+        elements['post_business_operations_avg'].value = scenario.post_business_operations_avg;
+        elements['post_research_avg'].value = scenario.post_research_avg;
+        
+        // Self ratings
+        elements['self_systems_development_avg'].value = scenario.self_systems_development_avg;
+        elements['self_technical_support_avg'].value = scenario.self_technical_support_avg;
+        elements['self_business_operations_avg'].value = scenario.self_business_operations_avg;
+        elements['self_research_avg'].value = scenario.self_research_avg;
+        
+        // Prediction data
+        elements['prediction_reasoning'].value = scenario.prediction_reasoning;
+        elements['prediction_probabilities'].value = scenario.prediction_probabilities;
+        elements['supervisor_comment'].value = scenario.supervisor_comment;
+        
+        // Clear the scenario selector
+        document.getElementById('postResult').innerHTML = '<div class="success">✅ Scenario loaded successfully! You can now run the post-analysis test.</div>';
+    };
     </script>
 </body>
 </html>

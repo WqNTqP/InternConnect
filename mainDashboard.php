@@ -21,8 +21,8 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
 // Function to generate student filter options based on coordinator
 function generateStudentFilterOptions($coordinatorId) {
     try {
-        $path = $_SERVER['DOCUMENT_ROOT'];
-        require_once $path."/database/database.php";
+        require_once __DIR__ . '/config/path_config.php';
+        require_once PathConfig::getDatabasePath();
         $dbo = new Database();
         
         $stmt = $dbo->conn->prepare("
@@ -54,9 +54,9 @@ function generateStudentFilterOptions($coordinatorId) {
         $displayName = $_SESSION["current_user_name"];
     } elseif(isset($_SESSION["current_user"])) {
         // For backwards compatibility, fetch name from database
-        // Old code - commented out
-        $path=$_SERVER['DOCUMENT_ROOT'];
-        require_once $path."/database/database.php";
+        // Use PathConfig for flexible path resolution
+        require_once __DIR__ . '/config/path_config.php';
+        require_once PathConfig::getDatabasePath();
         
         try {
             $db = new Database();
@@ -354,23 +354,23 @@ function generateStudentFilterOptions($coordinatorId) {
             <!-- End Report Tab Content -->
         
 <!-- Evaluation Tab Content -->
-<div id="evaluationContent" class="bg-white rounded-lg shadow-md hidden">
+<div id="evaluationContent" class="bg-white rounded-lg shadow-md hidden min-h-screen">
     <div class="border-b">
         <nav class="flex flex-wrap gap-2 md:space-x-4 px-3 md:px-6 py-3 overflow-x-auto bg-gradient-to-r from-gray-50 to-blue-50 rounded-t-lg">
             <button id="evalQuestionsTabBtn"
-                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 whitespace-nowrap active">
+                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap">
                 All Questions
             </button>
             <button id="rateTabBtn"
-                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-all duration-200 whitespace-nowrap">
+                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap">
                 Pre-Assessment
             </button>
             <button id="postAssessmentTabBtn"
-                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-all duration-200 whitespace-nowrap">
+                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap">
                 Post-Assessment
             </button>
             <button id="reviewTabBtn"
-                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-all duration-200 whitespace-nowrap">
+                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap">
                 Review
             </button>
         </nav>
@@ -494,6 +494,22 @@ function generateStudentFilterOptions($coordinatorId) {
             <!-- Prediction Tab Content -->
             <div id="predictionContent" class="hidden">
                 <div class="bg-white rounded-lg shadow-md p-3 md:p-6">
+                    <!-- Prediction Controls -->
+                    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-800 mb-2">Student Placement Prediction</h2>
+                            <p class="text-gray-600">Use machine learning to predict student placement outcomes based on pre-assessment data.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div id="predictionSpinner" class="hidden">
+                                <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                            </div>
+                            <button id="runPredictionBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 flex items-center gap-2">
+                                <i class="fas fa-brain"></i>
+                                Run ML Prediction
+                            </button>
+                        </div>
+                    </div>
                         <div class="mt-4 md:mt-6 overflow-x-auto">
                             <table id="predictionTable" class="min-w-full rounded-xl shadow-lg overflow-hidden border border-gray-200">
                                 <thead class="bg-blue-50">
@@ -881,6 +897,41 @@ function generateStudentFilterOptions($coordinatorId) {
                                             <small class="text-gray-500">Upload a logo image for the company.</small>
                                         </div>
                                     </div>
+                                    
+                                    <!-- MOA Section -->
+                                    <div class="mt-6 p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                                        <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                            <svg class="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            Memorandum of Agreement (MOA) <span class="text-red-500">*</span>
+                                        </h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div class="md:col-span-3">
+                                                <label for="moaFile" class="block text-sm font-medium text-gray-700 mb-1">MOA Document <span class="text-red-500">*</span></label>
+                                                <input type="file" id="moaFile" name="MOA_FILE" accept=".pdf" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                <small class="text-gray-500">Upload MOA PDF document (Max: 5MB, PDF only)</small>
+                                            </div>
+                                            <div>
+                                                <label for="moaStartDate" class="block text-sm font-medium text-gray-700 mb-1">MOA Start Date <span class="text-red-500">*</span></label>
+                                                <input type="date" id="moaStartDate" name="MOA_START_DATE" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                            </div>
+                                            <div>
+                                                <label for="moaEndDate" class="block text-sm font-medium text-gray-700 mb-1">MOA End Date <span class="text-red-500">*</span></label>
+                                                <input type="date" id="moaEndDate" name="MOA_END_DATE" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                            </div>
+                                            <div class="flex items-end">
+                                                <div class="w-full">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">MOA Status</label>
+                                                    <div class="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-600">
+                                                        <span id="moaStatusPreview" class="font-medium">Will be calculated automatically</span>
+                                                    </div>
+                                                    <small class="text-gray-500">Status determined by MOA validity dates</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
                                     <div class="mt-6 flex gap-4">
                                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">Add HTE</button>
                                         <button type="button" id="closeHTEForm" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md transition">Cancel</button>
@@ -1026,7 +1077,8 @@ function generateStudentFilterOptions($coordinatorId) {
                                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Address</th>
                                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact Person</th>
                                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact Number</th>
-                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
+                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">MOA Status</th>
+                                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody id="allCompaniesTableBody" class="bg-white divide-y divide-gray-200">
@@ -1056,6 +1108,107 @@ function generateStudentFilterOptions($coordinatorId) {
                                             <div class="flex gap-4 justify-end">
                                                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition">Save Logo</button>
                                                 <button type="button" id="cancelUpdateLogo" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg shadow">Cancel</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <!-- Edit HTE Modal -->
+                                <div id="editHTEModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+                                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative">
+                                        <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold" id="closeEditHTEModal">×</button>
+                                        <h3 class="text-2xl font-bold text-blue-700 mb-6 text-center">Edit Company (HTE)</h3>
+                                        <form id="editHTEForm" enctype="multipart/form-data">
+                                            <input type="hidden" id="editHteId" name="hteId">
+                                            
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                                <div>
+                                                    <label for="editHteName" class="block text-sm font-medium text-gray-700 mb-1">Company Name <span class="text-red-500">*</span></label>
+                                                    <input type="text" id="editHteName" name="NAME" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter HTE Name">
+                                                </div>
+                                                <div>
+                                                    <label for="editHteIndustry" class="block text-sm font-medium text-gray-700 mb-1">Industry <span class="text-red-500">*</span></label>
+                                                    <input type="text" id="editHteIndustry" name="INDUSTRY" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Industry">
+                                                </div>
+                                                <div>
+                                                    <label for="editHteAddress" class="block text-sm font-medium text-gray-700 mb-1">Address <span class="text-red-500">*</span></label>
+                                                    <input type="text" id="editHteAddress" name="ADDRESS" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Address">
+                                                </div>
+                                                <div>
+                                                    <label for="editHteEmail" class="block text-sm font-medium text-gray-700 mb-1">Contact Email <span class="text-red-500">*</span></label>
+                                                    <input type="email" id="editHteEmail" name="CONTACT_EMAIL" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Email">
+                                                </div>
+                                                <div>
+                                                    <label for="editHteContactPerson" class="block text-sm font-medium text-gray-700 mb-1">Contact Person <span class="text-red-500">*</span></label>
+                                                    <input type="text" id="editHteContactPerson" name="CONTACT_PERSON" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Person">
+                                                </div>
+                                                <div>
+                                                    <label for="editHteContactNumber" class="block text-sm font-medium text-gray-700 mb-1">Contact Number <span class="text-red-500">*</span></label>
+                                                    <input type="text" id="editHteContactNumber" name="CONTACT_NUMBER" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Number">
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- MOA Section -->
+                                            <div class="mt-6 p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                                                <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    Memorandum of Agreement (MOA)
+                                                </h4>
+                                                
+                                                <!-- Current MOA Status -->
+                                                <div id="currentMOASection" class="mb-4 p-3 bg-blue-50 rounded-lg">
+                                                    <h5 class="text-md font-medium text-blue-800 mb-2">Current MOA Status</h5>
+                                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                        <div>
+                                                            <span class="text-sm font-medium text-gray-600">Status:</span>
+                                                            <div id="currentMOAStatus" class="text-sm"></div>
+                                                        </div>
+                                                        <div>
+                                                            <span class="text-sm font-medium text-gray-600">Start Date:</span>
+                                                            <div id="currentMOAStartDate" class="text-sm"></div>
+                                                        </div>
+                                                        <div>
+                                                            <span class="text-sm font-medium text-gray-600">End Date:</span>
+                                                            <div id="currentMOAEndDate" class="text-sm"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mt-2" id="currentMOAFileSection" style="display:none;">
+                                                        <button type="button" id="viewCurrentMOA" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-xs">📄 View Current MOA</button>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Update MOA -->
+                                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <div class="md:col-span-3">
+                                                        <label for="editMoaFile" class="block text-sm font-medium text-gray-700 mb-1">Update MOA Document</label>
+                                                        <input type="file" id="editMoaFile" name="MOA_FILE" accept=".pdf" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                        <small class="text-gray-500">Upload new MOA PDF document (Max: 5MB, PDF only). Leave empty to keep current MOA.</small>
+                                                    </div>
+                                                    <div>
+                                                        <label for="editMoaStartDate" class="block text-sm font-medium text-gray-700 mb-1">MOA Start Date <span class="text-red-500">*</span></label>
+                                                        <input type="date" id="editMoaStartDate" name="MOA_START_DATE" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                    </div>
+                                                    <div>
+                                                        <label for="editMoaEndDate" class="block text-sm font-medium text-gray-700 mb-1">MOA End Date <span class="text-red-500">*</span></label>
+                                                        <input type="date" id="editMoaEndDate" name="MOA_END_DATE" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                    </div>
+                                                    <div class="flex items-end">
+                                                        <div class="w-full">
+                                                            <label class="block text-sm font-medium text-gray-700 mb-1">New MOA Status</label>
+                                                            <div class="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-600">
+                                                                <span id="editMoaStatusPreview" class="font-medium">Select dates to see status</span>
+                                                            </div>
+                                                            <small class="text-gray-500">Status determined by MOA validity dates</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mt-6 flex gap-4 justify-end">
+                                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition">Save Changes</button>
+                                                <button type="button" id="cancelEditHTE" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg shadow">Cancel</button>
                                             </div>
                                         </form>
                                     </div>
@@ -1109,7 +1262,48 @@ function generateStudentFilterOptions($coordinatorId) {
                                     <h2 class="text-xl md:text-2xl lg:text-3xl font-extrabold text-blue-800 tracking-tight mb-2">Post-Analysis</h2>
                                     <p class="text-sm md:text-base lg:text-lg text-gray-500 font-medium">Insights and analysis after all evaluations and predictions.</p>
                                 </div>
-                                <div id="postAnalysisContentArea" class="max-h-96 md:max-h-[500px] lg:max-h-[620px] overflow-y-auto pr-2"><!-- Post-analysis content will be dynamically rendered here --></div>
+                                <div id="postAnalysisContentArea" class="max-h-96 md:max-h-[500px] lg:max-h-[620px] overflow-y-auto pr-2">
+                                    <!-- Initial Welcome Message for Post-Analysis -->
+                                    <div class="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
+                                        <div class="bg-indigo-50 rounded-full p-8 mb-6 shadow-md">
+                                            <svg class="w-16 h-16 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="max-w-md mx-auto">
+                                            <h3 class="text-2xl font-bold text-indigo-700 mb-4">Welcome to Post-Analysis</h3>
+                                            <p class="text-gray-600 text-base leading-relaxed mb-6">
+                                                Comprehensive analysis and insights comparing pre-assessment predictions with actual OJT performance outcomes.
+                                            </p>
+                                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                                                <h4 class="text-blue-800 font-semibold mb-3">📊 What you'll find here:</h4>
+                                                <ul class="text-blue-700 text-sm space-y-2 text-left">
+                                                    <li class="flex items-start">
+                                                        <span class="inline-block w-2 h-2 bg-blue-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                                        <span>Post-assessment evaluation results and averages</span>
+                                                    </li>
+                                                    <li class="flex items-start">
+                                                        <span class="inline-block w-2 h-2 bg-blue-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                                        <span>Supervisor feedback and professional comments</span>
+                                                    </li>
+                                                    <li class="flex items-start">
+                                                        <span class="inline-block w-2 h-2 bg-blue-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                                        <span>Comparative analysis between predictions and outcomes</span>
+                                                    </li>
+                                                    <li class="flex items-start">
+                                                        <span class="inline-block w-2 h-2 bg-blue-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                                        <span>Identified strengths and areas for improvement</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <div class="mt-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4">
+                                                <p class="text-indigo-800 text-sm font-medium">
+                                                    👈 Select a student from the list to view their comprehensive post-analysis report
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1141,6 +1335,9 @@ function generateStudentFilterOptions($coordinatorId) {
     <script src="js/mainDashboard.js"></script>
 
     <script>
+        // Global coordinator ID for AJAX requests
+        const COORDINATOR_ID = <?php echo isset($_SESSION["current_user"]) ? $_SESSION["current_user"] : 'null'; ?>;
+        
         // Clear hardcoded data and load dynamic content based on coordinator
         $(document).ready(function() {
             // Clear ALL hardcoded student lists and show loading state
@@ -1179,7 +1376,8 @@ function generateStudentFilterOptions($coordinatorId) {
                 companies: false,
                 students: false,
                 predictions: false,
-                evaluation: false
+                evaluation: false,
+                control: false
             };
             
             // Load companies when attendance tab is shown
@@ -1202,6 +1400,25 @@ function generateStudentFilterOptions($coordinatorId) {
                     // Keep loading evaluation questions (for the questions tab)
                     loadEvaluationQuestions();
                     dataLoaded.evaluation = true;
+                }
+                
+                // Ensure All Questions tab is visible and active when evaluation tab is opened
+                setTimeout(function() {
+                    $('#evalQuestionsTabBtn').addClass('active');
+                    $('#rateTabBtn, #postAssessmentTabBtn, #reviewTabBtn').removeClass('active');
+                    $('#evalQuestionsTabContent').show();
+                    $('#rateTabContent, #postAssessmentTabContent, #reviewTabContent').hide();
+                }, 50);
+            });
+            
+            // Load all students when control tab is shown
+            $(document).on('click', '[data-tab="control"]', function() {
+                if (!dataLoaded.control) {
+                    // Load all students data automatically
+                    if (typeof loadAllStudentsData === 'function') {
+                        loadAllStudentsData();
+                    }
+                    dataLoaded.control = true;
                 }
             });
             
@@ -1244,71 +1461,7 @@ function generateStudentFilterOptions($coordinatorId) {
                 });
             }
             
-            // Load prediction data when prediction tab is shown
-            $(document).on('click', '[data-tab="prediction"]', function() {
-                if (!dataLoaded.predictions) {
-                    loadCoordinatorPredictions();
-                    dataLoaded.predictions = true;
-                }
-            });
-            
-            // Function to load coordinator's prediction data
-            function loadCoordinatorPredictions() {
-                let cdrid = $('#hiddencdrid').val();
-                
-                $.ajax({
-                    url: "ajaxhandler/predictionAjax.php",
-                    type: "POST",
-                    dataType: "json",
-                    data: {cdrid: cdrid, action: "getPredictions"},
-                    success: function(response) {
-                        if (response && response.success && response.data) {
-                            let tbody = '';
-                            response.data.forEach(function(student, index) {
-                                tbody += `
-                                    <tr data-row="${index}" class="hover:bg-blue-50 transition">
-                                        <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900">${student.name || ''}</td>
-                                        <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-700">${student.hte_name || ''}</td>
-                                        <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm ${student.status === 'Rated' ? 'text-green-600' : 'text-red-600'} font-semibold">
-                                            ${student.status || 'Not Rated'} <span class="ml-1">${student.status === 'Rated' ? '✔️' : '❌'}</span>
-                                        </td>
-                                        <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm">
-                                            <span class="inline-block ${student.placement ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'} font-bold px-2 md:px-3 py-1 rounded-full text-xs">
-                                                ${student.placement || 'Incomplete Data'}
-                                            </span>
-                                        </td>
-                                        <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm">
-                                            <button class="analysis-btn ${student.analysis ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 hover:bg-gray-500'} text-white px-2 md:px-4 py-1 md:py-2 rounded-lg shadow transition text-xs md:text-sm" 
-                                                    data-analysis="${encodeURIComponent(JSON.stringify(student.analysis || {}))}">
-                                                Analysis
-                                            </button>
-                                        </td>
-                                    </tr>
-                                `;
-                            });
-                            $('#predictionTable tbody').html(tbody);
-                        } else {
-                            $('#predictionTable tbody').html(`
-                                <tr>
-                                    <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                                        No prediction data available for this coordinator.
-                                    </td>
-                                </tr>
-                            `);
-                        }
-                    },
-                    error: function(e) {
-                        console.error("Error fetching prediction data:", e);
-                        $('#predictionTable tbody').html(`
-                            <tr>
-                                <td colspan="5" class="px-6 py-8 text-center text-red-500">
-                                    Error loading prediction data. Please try again.
-                                </td>
-                            </tr>
-                        `);
-                    }
-                });
-            }
+            // Note: Prediction tab loading is handled by js/mainDashboard.js
             
             // Function to load students for Review tab only (Pre-Assessment now uses new JavaScript system)
             function loadReviewStudents() {
@@ -1531,10 +1684,8 @@ function generateStudentFilterOptions($coordinatorId) {
                 loadEvaluationQuestions();
                 
                 // Ensure All Questions sub-tab is properly activated
-                $('#evalQuestionsTabBtn').removeClass('text-gray-500 hover:text-gray-700 hover:bg-gray-50')
-                                         .addClass('text-gray-900 bg-gray-100');
-                $('#rateTabBtn, #postAssessmentTabBtn, #reviewTabBtn').removeClass('text-gray-900 bg-gray-100')
-                                                                      .addClass('text-gray-500 hover:text-gray-700 hover:bg-gray-50');
+                $('#evalQuestionsTabBtn').addClass('active');
+                $('#rateTabBtn, #postAssessmentTabBtn, #reviewTabBtn').removeClass('active');
                 
                 dataLoaded.evaluation = true;
             }, 100);
@@ -1765,27 +1916,81 @@ function generateStudentFilterOptions($coordinatorId) {
                 loadHTEOptionsForStudent(sessionId);
             });
 
-            // Add HTE Form Submission
+            // MOA Date validation and status preview
+            function updateMOAStatus() {
+                const startDate = $('#moaStartDate').val();
+                const endDate = $('#moaEndDate').val();
+                const statusPreview = $('#moaStatusPreview');
+                
+                if (startDate && endDate) {
+                    const start = new Date(startDate);
+                    const end = new Date(endDate);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    if (end < start) {
+                        statusPreview.html('<span class="text-red-600">❌ Invalid: End date must be after start date</span>');
+                        return false;
+                    } else if (today > end) {
+                        statusPreview.html('<span class="text-red-600">🔴 Expired</span>');
+                    } else if (today >= start && today <= end) {
+                        statusPreview.html('<span class="text-green-600">🟢 Active</span>');
+                    } else {
+                        statusPreview.html('<span class="text-blue-600">⏳ Future (Will be active on start date)</span>');
+                    }
+                    return true;
+                } else {
+                    statusPreview.html('<span class="text-gray-600">Select both dates to see status</span>');
+                    return startDate !== '' && endDate !== '';
+                }
+            }
+            
+            // MOA date change handlers
+            $('#moaStartDate, #moaEndDate').on('change', updateMOAStatus);
+            
+            // Add HTE Form Submission with MOA support
             $('#hteForm').submit(function(e) {
                 e.preventDefault();
-                let formData = $(this).serialize();
+                
+                // Validate MOA dates first
+                if (!updateMOAStatus()) {
+                    alert('Please check MOA dates. End date must be after start date.');
+                    return;
+                }
+                
+                // Create FormData object to handle file uploads
+                let formData = new FormData(this);
+                formData.append('action', 'addHTEControl');
+                
+                // Disable submit button to prevent double submission
+                const submitBtn = $(this).find('button[type="submit"]');
+                const originalText = submitBtn.text();
+                submitBtn.prop('disabled', true).text('Adding HTE...');
 
                 $.ajax({
                     url: "ajaxhandler/attendanceAJAX.php",
                     type: "POST",
                     dataType: "json",
-                    data: formData + "&action=addHTEControl",
-                        success: function(response) {
-                            if (response.success) {
-                                alert("HTE added successfully!");
-                                $('#addHTEFormContainer').slideUp();
-                                $('#hteForm')[0].reset();
-                            } else {
-                                alert("Error adding HTE: " + response.message);
-                            }
-                        },
+                    data: formData,
+                    processData: false,  // Important for file uploads
+                    contentType: false,  // Important for file uploads
+                    success: function(response) {
+                        if (response.success) {
+                            alert("HTE added successfully!");
+                            $('#addHTEFormContainer').slideUp();
+                            $('#hteForm')[0].reset();
+                            $('#moaStatusPreview').text('Will be calculated automatically');
+                        } else {
+                            alert("Error adding HTE: " + response.message);
+                        }
+                    },
                     error: function(xhr, status, error) {
                         alert("Error adding HTE. Please try again.");
+                        console.error('HTE submission error:', xhr.responseText);
+                    },
+                    complete: function() {
+                        // Re-enable submit button
+                        submitBtn.prop('disabled', false).text(originalText);
                     }
                 });
             });
@@ -2717,6 +2922,22 @@ function generateStudentFilterOptions($coordinatorId) {
     transform: scale(1.2);
 }
 
+/* Evaluation Container Full Height */
+#evaluationContent {
+    min-height: calc(100vh - 140px); /* Account for header and padding */
+}
+
+/* Ensure the content wrapper maintains proper height */
+#evaluationContent .p-3,
+#evaluationContent .md\\:p-6 {
+    min-height: calc(100vh - 200px);
+}
+
+/* Maintain existing layout structure while adding height */
+.preassessment-content-wrapper {
+    min-height: calc(100vh - 260px);
+}
+
 /* Evaluation Tab Buttons Active State */
 #evalQuestionsTabBtn.active,
 #rateTabBtn.active,
@@ -2927,17 +3148,21 @@ function generateStudentFilterOptions($coordinatorId) {
 
 /* Prediction Analysis Modal Responsive Styles */
 #analysisModal {
-    padding: 0.5rem !important;
+    padding: 1rem !important;
 }
 
 #analysisModal > div {
-    margin: 0.5rem auto !important;
-    width: calc(100% - 1rem) !important;
-    max-width: 100% !important;
+    margin: 0 auto !important;
+    width: 90% !important;
+    max-width: 600px !important;
+    min-width: 400px !important;
 }
 
 @media (max-width: 640px) {
     #analysisModal > div {
+        width: 95% !important;
+        min-width: 300px !important;
+        max-width: 500px !important;
         padding: 1rem !important;
         border-radius: 0.75rem !important;
     }

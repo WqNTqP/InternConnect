@@ -2,8 +2,8 @@
 session_start(); // Start the session
 
 // Include database connection
-$path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . "/database/database.php"; // Adjust path as necessary
+require_once __DIR__ . '/../config/path_config.php';
+require_once PathConfig::getDatabasePath();
 
 header('Content-Type: application/json'); // Set content type to JSON
 

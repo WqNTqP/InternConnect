@@ -1,5 +1,4 @@
 <?php
-error_log('DEBUG: coordinatorWeeklyReportAjax.php loaded');
 // Configure session to work across different hostnames/IPs
 ini_set('session.cookie_domain', '');
 ini_set('session.cookie_path', '/');
@@ -9,7 +8,6 @@ ini_set('session.use_only_cookies', true);
 
 session_start();
 require_once '../database/database.php';
-require_once '../config/safe_upload.php';
 
 header('Content-Type: application/json');
 
@@ -22,7 +20,7 @@ $dbo = new Database();
 $conn = $dbo->conn;
 
 /**
- * Helper function to get proper image URL (local or Cloudinary)
+ * Helper function to generate correct image URL for both Cloudinary and local files
  */
 function getImageUrl($filename, $baseUrl) {
     if (strpos($filename, 'https://res.cloudinary.com') === 0) {
@@ -46,23 +44,20 @@ if (isset($_SESSION['student_user'])) {
     $_SESSION['user_type'] = 'student';
 }
 
-// Handle coordinator session
-if (isset($_SESSION['coordinator_user'])) {
-    $_SESSION['user_id'] = $_SESSION['coordinator_user'];
-    $_SESSION['user_type'] = 'coordinator';
+// Handle admin session from admindashboarddb.php
+if (isset($_SESSION['admin_user'])) {
+    $_SESSION['user_id'] = $_SESSION['admin_user'];
+    $_SESSION['user_type'] = 'admin';
 }
 
-
 // Check if user is logged in
-error_log('DEBUG: SESSION user_type: ' . ($_SESSION['user_type'] ?? 'unset'));
-error_log('DEBUG: SESSION user_id: ' . ($_SESSION['user_id'] ?? 'unset'));
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized access']);
     exit;
 }
 
-// Allow access for coordinator, admin, or superadmin
-if (!in_array($_SESSION['user_type'], ['coordinator', 'admin', 'SUPERADMIN'])) {
+// For admin dashboard access to weekly reports, allow admin users
+if ($_SESSION['user_type'] !== 'student' && $_SESSION['user_type'] !== 'admin') {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized access']);
     exit;
 }
@@ -96,9 +91,6 @@ try {
 }
 
 function getWeeklyReports() {
-    error_log('DEBUG: getWeeklyReports POST: ' . print_r($_POST, true));
-    error_log('DEBUG: getWeeklyReports called. POST: ' . print_r($_POST, true));
-    error_log('DEBUG: getWeeklyReports POST: ' . print_r($_POST, true));
     global $conn;
 
     $studentId = $_POST['studentId'] ?? null;
@@ -117,12 +109,14 @@ function getWeeklyReports() {
     // Build the query based on filters
     $query = "
         SELECT r.*,
-           i.SURNAME as student_name,
-           ri.image_filename, ri.day_of_week
-    FROM weekly_reports r
-    LEFT JOIN interns_details i ON r.interns_id = i.INTERNS_ID
-    LEFT JOIN report_images ri ON r.report_id = ri.report_id
-    WHERE r.approval_status = 'approved'
+       i.SURNAME as student_name,
+       ri.image_filename, 
+       ri.day_of_week
+FROM weekly_reports r
+LEFT JOIN interns_details i ON r.interns_id = i.INTERNS_ID
+LEFT JOIN report_images ri ON r.report_id = ri.report_id
+WHERE r.status = 'submitted'
+  AND r.approval_status = 'pending'
     ";
 
     $params = [];
@@ -130,29 +124,16 @@ function getWeeklyReports() {
     if ($studentId && $studentId !== 'all') {
         $query .= " AND r.interns_id = ?";
         $params[] = $studentId;
-    } else {
-        // Show all students under this coordinator
-        $coordinatorId = $_SESSION['user_id'] ?? null;
-        if ($coordinatorId) {
-            $query .= " AND r.interns_id IN (SELECT itd.INTERNS_ID FROM intern_details itd JOIN internship_needs ins ON itd.HTE_ID = ins.HTE_ID WHERE ins.COORDINATOR_ID = ?)";
-            $params[] = $coordinatorId;
-        }
     }
 
     $weekStart = $_POST['weekStart'] ?? null;
     $weekEnd = $_POST['weekEnd'] ?? null;
 
-    if ($weekStart && $weekEnd && $weekStart === $weekEnd) {
-        // If a single date is selected, find reports where the date is within the week range
-        $query .= " AND (? BETWEEN r.week_start AND r.week_end)";
-        $params[] = $weekStart;
-    } else if ($weekStart && $weekEnd) {
+    if ($weekStart && $weekEnd) {
         $query .= " AND r.week_start = ? AND r.week_end = ?";
         $params[] = $weekStart;
         $params[] = $weekEnd;
     }
-    error_log('DEBUG: SQL Query: ' . $query);
-    error_log('DEBUG: SQL Params: ' . print_r($params, true));
 
     $query .= " ORDER BY r.created_at DESC, ri.day_of_week, ri.uploaded_at";
 
@@ -160,8 +141,6 @@ function getWeeklyReports() {
     error_log("SQL Query: " . $query);
     error_log("Parameters: " . print_r($params, true));
 
-    error_log('DEBUG: SQL Query: ' . $query);
-    error_log('DEBUG: SQL Params: ' . print_r($params, true));
     $stmt = $conn->prepare($query);
     if (!$stmt) {
         error_log("Prepare failed: " . print_r($conn->errorInfo(), true));
@@ -193,28 +172,29 @@ function getWeeklyReports() {
             $currentReportId = $row['report_id'];
             $currentReport = $row;
 
-            // Process per-day content and ensure all days are present
-            $daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-            $contentPerDay = array_fill_keys($daysOfWeek, '');
+            // Process per-day content
             if (!empty($row['report_content'])) {
                 $contentData = json_decode($row['report_content'], true);
                 if (is_array($contentData)) {
-                    foreach ($daysOfWeek as $day) {
-                        if (isset($contentData[$day])) {
-                            $contentPerDay[$day] = $contentData[$day];
-                        }
-                    }
+                    $currentReport['contentPerDay'] = $contentData;
                 } else {
                     // Fallback for old format
-                    $contentPerDay['monday'] = $row['report_content'];
+                    $currentReport['contentPerDay'] = [
+                        'monday' => $row['report_content'],
+                        'tuesday' => '',
+                        'wednesday' => '',
+                        'thursday' => '',
+                        'friday' => ''
+                    ];
                 }
-            }
-            $currentReport['contentPerDay'] = $contentPerDay;
-
-            // Always include each day's description field
-            foreach ($daysOfWeek as $day) {
-                $descField = $day . '_description';
-                $currentReport[$day . 'Description'] = isset($row[$descField]) ? $row[$descField] : '';
+            } else {
+                $currentReport['contentPerDay'] = [
+                    'monday' => '',
+                    'tuesday' => '',
+                    'wednesday' => '',
+                    'thursday' => '',
+                    'friday' => ''
+                ];
             }
 
             // Initialize images per day
@@ -234,7 +214,7 @@ function getWeeklyReports() {
             $day = $row['day_of_week'] ?: 'monday'; // Default to monday if no day specified
             $imageData = [
                 'filename' => $row['image_filename'],
-                'url' => getImageUrl($row['image_filename'], $baseUrl)
+                'url' => $baseUrl . 'uploads/reports/' . $row['image_filename']
             ];
 
             if (isset($currentReport['imagesPerDay'][$day])) {
@@ -363,7 +343,7 @@ function getReportByWeekDates($studentId, $weekStart, $weekEnd) {
     foreach ($rows as $row) {
         if (!empty($row['image_filename'])) {
             $day = $row['day_of_week'] ?: 'monday'; // Default to monday if no day specified
-            $imageUrl = getImageUrl($row['image_filename'], $baseUrl);
+            $imageUrl = $baseUrl . 'uploads/reports/' . $row['image_filename'];
             $imagesPerDay[$day][] = [
                 'filename' => $row['image_filename'],
                 'url' => $imageUrl
@@ -686,7 +666,7 @@ function getReportByWeek($studentId, $week) {
     foreach ($rows as $row) {
         if (!empty($row['image_filename'])) {
             $day = $row['day_of_week'] ?: 'monday'; // Default to monday if no day specified
-            $imageUrl = getImageUrl($row['image_filename'], $baseUrl);
+            $imageUrl = $baseUrl . 'uploads/reports/' . $row['image_filename'];
             $imagesPerDay[$day][] = [
                 'filename' => $row['image_filename'],
                 'url' => $imageUrl
@@ -783,7 +763,7 @@ function getSubmittedReports($studentId) {
             $day = $row['day_of_week'] ?: 'monday'; // Default to monday if no day specified
             $imageData = [
                 'filename' => $row['image_filename'],
-                'url' => getImageUrl($row['image_filename'], $baseUrl)
+                'url' => $baseUrl . 'uploads/reports/' . $row['image_filename']
             ];
 
             if (isset($currentReport['imagesPerDay'][$day])) {
@@ -884,35 +864,49 @@ function insertReportImages($reportId, $images) {
 
 function handleImageUploads($files) {
     $uploadedImages = [];
+    
+    // Include Cloudinary configuration
+    $path = $_SERVER['DOCUMENT_ROOT'];
+    $basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+    require_once $basePath . '/config/cloudinary.php';
+    
+    $cloudinary = getCloudinaryUploader();
+    
     foreach ($files['name'] as $index => $name) {
         if ($files['error'][$index] === UPLOAD_ERR_OK) {
             $tmpName = $files['tmp_name'][$index];
             $fileSize = $files['size'][$index];
             $fileType = $files['type'][$index];
-
+            
             // Validate file type
             $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
             if (!in_array($fileType, $allowedTypes)) {
                 continue;
             }
-
+            
             // Validate file size (5MB max)
             if ($fileSize > 5 * 1024 * 1024) {
                 continue;
             }
-
-            // Cloud-first upload
-            $uploadResult = safeUploadImage($tmpName, $name, 'uploads', 'reports', true);
-            if (!empty($uploadResult['success'])) {
+            
+            // Generate unique public ID
+            $publicId = 'report_' . uniqid() . '_' . time();
+            
+            // Upload to Cloudinary
+            $uploadResult = $cloudinary->uploadImage($tmpName, 'internconnect/reports', $publicId);
+            
+            if ($uploadResult['success']) {
                 $uploadedImages[] = [
-                    'filename' => $uploadResult['url'],
+                    'filename' => $uploadResult['url'], // Store Cloudinary URL
                     'original_name' => $name
                 ];
+                error_log("Report image uploaded to Cloudinary: " . $uploadResult['url']);
             } else {
-                error_log('Cloud upload failed (handleImageUploads): ' . ($uploadResult['error'] ?? 'unknown error'));
+                error_log("Cloudinary upload failed: " . $uploadResult['error']);
             }
         }
     }
+    
     return $uploadedImages;
 }
 
@@ -927,7 +921,11 @@ function handleImageUploadsPerDay($files) {
     // Debug: Log the entire $_FILES structure
     error_log("handleImageUploadsPerDay called with files: " . print_r($files, true));
 
-    // Cloud-first uploads handled via safeUploadImage; no local directory needed
+    $uploadDir = '../uploads/reports/';
+    if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+        error_log("Created upload directory: $uploadDir");
+    }
 
     foreach ($days as $day) {
         $uploadedImagesPerDay[$day] = [];
@@ -962,16 +960,29 @@ function handleImageUploadsPerDay($files) {
                         continue;
                     }
 
-                    // Cloud-first upload per day
-                    $uploadResult = safeUploadImage($tmpName, $name, 'uploads', 'reports', true);
-                    if (!empty($uploadResult['success'])) {
+                    // Use safe upload with Cloudinary support
+                    $path = $_SERVER['DOCUMENT_ROOT'];
+                    $basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+                    require_once $basePath."/config/safe_upload.php";
+                    
+                    $uploadResult = safeUploadImage(
+                        $tmpName,
+                        $name,
+                        'uploads',
+                        'reports',
+                        true // Require Cloudinary - fail if not available to prevent data loss
+                    );
+
+                    if ($uploadResult['success']) {
                         $uploadedImagesPerDay[$day][] = [
-                            'filename' => $uploadResult['url'],
+                            'filename' => $uploadResult['url'], // Always URL since we require Cloudinary
                             'original_name' => $name
                         ];
-                        error_log("Cloud upload successful for $day - URL: {$uploadResult['url']}");
+                        error_log("Report image uploaded to Cloudinary: " . $uploadResult['url'] . " for day: $day");
                     } else {
-                        error_log("Cloud upload failed for $day: " . ($uploadResult['error'] ?? 'unknown error'));
+                        error_log("Report image upload failed (Cloudinary required): " . ($uploadResult['error'] ?? 'Unknown error'));
+                        // Don't continue processing this file - fail the entire upload batch
+                        throw new Exception("Report image upload failed: " . ($uploadResult['error'] ?? 'Cloud storage unavailable'));
                     }
                 } else {
                     error_log("File upload error code: " . $files['images']['error'][$dayKey][$index] . " for file $name");
@@ -1064,7 +1075,12 @@ function insertReportImagesPerDay($reportId, $imagesPerDay) {
         VALUES (?, ?, ?, CURRENT_TIMESTAMP)
     ");
 
-    // Cloud-first uploads handled via safeUploadImage; no local directory needed
+    // Create upload directory if it doesn't exist
+    $uploadDir = '../uploads/reports/';
+    if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+        error_log("Created upload directory: $uploadDir");
+    }
 
     $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
@@ -1081,17 +1097,25 @@ function insertReportImagesPerDay($reportId, $imagesPerDay) {
                 // Handle new uploads (with tmp_name)
                 if (isset($image['tmp_name']) && !empty($image['tmp_name'])) {
                     try {
-                        $originalName = $image['original_name'] ?? ($image['name'] ?? 'image.jpg');
-                        $uploadResult = safeUploadImage($image['tmp_name'], $originalName, 'uploads', 'reports', true);
-                        if (!empty($uploadResult['success'])) {
-                            $filename = $uploadResult['url']; // Store Cloud URL
-                            error_log("Cloud upload successful for day: $day - URL: {$filename}");
+                        // Generate unique filename
+                        $originalName = $image['original_name'] ?? 'image.jpg';
+                        $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+                        if (empty($extension)) {
+                            $extension = 'jpg'; // Default extension
+                        }
+                        $uniqueName = uniqid() . '_' . $reportId . '_' . $day . '.' . $extension;
+
+                        // Move uploaded file to permanent location
+                        $destinationPath = $uploadDir . $uniqueName;
+                        if (move_uploaded_file($image['tmp_name'], $destinationPath)) {
+                            $filename = $uniqueName;
+                            error_log("Successfully moved uploaded file to: $destinationPath for day: $day");
                         } else {
-                            error_log("Cloud upload failed for day: $day - " . ($uploadResult['error'] ?? 'unknown error'));
+                            error_log("Failed to move uploaded file from {$image['tmp_name']} to $destinationPath");
                             continue;
                         }
                     } catch (Exception $e) {
-                        error_log("Failed to process uploaded file (cloud): " . $e->getMessage());
+                        error_log("Failed to process uploaded file: " . $e->getMessage());
                         continue;
                     }
                 }

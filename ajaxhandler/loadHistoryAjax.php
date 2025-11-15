@@ -1,6 +1,7 @@
 <?php
 session_start();
-require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php";
+require_once __DIR__ . '/../config/path_config.php';
+require_once PathConfig::getDatabasePath();
 
 header('Content-Type: application/json');
 

@@ -342,6 +342,7 @@ $(function () {
             $('#evaluationTabContent').show();
         } else if (tabId === 'contralTab') {
             $('#contralTabContent').show();
+            loadCompaniesMOAData(); // Load MOA data when control tab is opened
         }
         
         // Update active tab
@@ -394,7 +395,14 @@ $(function () {
                 success: function (response) {
                     if (response.status === 'success') {
                         alert(response.message); // Display success message
-                        location.reload(); // Reload the page to reflect changes
+                        // Remove the approved record from the table
+                        $(`button[onclick="approveAttendance(${recordId})"]`).closest('tr').fadeOut(300, function() {
+                            $(this).remove();
+                            // Check if there are any remaining records
+                            if ($('#pendingTabContent table tbody tr').length === 0) {
+                                $('#pendingTabContent table tbody').append('<tr><td colspan="4">No pending attendance records found.</td></tr>');
+                            }
+                        });
                     } else {
                         alert(`Error: ${response.message}`); // Display error message
                     }
@@ -423,7 +431,14 @@ $(function () {
                 success: function (response) {
                     if (response.status === 'success') {
                         alert(response.message); // Display success message
-                        location.reload(); // Reload the page to reflect changes
+                        // Remove the declined record from the table
+                        $(`button[onclick="deletePendingAttendance(${recordId})"]`).closest('tr').fadeOut(300, function() {
+                            $(this).remove();
+                            // Check if there are any remaining records
+                            if ($('#pendingTabContent table tbody tr').length === 0) {
+                                $('#pendingTabContent table tbody').append('<tr><td colspan="4">No pending attendance records found.</td></tr>');
+                            }
+                        });
                     } else {
                         alert(`Error: ${response.message}`); // Display error message
                     }
@@ -1648,3 +1663,216 @@ function showChangePasswordModal() {
         });
     });
 }
+
+// MOA Status Calculation Utility (reused from mainDashboard.js)
+function calculateMOAStatus(startDate, endDate) {
+    if (!startDate || !endDate) {
+        return { status: 'No MOA', color: '#6c757d' };
+    }
+    
+    const today = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Remove time part for accurate comparison
+    today.setHours(0, 0, 0, 0);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    
+    if (today < start) {
+        return { status: 'Future', color: '#17a2b8' };
+    } else if (today >= start && today <= end) {
+        // Check if expiring within 30 days
+        const daysUntilExpiry = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+        if (daysUntilExpiry <= 30) {
+            return { status: 'Expiring Soon', color: '#ffc107' };
+        }
+        return { status: 'Active', color: '#28a745' };
+    } else {
+        return { status: 'Expired', color: '#dc3545' };
+    }
+}
+
+// Load admin's assigned company MOA data for admin control panel
+function loadCompaniesMOAData() {
+    // Get admin ID from the userName data attribute
+    const adminId = $('#userName').data('admin-id');
+    
+    if (!adminId) {
+        $('#companiesMOATableBody').html(`
+            <tr>
+                <td colspan="6" style="padding: 40px; text-align: center; color: #dc3545;">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
+                        <p>Admin ID not found. Please log in again.</p>
+                    </div>
+                </td>
+            </tr>
+        `);
+        return;
+    }
+    
+    $.ajax({
+        url: 'ajaxhandler/attendanceAJAX.php',
+        type: 'POST',
+        dataType: 'json',
+        data: { action: 'getAllHTEList', adminId: adminId }, // Get admin's assigned HTE
+        beforeSend: function() {
+            $('#companiesMOATableBody').html(`
+                <tr>
+                    <td colspan="6" style="padding: 40px; text-align: center; color: #666;">
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #007bff;"></i>
+                            <p>Loading companies...</p>
+                        </div>
+                    </td>
+                </tr>
+            `);
+        },
+        success: function(response) {
+            if (response.success && response.htes && Array.isArray(response.htes)) {
+                if (response.htes.length > 0) {
+                    renderCompaniesMOATable(response.htes);
+                    updateMOAStatistics(response.htes);
+                } else {
+                    $('#companiesMOATableBody').html(`
+                        <tr>
+                            <td colspan="6" style="padding: 40px; text-align: center; color: #666;">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <i class="fas fa-building" style="font-size: 24px; color: #6c757d;"></i>
+                                    <p>No company assigned to your account</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
+                }
+            } else {
+                $('#companiesMOATableBody').html(`
+                    <tr>
+                        <td colspan="6" style="padding: 40px; text-align: center; color: #dc3545;">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
+                                <p>Error loading company: ${response.message || 'Unknown error'}</p>
+                            </div>
+                        </td>
+                    </tr>
+                `);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading companies:', error);
+            $('#companiesMOATableBody').html(`
+                <tr>
+                    <td colspan="6" style="padding: 40px; text-align: center; color: #dc3545;">
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
+                            <p>Error loading your assigned company. Please try again.</p>
+                        </div>
+                    </td>
+                </tr>
+            `);
+        }
+    });
+}
+
+// Render companies MOA table
+function renderCompaniesMOATable(companies) {
+    let html = '';
+    
+    companies.forEach(function(company) {
+        const moaStatus = calculateMOAStatus(company.MOA_START_DATE, company.MOA_END_DATE);
+        
+        // Format dates
+        let moaDatesText = '-';
+        if (company.MOA_START_DATE && company.MOA_END_DATE) {
+            const startDate = new Date(company.MOA_START_DATE).toLocaleDateString();
+            const endDate = new Date(company.MOA_END_DATE).toLocaleDateString();
+            moaDatesText = `${startDate} - ${endDate}`;
+        }
+        
+        // MOA view button
+        let moaViewBtn = '';
+        if (company.MOA_FILE_URL) {
+            moaViewBtn = `<button class="view-moa-btn-admin" data-moa="${company.MOA_FILE_URL}" 
+                style="padding: 4px 8px; background: #17a2b8; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px;">
+                <i class="fas fa-file-pdf"></i> View MOA
+            </button>`;
+        }
+        
+        html += `
+            <tr data-company-id="${company.HTE_ID}" style="border-bottom: 1px solid #eee;">
+                <td style="padding: 12px; color: #333;">${company.NAME || '-'}</td>
+                <td style="padding: 12px; color: #666;">${company.INDUSTRY || '-'}</td>
+                <td style="padding: 12px; color: #666;">${company.CONTACT_PERSON || '-'}</td>
+                <td style="padding: 12px;">
+                    <span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; 
+                        background-color: ${moaStatus.color}20; color: ${moaStatus.color};">
+                        ${moaStatus.status}
+                    </span>
+                </td>
+                <td style="padding: 12px; color: #666; font-size: 14px;">${moaDatesText}</td>
+                <td style="padding: 12px;">
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        ${moaViewBtn}
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    $('#companiesMOATableBody').html(html);
+}
+
+// Note: Company filter not needed for admin - they only see their assigned company
+
+// Update MOA statistics
+function updateMOAStatistics(companies) {
+    let activeMOAs = 0;
+    let expiringSoonMOAs = 0;
+    let expiredMOAs = 0;
+    let noMOACompanies = 0;
+    
+    companies.forEach(function(company) {
+        const moaStatus = calculateMOAStatus(company.MOA_START_DATE, company.MOA_END_DATE);
+        
+        switch(moaStatus.status) {
+            case 'Active':
+                activeMOAs++;
+                break;
+            case 'Expiring Soon':
+                expiringSoonMOAs++;
+                break;
+            case 'Expired':
+                expiredMOAs++;
+                break;
+            case 'No MOA':
+                noMOACompanies++;
+                break;
+        }
+    });
+    
+    $('#activeMOAs').text(activeMOAs);
+    $('#expiringSoonMOAs').text(expiringSoonMOAs);
+    $('#expiredMOAs').text(expiredMOAs);
+    $('#noMOACompanies').text(noMOACompanies);
+}
+
+// Event handlers for admin control panel
+$(document).ready(function() {
+    // Refresh companies button
+    $(document).on('click', '#refreshCompaniesBtn', function() {
+        loadCompaniesMOAData();
+    });
+    
+    // No company filter needed - admin only sees their assigned company
+    
+    // MOA view button (read-only for admin)
+    $(document).on('click', '.view-moa-btn-admin', function() {
+        const moaPath = $(this).data('moa');
+        if (moaPath) {
+            window.open(moaPath, '_blank');
+        }
+    });
+    
+    // Company details view removed - unnecessary for admin interface
+});

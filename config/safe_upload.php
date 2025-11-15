@@ -13,8 +13,8 @@ function isRenderEnvironment() {
 }
 
 // Load Cloudinary configuration for all environments
-$path = $_SERVER['DOCUMENT_ROOT'];
-$basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+require_once __DIR__ . '/path_config.php';
+$basePath = PathConfig::getProjectPath();
 
 if (file_exists($basePath . '/config/cloudinary.php')) {
     require_once $basePath . '/config/cloudinary.php';
@@ -81,10 +81,8 @@ function safeUploadImage($tempFile, $originalName, $folder, $subfolder = '', $re
         // Fallback to local storage
         error_log("Using local storage fallback for: " . $originalName);
         
-        $path = $_SERVER['DOCUMENT_ROOT'];
-        $basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
-        
-        $uploadDir = $basePath . '/' . trim($folder, '/') . '/';
+        $projectPath = PathConfig::getProjectPath();
+        $uploadDir = $projectPath . '/' . trim($folder, '/') . '/';
         if ($subfolder) {
             $uploadDir .= trim($subfolder, '/') . '/';
         }
