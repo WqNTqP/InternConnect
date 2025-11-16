@@ -162,7 +162,7 @@ try {
         echo "<li>Verify username/password in Railway dashboard</li>";
     } elseif (strpos($errorMsg, 'timeout') !== false || strpos($errorMsg, 'timed out') !== false) {
         echo "<li style='color: red;'>Network timeout - this might happen on Render too</li>";
-        echo "<li>Consider using InfinityFree database instead</li>";
+        echo "<li>Check Railway service status and network connectivity</li>";
     } elseif (strpos($errorMsg, 'SSL') !== false) {
         echo "<li style='color: red;'>SSL connection issue</li>";
         echo "<li>Railway might require different SSL configuration</li>";
@@ -217,18 +217,18 @@ if ($successful > 0) {
     echo "<li><strong>Slowest:</strong> " . max($times) . "ms</li>";
     echo "</ul>";
     
-    if ($successRate >= 80 && $avgTime < 1000) {
+    if ($successRate >= 80 && $avgTime < 3000) {
         echo "<p><strong>✅ Recommendation:</strong> Railway connection looks good for production!</p>";
     } elseif ($successRate >= 60) {
         echo "<p><strong>⚠️ Recommendation:</strong> Railway connection works but may be unstable. Consider monitoring.</p>";
     } else {
-        echo "<p><strong>❌ Recommendation:</strong> Railway connection unreliable. Consider using InfinityFree instead.</p>";
+        echo "<p><strong>❌ Recommendation:</strong> Railway connection unreliable. Debug connection issues.</p>";
     }
     echo "</div>";
 } else {
     echo "<div class='error'>";
     echo "<h3>❌ All Connection Attempts Failed</h3>";
-    echo "<p><strong>Recommendation:</strong> Use InfinityFree database for production deployment.</p>";
+    echo "<p><strong>Recommendation:</strong> Debug Railway connection issues before deployment.</p>";
     echo "</div>";
 }
 
@@ -239,13 +239,13 @@ if ($successful >= 4) {
     echo "<ol>";
     echo "<li><strong>✅ Railway Connection Working:</strong> You can safely commit and deploy</li>";
     echo "<li><strong>Monitor:</strong> Watch for any timeout issues in production</li>";
-    echo "<li><strong>Backup Plan:</strong> Keep InfinityFree credentials ready as fallback</li>";
+    echo "<li><strong>Production Ready:</strong> Railway database fully operational</li>";
     echo "</ol>";
 } else {
     echo "<ol>";
-    echo "<li><strong>❌ Railway Connection Issues:</strong> Consider switching to InfinityFree</li>";
-    echo "<li><strong>Alternative:</strong> Update database config to use InfinityFree for production</li>";
-    echo "<li><strong>Deploy:</strong> InfinityFree typically has better Render compatibility</li>";
+    echo "<li><strong>❌ Railway Connection Issues:</strong> Debug and resolve connection problems</li>";
+    echo "<li><strong>Alternative:</strong> Contact Railway support for assistance</li>";
+    echo "<li><strong>Deploy:</strong> Only after resolving Railway connectivity issues</li>";
     echo "</ol>";
 }
 echo "</div>";

@@ -342,7 +342,7 @@ try {
         echo "<li>🔑 Recommendation: Verify Railway database credentials</li>";
     } elseif (strpos($errorMsg, 'timeout') !== false || strpos($errorMsg, 'timed out') !== false) {
         echo "<li class='status-error'>❌ Network timeout - connection too slow</li>";
-        echo "<li>🌐 Recommendation: Consider InfinityFree for better Render compatibility</li>";
+        echo "<li>🌐 Recommendation: Check Railway service status or network connectivity</li>";
     } elseif (strpos($errorMsg, 'ssl') !== false) {
         echo "<li class='status-error'>❌ SSL/TLS configuration issue</li>";
         echo "<li>🔒 Recommendation: Check SSL certificate paths</li>";
@@ -372,7 +372,7 @@ if ($successRate >= 85) {
     echo "<ul>";
     echo "<li><strong>Proceed with Railway database</strong> - All systems operational</li>";
     echo "<li><strong>Monitor performance</strong> - Set up logging for production issues</li>";
-    echo "<li><strong>Backup plan ready</strong> - Keep InfinityFree credentials as fallback</li>";
+    echo "<li><strong>Production ready</strong> - Railway database fully configured</li>";
     echo "</ul>";
 } elseif ($successRate >= 60) {
     echo "<div class='warning'>";
@@ -383,8 +383,8 @@ if ($successRate >= 85) {
     echo "<h4>⚠️ Deployment Recommendation:</h4>";
     echo "<ul>";
     echo "<li><strong>Railway may work but watch for issues</strong></li>";
-    echo "<li><strong>Consider InfinityFree</strong> - More reliable for Render hosting</li>";
-    echo "<li><strong>Test thoroughly</strong> - Monitor closely in production</li>";
+    echo "<li><strong>Monitor closely</strong> - Check for timeout or connection issues</li>";
+    echo "<li><strong>Test thoroughly</strong> - Verify stability in production environment</li>";
     echo "</ul>";
 } else {
     echo "<div class='error'>";
@@ -394,9 +394,9 @@ if ($successRate >= 85) {
     echo "</div>";
     echo "<h4>❌ Deployment Recommendation:</h4>";
     echo "<ul>";
-    echo "<li><strong>DO NOT USE Railway for production</strong></li>";
-    echo "<li><strong>Switch to InfinityFree database</strong> - Better Render compatibility</li>";
-    echo "<li><strong>Test InfinityFree connection</strong> - More reliable alternative</li>";
+    echo "<li><strong>Railway connection issues detected</strong></li>";
+    echo "<li><strong>Check Railway service status</strong> - Verify database is running</li>";
+    echo "<li><strong>Review network connectivity</strong> - Test from different locations</li>";
     echo "</ul>";
 }
 
@@ -410,9 +410,9 @@ if ($successRate >= 85) {
     echo "<tr><td>🚀 Deploy to Render with Railway</td><td class='status-good'>GO</td><td>HIGH</td></tr>";
     echo "<tr><td>📊 Set up production monitoring</td><td class='status-warning'>TODO</td><td>MEDIUM</td></tr>";
 } else {
-    echo "<tr><td>🔄 Switch to InfinityFree database</td><td class='status-error'>NEEDED</td><td>HIGH</td></tr>";
-    echo "<tr><td>🧪 Test InfinityFree connection</td><td class='status-warning'>TODO</td><td>HIGH</td></tr>";
-    echo "<tr><td>📝 Update database configuration</td><td class='status-warning'>TODO</td><td>MEDIUM</td></tr>";
+    echo "<tr><td>🔧 Debug Railway connection</td><td class='status-error'>NEEDED</td><td>HIGH</td></tr>";
+    echo "<tr><td>📞 Contact Railway support</td><td class='status-warning'>TODO</td><td>HIGH</td></tr>";
+    echo "<tr><td>📝 Check service status</td><td class='status-warning'>TODO</td><td>MEDIUM</td></tr>";
 }
 
 echo "</table>";

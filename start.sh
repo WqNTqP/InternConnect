@@ -24,7 +24,7 @@ export FLASK_ENV=production
 export PYTHONUNBUFFERED=1
 
 # Set database environment variables if not set
-export DB_HOST=${DB_HOST:-sql102.infinityfree.com:3306}
+export DB_HOST=${DB_HOST:-mainline.proxy.rlwy.net:31782}
 export DB_USERNAME=${DB_USERNAME:-sql3806785}
 export DB_PASSWORD=${DB_PASSWORD:-DAl9FGjxvF}
 export DB_NAME=${DB_NAME:-sql3806785}

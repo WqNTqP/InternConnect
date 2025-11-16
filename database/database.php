@@ -6,103 +6,101 @@ private $servername;
 private $username;
 private $password;
 private $dbname;
-private $fallbackConfig;
 public $conn = null;
 
 public function __construct() {
-    // Load .env file if it exists (for local development)
+    // Load .env file for configuration
     $this->loadEnvFile();
     
-    // Use environment variables for production, fallback to local values for development
-    // On Render, check if we're in production environment
-    $isProduction = isset($_SERVER['RENDER']) || !file_exists(__DIR__ . '/../.env');
+    // Always use Railway database - production ready configuration
+    $this->servername = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'mainline.proxy.rlwy.net:31782';
+    $this->username = $_ENV['DB_USERNAME'] ?? getenv('DB_USERNAME') ?: 'root';
+    $this->password = $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: 'LYeUTqrnaDxpSAdWiirrGhFAcVVyNMGJ';
+    $this->dbname = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'railway';
     
-    if ($isProduction) {
-        // Production: Use Railway database with proper SSL configuration
-        $this->servername = getenv('DB_HOST') ?: 'mainline.proxy.rlwy.net:31782';
-        $this->username = getenv('DB_USERNAME') ?: 'root';
-        $this->password = getenv('DB_PASSWORD') ?: 'LYeUTqrnaDxpSAdWiirrGhFAcVVyNMGJ';
-        $this->dbname = getenv('DB_NAME') ?: 'railway';
-    } else {
-        // Local development: Try localhost first, fallback to live DB if needed
-        $this->servername = $_ENV['DB_HOST'] ?? 'localhost:3306';
-        $this->username = $_ENV['DB_USERNAME'] ?? 'root';
-        $this->password = $_ENV['DB_PASSWORD'] ?? '';
-        $this->dbname = $_ENV['DB_NAME'] ?? 'attendancetrackernp';
-    }
+    // Log environment detection for debugging
+    error_log("Railway DB Config - Host: {$this->servername}, DB: {$this->dbname}, User: {$this->username}");
+    error_log("Environment: " . (isset($_SERVER['RENDER']) ? 'Render Production' : 'Local Development'));
     
-    // Store fallback credentials for Railway database (local development)
-    $this->fallbackConfig = [
-        'servername' => 'mainline.proxy.rlwy.net:31782',
-        'username' => 'root',
-        'password' => 'LYeUTqrnaDxpSAdWiirrGhFAcVVyNMGJ',
-        'dbname' => 'railway'
-    ];
-    
-    // Connection established using environment variables
-    
+    $this->connect();
+}
+
+private function connect() {
     try {
-        // Handle port separately if needed
+        // Parse host and port
         $hostParts = explode(':', $this->servername);
         $hostname = $hostParts[0];
         $port = isset($hostParts[1]) ? $hostParts[1] : 3306;
         
-        // Add connection timeout and SSL options for Railway external connections
+        // Railway-optimized connection options
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_TIMEOUT => 60, // Increased timeout for Railway connection
+            PDO::ATTR_TIMEOUT => 60, // Extended timeout for Railway external connections
             PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4",
             PDO::ATTR_PERSISTENT => false,
-            PDO::ATTR_EMULATE_PREPARES => false
+            PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
         ];
         
-        // Add SSL configuration for Railway external connections (production only)
-        if ($isProduction && strpos($this->servername, 'railway') !== false) {
-            $options[PDO::MYSQL_ATTR_SSL_CA] = '/etc/ssl/certs/ca-certificates.crt';
+        // Add SSL configuration for Railway external connections
+        if (strpos($this->servername, 'railway') !== false || strpos($this->servername, 'rlwy.net') !== false) {
+            // Try multiple SSL certificate paths for different environments
+            $sslPaths = [
+                '/etc/ssl/certs/ca-certificates.crt', // Ubuntu/Debian (Render)
+                '/etc/pki/tls/certs/ca-bundle.crt',   // CentOS/RHEL
+                '/usr/local/share/certs/ca-root-nss.crt', // FreeBSD
+                '/etc/ssl/cert.pem' // macOS
+            ];
+            
+            $sslFound = false;
+            foreach ($sslPaths as $sslPath) {
+                if (file_exists($sslPath)) {
+                    $options[PDO::MYSQL_ATTR_SSL_CA] = $sslPath;
+                    $sslFound = true;
+                    error_log("Using SSL certificate: {$sslPath}");
+                    break;
+                }
+            }
+            
+            if (!$sslFound) {
+                error_log("No SSL certificate found, attempting connection without SSL CA file");
+            }
+            
             $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
         }
         
-        $dsn = "mysql:host=$hostname;port=$port;dbname=$this->dbname;charset=utf8mb4";
+        $dsn = "mysql:host=$hostname;port=$port;dbname={$this->dbname};charset=utf8mb4";
         
-        // For Railway connections, try SSL first, fallback to non-SSL
-        if ($isProduction && strpos($this->servername, 'railway') !== false) {
-            try {
-                $this->conn = new PDO($dsn, $this->username, $this->password, $options);
-            } catch (PDOException $sslError) {
-                // If SSL connection fails, try without SSL
-                error_log("Railway SSL connection failed, trying without SSL: " . $sslError->getMessage());
-                unset($options[PDO::MYSQL_ATTR_SSL_CA]);
-                unset($options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT]);
-                $this->conn = new PDO($dsn, $this->username, $this->password, $options);
-            }
-        } else {
+        error_log("Attempting Railway connection with DSN: {$dsn}");
+        error_log("SSL options present: " . (isset($options[PDO::MYSQL_ATTR_SSL_CA]) ? 'Yes' : 'No'));
+        
+        // Try SSL connection first, fallback to non-SSL if needed
+        try {
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
-        }
-        
-        //echo "connected successfully";
-      } catch(PDOException $e) {
-        error_log("Primary database connection failed: " . $e->getMessage());
-        error_log("Host: $hostname:$port, Database: " . $this->dbname . ", Username: " . $this->username);
-        
-        // If local connection fails and we have fallback config, try live database
-        if (!$isProduction && $this->fallbackConfig) {
+            error_log("Railway database connected successfully with SSL");
+        } catch (PDOException $sslError) {
+            // Remove SSL options and retry
+            error_log("Railway SSL connection failed, trying without SSL: " . $sslError->getMessage());
+            
+            // Remove all SSL-related options
+            unset($options[PDO::MYSQL_ATTR_SSL_CA]);
+            unset($options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT]);
+            
             try {
-                error_log("Attempting fallback to live database...");
-                $fallbackParts = explode(':', $this->fallbackConfig['servername']);
-                $fallbackHost = $fallbackParts[0];
-                $fallbackPort = isset($fallbackParts[1]) ? $fallbackParts[1] : 3306;
-                
-                $fallbackDsn = "mysql:host=$fallbackHost;port=$fallbackPort;dbname={$this->fallbackConfig['dbname']};charset=utf8";
-                $this->conn = new PDO($fallbackDsn, $this->fallbackConfig['username'], $this->fallbackConfig['password'], $options);
-                error_log("Successfully connected to live database as fallback");
-            } catch(PDOException $fallbackError) {
-                error_log("Fallback connection also failed: " . $fallbackError->getMessage());
-                $this->conn = null;
+                $this->conn = new PDO($dsn, $this->username, $this->password, $options);
+                error_log("Railway database connected successfully without SSL");
+            } catch (PDOException $nonSslError) {
+                error_log("Railway connection failed even without SSL: " . $nonSslError->getMessage());
+                throw $nonSslError;
             }
-        } else {
-            $this->conn = null;
         }
-      }
+        
+    } catch(PDOException $e) {
+        error_log("Railway database connection failed: " . $e->getMessage());
+        error_log("Host: $hostname:$port, Database: " . $this->dbname . ", Username: " . $this->username);
+        $this->conn = null;
+        throw new Exception("Database connection failed: " . $e->getMessage());
+    }
 }
 
 private function loadEnvFile() {
