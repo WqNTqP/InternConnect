@@ -1841,22 +1841,10 @@ function loadPostAssessmentEvaluation(studentId) {
             // Only run predictions for students who are valid AND don't already have predictions
             let hasPrediction = student.pre_assessment && student.pre_assessment.ojt_placement;
             if (student.valid && !hasPrediction) {
-                // Get grades and skills from pre_assessment - filter to only expected features
+                // Send all data to Flask - let Flask filter what it needs for ML vs reasoning
                 const allData = student.pre_assessment;
-                const expectedFeatures = [
-                    'CC 102', 'CC 103', 'PF 101', 'CC 104', 'IPT 101', 'IPT 102', 'CC 106', 'CC 105',
-                    'IM 101', 'IM 102', 'HCI 101', 'HCI 102', 'WS 101', 'NET 101', 'NET 102',
-                    'IAS 101', 'IAS 102', 'CAP 101', 'CAP 102', 'SP 101', 'soft_skill', 'communication_skill', 'technical_skill'
-                ];
                 
-                // Filter to only include expected features
-                const grades = {};
-                expectedFeatures.forEach(feature => {
-                    grades[feature] = allData[feature] || 0;
-                });
-                
-                console.log('Sending to Flask:', grades);
-                console.log('Feature count:', Object.keys(grades).length);
+                console.log('Sending to Flask:', allData);
                 
                 // Use PHP proxy for Flask API (works in both local and production)
                 const apiUrl = window.location.hostname === 'localhost' 
@@ -1867,7 +1855,7 @@ function loadPostAssessmentEvaluation(studentId) {
                     url: apiUrl,
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify(grades),
+                    data: JSON.stringify(allData),
                     success: function(mlres) {
                         // Validate ML response
                         if (!mlres || !mlres.placement) {
