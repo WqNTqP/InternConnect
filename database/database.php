@@ -105,19 +105,26 @@ private function connect() {
 
 private function loadEnvFile() {
     $envFile = __DIR__ . '/../.env';
+    error_log("Loading .env file from: $envFile");
+    
     if (file_exists($envFile)) {
         $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         foreach ($lines as $line) {
             if (strpos(trim($line), '#') === 0) {
                 continue; // Skip comments
             }
+            if (strpos($line, '=') === false) {
+                continue; // Skip lines without =
+            }
             list($name, $value) = explode('=', $line, 2);
             $name = trim($name);
             $value = trim($value);
-            if (!array_key_exists($name, $_ENV)) {
-                $_ENV[$name] = $value;
-            }
+            // Always use .env file values (they take priority)
+            $_ENV[$name] = $value;
+            error_log("Loaded env var: $name = $value");
         }
+    } else {
+        error_log("⚠️ .env file not found at: $envFile");
     }
 }
 
