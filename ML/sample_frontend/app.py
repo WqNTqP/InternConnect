@@ -810,13 +810,11 @@ def post_analysis():
         else:
             return 'Poor'
     
-    import requests
-    
     student_id = request.args.get('student_id')
     if not student_id:
         return jsonify({'error': 'student_id is required'}), 400
 
-    # Use PHP bridge to fetch pre-assessment data
+    # Use direct database connection for Render, HTTP bridge for local
     debug_info = {
         'original_student_id': student_id,
         'attempts': [],
@@ -830,13 +828,52 @@ def post_analysis():
         print(f"🔍 Environment check - RENDER: {'RENDER' in os.environ}, RENDER_SERVICE_ID: {'RENDER_SERVICE_ID' in os.environ}")
         print(f"🔍 Is Render environment: {is_render}")
         
-        # Fetch pre-assessment data using PHP bridge with environment-aware URL
+        data = None
+        
         if is_render:
-            # Production environment (Render)
-            base_url = 'https://internconnect-kjzb.onrender.com/api/database_bridge.php'
-            print(f"🚀 Production mode detected - using URL: {base_url}")
-        else:
-            # Local development environment - use the same logic as initialization
+            # Production environment (Render) - use direct database connection
+            print(f"🚀 Production mode detected - using direct database connection")
+            try:
+                import pymysql
+                
+                # Railway database connection details (matching current production config)
+                db_config = {
+                    'host': 'mainline.proxy.rlwy.net',
+                    'port': 31782,
+                    'user': 'root',
+                    'password': 'teKDknmhZKNYzwvWJLRQQZKXSJJLWTmG',
+                    'database': 'railway',
+                    'charset': 'utf8mb4'
+                }
+                
+                connection = pymysql.connect(**db_config)
+                cursor = connection.cursor(pymysql.cursors.DictCursor)
+                
+                query = "SELECT * FROM pre_assessment WHERE STUDENT_ID = %s"
+                cursor.execute(query, (student_id,))
+                result = cursor.fetchone()
+                
+                cursor.close()
+                connection.close()
+                
+                if result:
+                    data = result
+                    debug_info['attempts'].append({'direct_db_connection': 'success'})
+                    print(f"✅ Direct database connection successful for student {student_id}")
+                else:
+                    debug_info['attempts'].append({'direct_db_connection': 'no_data'})
+                    return jsonify({'error': 'Student not found', 'debug': debug_info}), 404
+                    
+            except Exception as e:
+                debug_info['attempts'].append({'direct_db_error': str(e)})
+                print(f"❌ Direct database connection failed: {str(e)}")
+                # Fallback to HTTP bridge if direct connection fails
+                is_render = False
+        
+        if not is_render:
+            # Local development environment or fallback - use HTTP bridge
+            import requests
+            
             possible_bases = [
                 'http://localhost:80/InternConnect/api/database_bridge.php',
                 'http://localhost/InternConnect/api/database_bridge.php',
@@ -856,46 +893,46 @@ def post_analysis():
             
             if not base_url:
                 base_url = 'http://localhost/InternConnect/api/database_bridge.php'  # fallback
-        
-        full_url = f"{base_url}?action=get_pre_assessment&student_id={student_id}"
-        print(f"🔗 Making request to: {full_url}")
-        
-        try:
-            response = requests.get(full_url, timeout=10)
-        except requests.exceptions.ConnectionError as e:
-            debug_info['attempts'].append({'connection_error': str(e)})
-            return jsonify({'error': 'Cannot connect to database bridge', 'debug': debug_info}), 500
-        except requests.exceptions.Timeout as e:
-            debug_info['attempts'].append({'timeout_error': str(e)})
-            return jsonify({'error': 'Database bridge request timeout', 'debug': debug_info}), 500
-        except Exception as e:
-            debug_info['attempts'].append({'request_error': str(e)})
-            return jsonify({'error': 'Request error to database bridge', 'debug': debug_info}), 500
-        
-        debug_info['attempts'].append({
-            'php_bridge_status': response.status_code,
-            'url_used': full_url,
-            'environment': 'RENDER' if 'RENDER' in os.environ else 'LOCAL'
-        })
-        
-        if response.status_code != 200:
-            error_msg = f"HTTP {response.status_code} from database bridge"
+            
+            full_url = f"{base_url}?action=get_pre_assessment&student_id={student_id}"
+            print(f"🔗 Making request to: {full_url}")
+            
             try:
-                error_detail = response.text[:500]  # First 500 chars of error
-                debug_info['attempts'].append({'error_response': error_detail})
-            except:
-                pass
-            return jsonify({'error': error_msg, 'debug': debug_info}), 500
+                response = requests.get(full_url, timeout=10)
+            except requests.exceptions.ConnectionError as e:
+                debug_info['attempts'].append({'connection_error': str(e)})
+                return jsonify({'error': 'Cannot connect to database bridge', 'debug': debug_info}), 500
+            except requests.exceptions.Timeout as e:
+                debug_info['attempts'].append({'timeout_error': str(e)})
+                return jsonify({'error': 'Database bridge request timeout', 'debug': debug_info}), 500
+            except Exception as e:
+                debug_info['attempts'].append({'request_error': str(e)})
+                return jsonify({'error': 'Request error to database bridge', 'debug': debug_info}), 500
             
-        result = response.json()
-        debug_info['attempts'].append({'php_bridge_response': 'success'})
-        
-        if not result.get('success', False):
-            return jsonify({'error': 'Student not found', 'debug': debug_info}), 404
+            debug_info['attempts'].append({
+                'php_bridge_status': response.status_code,
+                'url_used': full_url,
+                'environment': 'LOCAL'
+            })
             
-        data = result.get('data', {})
-        if not data:
-            return jsonify({'error': 'No student data found', 'debug': debug_info}), 404
+            if response.status_code != 200:
+                error_msg = f"HTTP {response.status_code} from database bridge"
+                try:
+                    error_detail = response.text[:500]  # First 500 chars of error
+                    debug_info['attempts'].append({'error_response': error_detail})
+                except:
+                    pass
+                return jsonify({'error': error_msg, 'debug': debug_info}), 500
+                
+            result = response.json()
+            debug_info['attempts'].append({'php_bridge_response': 'success'})
+            
+            if not result.get('success', False):
+                return jsonify({'error': 'Student not found', 'debug': debug_info}), 404
+                
+            data = result.get('data', {})
+            if not data:
+                return jsonify({'error': 'No student data found', 'debug': debug_info}), 404
             
     except requests.RequestException as e:
         debug_info['attempts'].append({'php_bridge_error': str(e)})
