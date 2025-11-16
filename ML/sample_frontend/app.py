@@ -57,12 +57,36 @@ feature_cols = []
 
 try:
     # Environment-aware base URL configuration
-    if 'RENDER' in os.environ:
+    is_render = 'RENDER' in os.environ or 'RENDER_SERVICE_ID' in os.environ
+    print(f"🔍 Environment detection - Is Render: {is_render}")
+    
+    if is_render:
         # Production environment (Render)
         base_url = 'https://internconnect-kjzb.onrender.com/api/database_bridge.php'
+        print(f"🚀 Using production URL: {base_url}")
     else:
-        # Local development environment
-        base_url = 'http://localhost/InternConnect/api/database_bridge.php'
+        # Local development environment - try multiple common ports
+        possible_bases = [
+            'http://localhost:80/InternConnect/api/database_bridge.php',
+            'http://localhost/InternConnect/api/database_bridge.php',
+            'http://127.0.0.1:80/InternConnect/api/database_bridge.php',
+            'http://127.0.0.1/InternConnect/api/database_bridge.php'
+        ]
+        
+        base_url = None
+        for test_url in possible_bases:
+            try:
+                test_response = requests.get(test_url + '?action=test', timeout=3)
+                if test_response.status_code == 200:
+                    base_url = test_url
+                    print(f"✅ Found working local server at: {base_url}")
+                    break
+            except:
+                continue
+        
+        if not base_url:
+            base_url = 'http://localhost/InternConnect/api/database_bridge.php'  # fallback
+            print(f"⚠️ Using fallback URL: {base_url}")
     
     print(f"🔄 Fetching feature columns from live database using: {base_url}")
     response = requests.get(f"{base_url}?action=get_feature_columns", timeout=10)
@@ -785,14 +809,67 @@ def post_analysis():
     }
 
     try:
-        # Fetch pre-assessment data using PHP bridge
-        base_url = "http://localhost/InternConnect/api/database_bridge.php"
-        response = requests.get(f"{base_url}?action=get_pre_assessment&student_id={student_id}", timeout=10)
+        # Debug environment detection
+        is_render = 'RENDER' in os.environ or 'RENDER_SERVICE_ID' in os.environ
+        print(f"🔍 Environment check - RENDER: {'RENDER' in os.environ}, RENDER_SERVICE_ID: {'RENDER_SERVICE_ID' in os.environ}")
+        print(f"🔍 Is Render environment: {is_render}")
         
-        debug_info['attempts'].append({'php_bridge_status': response.status_code})
+        # Fetch pre-assessment data using PHP bridge with environment-aware URL
+        if is_render:
+            # Production environment (Render)
+            base_url = 'https://internconnect-kjzb.onrender.com/api/database_bridge.php'
+            print(f"🚀 Production mode detected - using URL: {base_url}")
+        else:
+            # Local development environment - use the same logic as initialization
+            possible_bases = [
+                'http://localhost:80/InternConnect/api/database_bridge.php',
+                'http://localhost/InternConnect/api/database_bridge.php',
+                'http://127.0.0.1:80/InternConnect/api/database_bridge.php',
+                'http://127.0.0.1/InternConnect/api/database_bridge.php'
+            ]
+            
+            base_url = None
+            for test_url in possible_bases:
+                try:
+                    test_response = requests.get(test_url + '?action=test', timeout=3)
+                    if test_response.status_code == 200:
+                        base_url = test_url
+                        break
+                except:
+                    continue
+            
+            if not base_url:
+                base_url = 'http://localhost/InternConnect/api/database_bridge.php'  # fallback
+        
+        full_url = f"{base_url}?action=get_pre_assessment&student_id={student_id}"
+        print(f"🔗 Making request to: {full_url}")
+        
+        try:
+            response = requests.get(full_url, timeout=10)
+        except requests.exceptions.ConnectionError as e:
+            debug_info['attempts'].append({'connection_error': str(e)})
+            return jsonify({'error': 'Cannot connect to database bridge', 'debug': debug_info}), 500
+        except requests.exceptions.Timeout as e:
+            debug_info['attempts'].append({'timeout_error': str(e)})
+            return jsonify({'error': 'Database bridge request timeout', 'debug': debug_info}), 500
+        except Exception as e:
+            debug_info['attempts'].append({'request_error': str(e)})
+            return jsonify({'error': 'Request error to database bridge', 'debug': debug_info}), 500
+        
+        debug_info['attempts'].append({
+            'php_bridge_status': response.status_code,
+            'url_used': full_url,
+            'environment': 'RENDER' if 'RENDER' in os.environ else 'LOCAL'
+        })
         
         if response.status_code != 200:
-            return jsonify({'error': 'Failed to fetch student data from database', 'debug': debug_info}), 500
+            error_msg = f"HTTP {response.status_code} from database bridge"
+            try:
+                error_detail = response.text[:500]  # First 500 chars of error
+                debug_info['attempts'].append({'error_response': error_detail})
+            except:
+                pass
+            return jsonify({'error': error_msg, 'debug': debug_info}), 500
             
         result = response.json()
         debug_info['attempts'].append({'php_bridge_response': 'success'})

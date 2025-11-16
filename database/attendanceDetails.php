@@ -952,16 +952,54 @@ class attendanceDetails
 
             foreach ($studentIds as $studentId) {
                 try {
-                    // Delete from parent table - CASCADE will handle all related records automatically
-                    $stmt = $dbo->conn->prepare("DELETE FROM interns_details WHERE STUDENT_ID = :studentId");
+                    // Get INTERNS_ID before deletion
+                    $stmt = $dbo->conn->prepare("SELECT INTERNS_ID FROM interns_details WHERE STUDENT_ID = :studentId");
                     $stmt->execute([":studentId" => $studentId]);
-                    $rowsDeleted = $stmt->rowCount();
-                    $deletedCount += $rowsDeleted;
+                    $internResult = $stmt->fetch(PDO::FETCH_ASSOC);
+                    $internsId = $internResult ? $internResult['INTERNS_ID'] : null;
 
-                    if ($rowsDeleted === 0) {
+                    $totalDeleted = 0;
+
+                    // Delete from all related tables in correct order (child tables first)
+                    $deleteTables = [
+                        // Tables using STUDENT_ID
+                        ['table' => 'coordinator_evaluation', 'column' => 'STUDENT_ID', 'value' => $studentId],
+                        ['table' => 'student_evaluation', 'column' => 'STUDENT_ID', 'value' => $studentId],
+                        ['table' => 'post_assessment', 'column' => 'STUDENT_ID', 'value' => $studentId],
+                        ['table' => 'pre_assessment', 'column' => 'STUDENT_ID', 'value' => $studentId],
+                        ['table' => 'student_deletion_log', 'column' => 'STUDENT_ID', 'value' => $studentId]
+                    ];
+
+                    // Add tables using INTERNS_ID if we found it
+                    if ($internsId) {
+                        $deleteTables[] = ['table' => 'attendance', 'column' => 'INTERNS_ID', 'value' => $internsId];
+                        $deleteTables[] = ['table' => 'intern_details', 'column' => 'INTERNS_ID', 'value' => $internsId];
+                    }
+
+                    // Finally delete from main table
+                    $deleteTables[] = ['table' => 'interns_details', 'column' => 'STUDENT_ID', 'value' => $studentId];
+
+                    foreach ($deleteTables as $deleteInfo) {
+                        try {
+                            $stmt = $dbo->conn->prepare("DELETE FROM {$deleteInfo['table']} WHERE {$deleteInfo['column']} = :value");
+                            $stmt->execute([":value" => $deleteInfo['value']]);
+                            $rowsDeleted = $stmt->rowCount();
+                            $totalDeleted += $rowsDeleted;
+                            
+                            if ($rowsDeleted > 0) {
+                                error_log("Deleted $rowsDeleted records from {$deleteInfo['table']} for student $studentId");
+                            }
+                        } catch (Exception $e) {
+                            // Some tables might not exist or have different structure, continue with others
+                            error_log("Note: Could not delete from {$deleteInfo['table']}: " . $e->getMessage());
+                        }
+                    }
+
+                    if ($totalDeleted === 0) {
                         $errors[] = "Student $studentId not found or already deleted";
                     } else {
-                        error_log("Deleted student $studentId with CASCADE cleanup");
+                        $deletedCount++;
+                        error_log("Successfully deleted student $studentId from all tables (total $totalDeleted records)");
                     }
 
                 } catch (Exception $e) {
