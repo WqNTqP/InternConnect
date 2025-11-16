@@ -59,7 +59,7 @@ try:
     # Environment-aware base URL configuration
     if 'RENDER' in os.environ:
         # Production environment (Render)
-        base_url = 'https://internconnect.onrender.com/api/database_bridge.php'
+        base_url = 'https://internconnect-kjzb.onrender.com/api/database_bridge.php'
     else:
         # Local development environment
         base_url = 'http://localhost/InternConnect/api/database_bridge.php'

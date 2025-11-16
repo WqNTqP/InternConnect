@@ -5153,7 +5153,7 @@ $(document).ready(function() {
                             <div class="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border">
                                 <label for="mainDashboardCategoryDropdown" class="text-sm font-semibold text-gray-700 whitespace-nowrap">Filter by Category:</label>
                                 <select id="mainDashboardCategoryDropdown" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white">
-                                    <option value="soft" selected>Personal & Soft Skills (${evaluationsByCategory.soft.length})</option>
+                                    <option value="soft" selected>Soft Skills (${evaluationsByCategory.soft.length})</option>
                                     <option value="comm">Communication Skills (${evaluationsByCategory.comm.length})</option>
                                     <option value="tech">Technical Skills (${evaluationsByCategory.tech.length})</option>
                                 </select>
@@ -5477,7 +5477,7 @@ $(document).ready(function() {
                         }
                     });
                     
-                    alert(`✅ SUCCESS: All ${selectedRatings.length} ratings saved successfully across ALL categories!\n\nPre-assessment averages updated for:\n• Personal & Soft Skills\n• Communication Skills\n• Technical Skills\n\n🎉 Evaluation complete!`);
+                    alert(`✅ SUCCESS: All ${selectedRatings.length} ratings saved successfully across ALL categories!\n\nPre-assessment averages updated for:\n• Soft Skills\n• Communication Skills\n• Technical Skills\n\n🎉 Evaluation complete!`);
                 } else {
                     alert('❌ Error saving ratings: ' + (response.message || 'Unknown error'));
                     $button.removeClass('bg-green-800 hover:bg-green-900 bg-yellow-600 hover:bg-yellow-700')
@@ -5652,7 +5652,7 @@ $(document).ready(function() {
                 <label for="reviewCategoryDropdown" class="block text-sm font-medium text-gray-700 mb-2">Filter by Category:</label>
                 <select id="reviewCategoryDropdown" class="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     <option value="all">All Categories</option>
-                    <option value="soft">Personal & Soft Skills</option>
+                    <option value="soft">Soft Skills</option>
                     <option value="comm">Communication Skills</option>
                     <option value="tech">Technical Skills</option>
                 </select>
@@ -5748,7 +5748,7 @@ $(document).ready(function() {
                 if (response.success && response.evaluations && response.evaluations.length > 0) {
                     // Group evaluations by category with improved filtering
                     const evalsByCategory = {
-                        'Personal & Soft Skills': response.evaluations.filter(ev => ev.category && 
+                        'Soft Skills': response.evaluations.filter(ev => ev.category && 
                             (ev.category.toLowerCase().includes('soft') || 
                              ev.category.toLowerCase().includes('personal') || 
                              ev.category.toLowerCase().includes('interpersonal'))),

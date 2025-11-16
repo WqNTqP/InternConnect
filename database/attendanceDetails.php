@@ -928,16 +928,11 @@ class attendanceDetails
                 JOIN intern_details itd ON id.INTERNS_ID = itd.INTERNS_ID
                 WHERE itd.SESSION_ID = :sessionId
                 AND itd.HTE_ID = :hteId
-                AND EXISTS (
-                    SELECT 1 FROM internship_needs
-                    WHERE HTE_ID = :hteId AND COORDINATOR_ID = :coordinatorId AND SESSION_ID = :sessionId
-                )
-                    ORDER BY id.NAME ASC
+                ORDER BY id.NAME ASC
             ");
             $stmt->execute([
                 ':sessionId' => $sessionId,
-                ':hteId' => $hteId,
-                ':coordinatorId' => $coordinatorId
+                ':hteId' => $hteId
             ]);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
             error_log("Query returned " . count($results) . " students");

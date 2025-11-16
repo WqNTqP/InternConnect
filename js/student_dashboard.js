@@ -3133,8 +3133,8 @@ $(document).ready(function() {
         // Show loading indicator and disable submit button immediately
         const $submitBtn = $('#evaluationForm button[type="submit"], #submitEvaluationBtn, #submitAnswersBtn, #submitBtn, #submitAnswers');
         const originalText = $submitBtn.first().text();
-        $submitBtn.prop('disabled', true).text('Submitting...');
-        $('#evaluationFormMessage').html('<span style="color:blue;font-weight:bold;">⏳ Submitting your answers, please wait...</span>');
+        $submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" style="width: 1rem; height: 1rem; display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-rotate 0.75s linear infinite; margin-right: 0.5rem;"></span>Submitting...');
+        $('#evaluationFormMessage').html('<span style="color:blue;font-weight:bold;"><span class="spinner-border spinner-border-sm" style="width: 1rem; height: 1rem; display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-rotate 0.75s linear infinite; margin-right: 0.5rem;"></span>Submitting your answers, please wait...</span>');
         
         // AJAX submit
         $.ajax({
