@@ -132,6 +132,14 @@ body {
     visibility: visible;
     opacity: 1;
     animation: falldown 2s linear;
+    color: #dc2626; /* Red color for errors */
+}
+
+.applysuccessdiv {
+    visibility: visible;
+    opacity: 1;
+    animation: falldown 2s linear;
+    color: #16a34a; /* Green color for success */
 }
 @keyframes falldown {
     0%{opacity: 0;transform: translateY(-100px);}

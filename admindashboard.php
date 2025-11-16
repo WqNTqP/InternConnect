@@ -12,17 +12,7 @@ if ($dbo->conn === null) {
     die("Database connection failed. Please check your connection settings.");
 }
 
-// Fetch pending attendance records with student details
-$stmt = $dbo->conn->prepare("
-    SELECT pa.*, id.STUDENT_ID
-    FROM pending_attendance pa
-    LEFT JOIN interns_details id ON pa.INTERNS_ID = id.INTERNS_ID
-    WHERE pa.status = 'pending'
-");
-$stmt->execute();
-$pendingRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Check if admin is logged in and get coordinator ID
+// Get coordinator's HTE_ID first for filtering
 session_start();
 $coordinatorId = $_SESSION["admin_user"] ?? null;
 if (!$coordinatorId) {
@@ -30,8 +20,36 @@ if (!$coordinatorId) {
     exit();
 }
 
+// Get coordinator's HTE_ID for proper filtering
+$coordinatorHteId = null;
+try {
+    $stmt = $dbo->conn->prepare("SELECT HTE_ID FROM coordinator WHERE COORDINATOR_ID = ?");
+    $stmt->execute([$coordinatorId]);
+    $coordinatorData = $stmt->fetch(PDO::FETCH_ASSOC);
+    $coordinatorHteId = $coordinatorData['HTE_ID'] ?? null;
+} catch (Exception $e) {
+    error_log("Error getting coordinator HTE_ID: " . $e->getMessage());
+}
+
+// Fetch pending attendance records ONLY for coordinator's HTE
+$pendingRecords = [];
+if ($coordinatorHteId) {
+    $stmt = $dbo->conn->prepare("
+        SELECT pa.*, id.STUDENT_ID
+        FROM pending_attendance pa
+        LEFT JOIN interns_details id ON pa.INTERNS_ID = id.INTERNS_ID
+        WHERE pa.status = 'pending' AND pa.HTE_ID = ?
+    ");
+    $stmt->execute([$coordinatorHteId]);
+    $pendingRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 // Set adminId for use in the template
 $adminId = $coordinatorId;
+
+// Debug: Log the admin ID for troubleshooting
+error_log("Admin Dashboard Debug - coordinatorId: " . ($coordinatorId ?? 'NULL'));
+error_log("Admin Dashboard Debug - adminId: " . ($adminId ?? 'NULL'));
 
 // Get admin details for display
 try {
@@ -58,13 +76,8 @@ $presentList = [];
 $onTimeList = [];
 $lateList = [];
 
-// Get coordinator's HTE_ID and then get students assigned to that HTE
+// Get students assigned to this coordinator's HTE
 try {
-    // First, get the coordinator's HTE_ID
-    $stmt = $dbo->conn->prepare("SELECT HTE_ID FROM coordinator WHERE COORDINATOR_ID = ?");
-    $stmt->execute([$coordinatorId]);
-    $coordinatorData = $stmt->fetch(PDO::FETCH_ASSOC);
-    $coordinatorHteId = $coordinatorData['HTE_ID'] ?? null;
     
     if ($coordinatorHteId) {
         // Get students assigned to this coordinator's HTE
@@ -109,24 +122,63 @@ $totalStudents = count($allStudents);
 <body>
     <div class="page">
         <div class="top-header">
-            <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle Sidebar">&#9776;</button>
-            <div class="sidebar-logo" style="margin-left: 1rem; cursor: pointer;" onclick="window.location.href='admindashboard.php';">
-                <h2 class="logo" style="cursor: pointer;">InternConnect</h2>
+            <div class="header-left">
+                <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle Sidebar">&#9776;</button>
+                <div class="sidebar-logo">
+                    <div class="logo" onclick="window.location.href='admindashboard.php';">
+                        <span>InternConnect</span>
+                    </div>
+                </div>
             </div>
             <div class="user-profile" id="userProfile">
-                <div class="user-avatar-circle" id="userAvatarCircle">
-                    <i class="fas fa-user"></i>
-                </div>
-                <span id="userName" class="user-name-text" data-admin-id="<?php echo htmlspecialchars($adminId); ?>"><?php echo htmlspecialchars($adminName); ?> &#x25BC;</span>
-                <div class="user-dropdown" id="userDropdown" style="display:none;">
-                    <div class="user-dropdown-header">
-                        <div class="user-dropdown-avatar">
-                            <i class="fas fa-user"></i>
+                <div class="relative">
+                    <button id="userDropdownToggle" class="modern-user-dropdown">
+                        <div class="user-avatar">
+                            <?php 
+                                $nameParts = explode(' ', $adminName);
+                                $initials = (isset($nameParts[0]) ? substr($nameParts[0], 0, 1) : 'A') . (isset($nameParts[1]) ? substr($nameParts[1], 0, 1) : '');
+                            ?>
+                            <span class="avatar-initials"><?php echo $initials; ?></span>
                         </div>
-                        <div class="user-dropdown-name" id="userDropdownName"><?php echo htmlspecialchars($adminName); ?></div>
+                        <span id="userName" class="user-name" data-admin-id="<?php echo htmlspecialchars($adminId); ?>" style="display: none;"><?php echo htmlspecialchars($adminName); ?></span>
+                        <!-- Debug: Admin ID for troubleshooting -->
+                        <!-- AdminID: <?php echo htmlspecialchars($adminId ?? 'NOT SET'); ?> -->
+                        <div class="dropdown-arrow">
+                            <i class="fas fa-chevron-down" id="dropdownArrow"></i>
+                        </div>
+                    </button>
+                    <div id="userDropdown" class="modern-dropdown-menu">
+                        <div class="dropdown-header">
+                            <div class="header-avatar">
+                                <span class="header-initials"><?php echo $initials; ?></span>
+                            </div>
+                            <div class="header-info">
+                                <div class="header-name"><?php echo htmlspecialchars($adminName); ?></div>
+                                <div class="header-email"><?php echo htmlspecialchars($adminDetails['EMAIL'] ?? 'Not available'); ?></div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-section">
+                            <button id="btnProfile" class="dropdown-item">
+                                <div class="item-icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="item-content">
+                                    <span class="item-title">Profile</span>
+                                    <span class="item-subtitle">View and edit profile</span>
+                                </div>
+                            </button>
+                            <button id="logoutBtn" class="dropdown-item logout-item">
+                                <div class="item-icon">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                </div>
+                                <div class="item-content">
+                                    <span class="item-title">Sign Out</span>
+                                    <span class="item-subtitle">Logout from account</span>
+                                </div>
+                            </button>
+                        </div>
                     </div>
-                    <button id="btnProfile">Profile</button>
-                    <button id="logoutBtn">Logout</button>
                 </div>
             </div>
         </div>
@@ -159,17 +211,60 @@ $totalStudents = count($allStudents);
                     <ul class="admin-eval-student-list" style="list-style: none; padding: 0; margin: 0; max-height: 600px; overflow-y: auto; border: 1px solid #e5e7eb; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
                         <?php if (!empty($allStudents)): ?>
                             <?php foreach ($allStudents as $i => $student): ?>
-                                <li class="admin-eval-student<?php echo $i === 0 ? ' active' : ''; ?>" style="padding: 10px 14px; border-radius: 4px; margin-bottom: 6px; cursor: pointer; background: <?php echo $i === 0 ? '#e0e7ff' : '#fff'; ?>;<?php echo $i === 0 ? ' font-weight: bold;' : ''; ?>" data-student-id="<?php echo htmlspecialchars($student['STUDENT_ID']); ?>">
-                                    <?php echo htmlspecialchars($student['SURNAME'] . (isset($student['NAME']) ? ', ' . $student['NAME'] : '')); ?>
+                                <li class="admin-eval-student<?php echo $i === 0 ? ' active' : ''; ?>" style="padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; background: <?php echo $i === 0 ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : '#fff'; ?>; color: <?php echo $i === 0 ? '#fff' : '#374151'; ?>; font-weight: <?php echo $i === 0 ? '600' : '500'; ?>; border: 2px solid <?php echo $i === 0 ? 'transparent' : '#e5e7eb'; ?>; transition: all 0.3s ease;" data-student-id="<?php echo htmlspecialchars($student['STUDENT_ID']); ?>">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-user-graduate" style="color: <?php echo $i === 0 ? '#93c5fd' : '#9ca3af'; ?>; font-size: 14px;"></i>
+                                        <span><?php echo htmlspecialchars($student['SURNAME'] . (isset($student['NAME']) ? ', ' . $student['NAME'] : '')); ?></span>
+                                    </div>
                                 </li>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <li class="admin-eval-student" style="padding: 10px 14px; border-radius: 4px; margin-bottom: 6px; cursor: pointer; background: #fff;">No students found.</li>
+                            <li class="empty-state-list-item">
+                                <div class="empty-state-mini">
+                                    <i class="fas fa-user-graduate"></i>
+                                    <span>No students assigned to you yet</span>
+                                </div>
+                            </li>
                         <?php endif; ?>
                     </ul>
                 </div>
                 <div class="admin-eval-main admin-eval-content-section" style="flex: 1; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 24px;">
-                    <!-- Evaluation table and ratings will be loaded dynamically via JS -->
+                    <!-- Empty state shown when no student is selected -->
+                    <div class="admin-eval-empty-state" style="display: block; text-align: center; padding: 60px 20px; color: #6b7280;">
+                        <div class="empty-state-icon" style="margin-bottom: 24px; color: #9ca3af;">
+                            <i class="fas fa-clipboard-check" style="font-size: 64px;"></i>
+                        </div>
+                        <h3 style="color: #374151; margin-bottom: 12px; font-size: 24px; font-weight: 600;">Student Evaluation Center</h3>
+                        <p style="font-size: 16px; margin-bottom: 8px;">Select a student from the sidebar to begin their evaluation.</p>
+                        <p style="font-size: 14px; color: #9ca3af;">View competency assessments, provide ratings, and add recommendations.</p>
+                        <div class="evaluation-features" style="margin-top: 32px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                            <div class="feature-item" style="padding: 16px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                                <i class="fas fa-star" style="color: #3b82f6; margin-bottom: 8px; font-size: 20px;"></i>
+                                <h4 style="color: #374151; font-size: 14px; font-weight: 600; margin-bottom: 4px;">Rate Competencies</h4>
+                                <p style="color: #6b7280; font-size: 12px;">Evaluate student performance across different skill areas</p>
+                            </div>
+                            <div class="feature-item" style="padding: 16px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #10b981;">
+                                <i class="fas fa-comments" style="color: #10b981; margin-bottom: 8px; font-size: 20px;"></i>
+                                <h4 style="color: #374151; font-size: 14px; font-weight: 600; margin-bottom: 4px;">Add Feedback</h4>
+                                <p style="color: #6b7280; font-size: 12px;">Provide constructive comments and recommendations</p>
+                            </div>
+                            <div class="feature-item" style="padding: 16px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                                <i class="fas fa-chart-line" style="color: #f59e0b; margin-bottom: 8px; font-size: 20px;"></i>
+                                <h4 style="color: #374151; font-size: 14px; font-weight: 600; margin-bottom: 4px;">Track Progress</h4>
+                                <p style="color: #6b7280; font-size: 12px;">Monitor development over time</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading state shown during data fetch -->
+                    <div class="admin-eval-loading" style="display: none; text-align: center; padding: 80px 20px;">
+                        <div class="loading-spinner" style="width: 50px; height: 50px; border: 4px solid #f3f4f6; border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 24px;"></div>
+                        <h4 style="color: #374151; margin-bottom: 8px; font-size: 18px; font-weight: 600;">Loading Evaluation Data</h4>
+                        <p style="color: #6b7280; font-size: 14px;">Fetching student assessments and previous ratings...</p>
+                    </div>
+                    
+                    <!-- Evaluation content will be loaded here dynamically -->
+                    <div class="admin-eval-content" style="display: none;"></div>
                 </div>
             </div>
         </div>
@@ -304,7 +399,13 @@ $totalStudents = count($allStudents);
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="4">No pending attendance records found.</td>
+                                    <td colspan="4" class="empty-table-message">
+                                        <div class="empty-state-table">
+                                            <i class="fas fa-check-circle"></i>
+                                            <span>All attendance records have been processed!</span>
+                                            <small>New submissions will appear here for approval.</small>
+                                        </div>
+                                    </td>
                                 </tr>
                             <?php endif; ?>
                         </table>
@@ -335,7 +436,13 @@ $totalStudents = count($allStudents);
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="5">No students found under your management.</td>
+                                    <td colspan="5" class="empty-table-message">
+                                        <div class="empty-state-table">
+                                            <i class="fas fa-users"></i>
+                                            <span>No students assigned yet</span>
+                                            <small>Students will appear here once they are assigned to your supervision.</small>
+                                        </div>
+                                    </td>
                                 </tr>
                             <?php endif; ?>
                         </table>
@@ -352,6 +459,15 @@ $totalStudents = count($allStudents);
                 </div>
 
                 <h3>Historical Attendance Records</h3>
+                
+                <!-- History Loading State -->
+                <div id="historyLoading" class="loading-state">
+                    <div class="loading-content">
+                        <i class="fas fa-spinner fa-spin loading-spinner"></i>
+                        <span>Loading attendance records...</span>
+                    </div>
+                </div>
+                
                 <div id="historySummary" style="display: none;">
                     <p>Date: <span id="selectedDate"></span></p>
                     
@@ -408,7 +524,18 @@ $totalStudents = count($allStudents);
                                     <!-- Records will be populated here -->
                                 </tbody>
                             </table>
-                            <div id="historyNoRecords" style="display: none;">No records found for the selected date.</div>
+                            <div id="historyNoRecords" class="empty-state-container" style="display: none;">
+                                <div class="empty-state-content">
+                                    <div class="empty-state-icon">
+                                        <i class="fas fa-calendar-times"></i>
+                                    </div>
+                                    <div class="empty-state-title">No Records Found</div>
+                                    <div class="empty-state-message">
+                                        No attendance records exist for the selected date.<br>
+                                        Try selecting a different date or check if students were present.
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -433,17 +560,31 @@ $totalStudents = count($allStudents);
 
             <!-- Reports Tab Content -->
             <div id="reportsTabContent" class="tab-content" style="display: none;">
-                <div class="reportHeader">
-                    <h3>Weekly Reports</h3>
-                    <div class="reports-controls">
-                        <div class="filter-controls">
-                            <label for="studentFilter">Filter by Student:</label>
-                            <input type="text" id="studentFilter" list="studentList" placeholder="Type student name or select from list" autocomplete="off">
-                            <datalist id="studentList">
+                <div class="modern-report-header">
+                    <div class="header-title-section">
+                        <h3 class="header-title">
+                            <i class="fas fa-file-chart-line"></i>
+                            Weekly Reports
+                        </h3>
+                        <p class="header-subtitle">Review and manage student weekly activity reports</p>
+                    </div>
+                    <div class="reports-controls-modern">
+                        <div class="filter-group">
+                            <div class="input-wrapper has-autocomplete">
+                                <label for="studentFilter" class="modern-label">
+                                    <i class="fas fa-user"></i>
+                                    Filter by Student
+                                </label>
+                                <input type="text" id="studentFilter" list="studentList" 
+                                       placeholder="Type student name or select from list" 
+                                       autocomplete="off" class="modern-input"
+                                       title="Start typing to see available students or click the dropdown arrow">
+                                <datalist id="studentList">
                                 <option value="">All Students</option>
                                 <?php
-                                // Debug: Check adminId
+                                // Debug: Check adminId and coordinatorHteId
                                 echo "<!-- Debug: adminId = " . htmlspecialchars($adminId ?? 'NOT SET') . " -->";
+                                echo "<!-- Debug: coordinatorHteId = " . htmlspecialchars($coordinatorHteId ?? 'NOT SET') . " -->";
 
                                 // Fetch all students under this admin's management
                                 $studentsStmt = $dbo->conn->prepare("
@@ -453,7 +594,7 @@ $totalStudents = count($allStudents);
                                     WHERE itd.HTE_ID = :hteId
                                     ORDER BY id.SURNAME, id.NAME
                                 ");
-                                $studentsStmt->bindParam(':hteId', $hteId);
+                                $studentsStmt->bindParam(':hteId', $coordinatorHteId);
                                 $studentsStmt->execute();
                                 $students = $studentsStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -470,12 +611,26 @@ $totalStudents = count($allStudents);
                                 <?php endforeach; ?>
                             </datalist>
 
-                            <label for="dateFilter">Select Date:</label>
-                            <input type="date" id="dateFilter" name="dateFilter" class="form-control" style="width: auto; display: inline-block; margin-right: 10px;"
-                                   value="<?php echo date('Y-m-d'); ?>"
-                            >
+                            </div>
+                        </div>
+                        
+                        <div class="date-group">
+                            <div class="input-wrapper">
+                                <label for="dateFilter" class="modern-label">
+                                    <i class="fas fa-calendar"></i>
+                                    Select Date
+                                </label>
+                                <input type="date" id="dateFilter" name="dateFilter" class="modern-input date-input"
+                                       value="<?php echo date('Y-m-d'); ?>">
+                            </div>
+                        </div>
 
-                            <button id="loadReportsBtn">Load Reports</button>
+                        <div class="action-group">
+                            <button id="loadReportsBtn" class="modern-load-btn">
+                                <i class="fas fa-search"></i>
+                                <span>Load Reports</span>
+                            </button>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -563,93 +718,201 @@ $totalStudents = count($allStudents);
                     </div>
                 </div>
 
-                <div id="reportsContainer">
-                    <div id="reportsLoading" style="display: none; text-align: center; padding: 20px;">
-                        <i class="fas fa-spinner fa-spin"></i> Loading reports...
+                <div id="reportsContainer" class="reports-main-container">
+                    <div id="reportsLoading" class="loading-state" style="display: none;">
+                        <div class="loading-content">
+                            <i class="fas fa-spinner fa-spin loading-spinner"></i>
+                            <span>Loading reports...</span>
+                        </div>
                     </div>
                     <div id="reportsList" style="display: none;">
                         <!-- Reports will be populated here -->
                     </div>
-                    <div id="noReports" style="display: none; text-align: center; padding: 20px;">
-                        No weekly reports found matching your criteria.
+                    <div id="noReports" class="empty-state-container" style="display: none;">
+                        <div class="empty-state-content">
+                            <div class="empty-state-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="empty-state-title">No Weekly Reports Found</div>
+                            <div class="empty-state-message">
+                                No reports match your current search criteria.<br>
+                                Try adjusting the date range or selecting a different student.
+                            </div>
+                            <div class="empty-state-suggestions">
+                                <div class="suggestion-item">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>Check different date ranges</span>
+                                </div>
+                                <div class="suggestion-item">
+                                    <i class="fas fa-user"></i>
+                                    <span>Select "All Students" to see all reports</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+      
 
             <!-- Control Tab Content -->
             <div id="contralTabContent" class="tab-content" style="display: none;">
-                <div class="dashboard-header">
-                    <h2>Control Panel</h2>
-                    <p>Manage company MOAs (Memorandums of Agreement) and view system information</p>
-                </div>
-
-                <!-- MOA Management Section -->
-                <div class="section">
-                    <div class="section-header">
-                        <h3><i class="fas fa-file-contract"></i> My Assigned Company MOA</h3>
-                        <p>View Memorandum of Agreement for your assigned company</p>
-                    </div>
-
-                    <!-- Refresh Button -->
-                    <div class="action-container" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                            <div style="flex: 1;">
-                                <p style="margin: 0; color: #555; font-style: italic;">Viewing MOA information for your assigned company</p>
+                <div class="control-panel-container">
+                    <!-- Enhanced Header -->
+                    <div class="control-panel-header">
+                        <div class="header-content">
+                            <div class="header-text">
+                                <h2><i class="fas fa-cogs"></i> Control Panel</h2>
+                                <p>Manage company partnerships and view system information</p>
                             </div>
-                            <button id="refreshCompaniesBtn" class="btn" style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                <i class="fas fa-refresh"></i> Refresh
-                            </button>
+                            <div class="header-actions">
+                                <button id="refreshCompaniesBtn" class="control-refresh-btn">
+                                    <i class="fas fa-sync-alt"></i>
+                                    <span>Refresh Data</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Companies MOA Table -->
-                    <div class="table-container" style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
-                        <table class="companies-table" style="width: 100%; border-collapse: collapse;">
-                            <thead style="background: #f1f3f4;">
-                                <tr>
-                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-bottom: 1px solid #ddd;">Company Name</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-bottom: 1px solid #ddd;">Industry</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-bottom: 1px solid #ddd;">Contact Person</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-bottom: 1px solid #ddd;">MOA Status</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-bottom: 1px solid #ddd;">MOA Dates</th>
-                                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-bottom: 1px solid #ddd;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="companiesMOATableBody">
-                                <tr>
-                                    <td colspan="6" style="padding: 40px; text-align: center; color: #666;">
-                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                            <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #007bff;"></i>
-                                            <p>Loading your assigned company...</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <!-- Quick Stats Dashboard -->
+                    <div class="control-stats-grid">
+                        <div class="stat-card active-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-handshake"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="activeMOAs">0</div>
+                                <div class="stat-label">Active MOAs</div>
+                                <div class="stat-description">Currently active agreements</div>
+                            </div>
+                        </div>
+                        <div class="stat-card warning-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="expiringSoonMOAs">0</div>
+                                <div class="stat-label">Expiring Soon</div>
+                                <div class="stat-description">Require attention within 30 days</div>
+                            </div>
+                        </div>
+                        <div class="stat-card danger-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="expiredMOAs">0</div>
+                                <div class="stat-label">Expired MOAs</div>
+                                <div class="stat-description">Need renewal or replacement</div>
+                            </div>
+                        </div>
+                        <div class="stat-card info-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="noMOACompanies">0</div>
+                                <div class="stat-label">No MOA</div>
+                                <div class="stat-description">Companies without agreements</div>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- MOA Statistics -->
-                    <div class="moa-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;">
-                        <div class="stat-card" style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #28a745;">
-                            <div style="font-size: 24px; font-weight: bold; color: #28a745;" id="activeMOAs">0</div>
-                            <div style="font-size: 14px; color: #666;">Active MOAs</div>
+                    <!-- Company Information Section -->
+                    <div class="control-section">
+                        <div class="section-header">
+                            <div class="section-title">
+                                <i class="fas fa-building"></i>
+                                <h3>My Assigned Company</h3>
+                            </div>
+                            <div class="section-description">
+                                <p>View and manage Memorandum of Agreement for your assigned company</p>
+                            </div>
                         </div>
-                        <div class="stat-card" style="background: #fff3cd; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #ffc107;">
-                            <div style="font-size: 24px; font-weight: bold; color: #ffc107;" id="expiringSoonMOAs">0</div>
-                            <div style="font-size: 14px; color: #666;">Expiring Soon</div>
+
+                        <div class="company-table-container">
+                            <div class="table-wrapper">
+                                <table class="companies-table-modern">
+                                    <thead>
+                                        <tr>
+                                            <th><i class="fas fa-building"></i> Company Details</th>
+                                            <th><i class="fas fa-industry"></i> Industry</th>
+                                            <th><i class="fas fa-user"></i> Contact Person</th>
+                                            <th><i class="fas fa-file-contract"></i> MOA Status</th>
+                                            <th><i class="fas fa-calendar-alt"></i> Agreement Period</th>
+                                            <th><i class="fas fa-cog"></i> Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="companiesMOATableBody">
+                                        <tr class="loading-row">
+                                            <td colspan="6">
+                                                <div class="loading-state">
+                                                    <div class="loading-spinner"></div>
+                                                    <div class="loading-text">
+                                                        <h4>Loading Company Information</h4>
+                                                        <p>Retrieving your assigned company details...</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        <div class="stat-card" style="background: #f8d7da; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #dc3545;">
-                            <div style="font-size: 24px; font-weight: bold; color: #dc3545;" id="expiredMOAs">0</div>
-                            <div style="font-size: 14px; color: #666;">Expired MOAs</div>
+                    </div>
+
+                    <!-- System Information Section -->
+                    <div class="control-section">
+                        <div class="section-header">
+                            <div class="section-title">
+                                <i class="fas fa-info-circle"></i>
+                                <h3>System Information</h3>
+                            </div>
+                            <div class="section-description">
+                                <p>Current system status and administrative information</p>
+                            </div>
                         </div>
-                        <div class="stat-card" style="background: #d1ecf1; padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid #17a2b8;">
-                            <div style="font-size: 24px; font-weight: bold; color: #17a2b8;" id="noMOACompanies">0</div>
-                            <div style="font-size: 14px; color: #666;">No MOA</div>
+
+                        <div class="system-info-grid">
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <i class="fas fa-user-shield"></i>
+                                </div>
+                                <div class="info-content">
+                                    <h4>Admin Role</h4>
+                                    <p id="adminRoleInfo">Loading...</p>
+                                </div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <i class="fas fa-calendar"></i>
+                                </div>
+                                <div class="info-content">
+                                    <h4>Last Login</h4>
+                                    <p id="lastLoginInfo">Loading...</p>
+                                </div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="info-content">
+                                    <h4>Managed Students</h4>
+                                    <p id="managedStudentsInfo">Loading...</p>
+                                </div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <i class="fas fa-server"></i>
+                                </div>
+                                <div class="info-content">
+                                    <h4>System Status</h4>
+                                    <p id="systemStatusInfo"><span class="status-online">Online</span></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
+        </div>
 
 
 
@@ -662,6 +925,71 @@ $totalStudents = count($allStudents);
             var loadReportsBtn = document.getElementById('loadReportsBtn');
             if (loadReportsBtn) {
                 loadReportsBtn.click();
+            }
+            
+            // Enhanced datalist functionality for student filter
+            const studentFilter = document.getElementById('studentFilter');
+            if (studentFilter) {
+                // Show datalist options when input is focused or clicked
+                studentFilter.addEventListener('focus', function() {
+                    this.setAttribute('size', Math.min(this.list.options.length, 8));
+                    // Trigger datalist display by simulating input
+                    setTimeout(() => {
+                        if (this.value === '') {
+                            // Show all options when empty
+                            this.value = ' ';
+                            this.value = '';
+                        }
+                        this.showPicker ? this.showPicker() : null;
+                    }, 10);
+                });
+                
+                // Also show on click
+                studentFilter.addEventListener('click', function() {
+                    if (this.list && this.list.options.length > 0) {
+                        // Force show datalist by triggering focus and input events
+                        this.focus();
+                        setTimeout(() => {
+                            this.value = this.value + ' ';
+                            this.value = this.value.trim();
+                        }, 50);
+                    }
+                });
+                
+                // Handle datalist selection and real-time search
+                studentFilter.addEventListener('input', function() {
+                    // Remove any previous error styling
+                    this.style.borderColor = '';
+                    this.style.backgroundColor = '';
+                    
+                    // Debounce the search to avoid too many requests
+                    clearTimeout(this.searchTimeout);
+                    this.searchTimeout = setTimeout(() => {
+                        const searchValue = this.value.trim();
+                        if (searchValue.length >= 2 || searchValue === '') {
+                            // Auto-trigger search when user types at least 2 characters or clears the field
+                            const loadBtn = document.getElementById('loadReportsBtn');
+                            if (loadBtn) {
+                                loadBtn.click();
+                            }
+                        }
+                    }, 800); // Increased to 800ms for better UX
+                });
+                
+                // Also handle when user selects from datalist
+                studentFilter.addEventListener('change', function() {
+                    // Immediately trigger search when user selects from dropdown
+                    const loadBtn = document.getElementById('loadReportsBtn');
+                    if (loadBtn) {
+                        loadBtn.click();
+                    }
+                });
+                
+                // Add a visual indicator when datalist has options
+                const datalist = document.getElementById('studentList');
+                if (datalist && datalist.options.length > 0) {
+                    studentFilter.classList.add('has-datalist-options');
+                }
             }
         });
         // Initialize sidebar state on page load
@@ -828,6 +1156,105 @@ $totalStudents = count($allStudents);
                     $('#returnReportModal').hide();
                     currentReportId = null;
                 }
+            });
+
+            // Sidebar collapse functionality and user dropdown
+            let sidebarOpen = false;
+            let sidebarCollapsed = false;
+
+            // Toggle sidebar visibility
+            $('#sidebarToggle').click(function() {
+                const sidebar = $('.sidebar');
+                const contentArea = $('.content-area');
+                
+                if ($(window).width() >= 769) {
+                    // Desktop behavior - toggle collapse/expand
+                    if (!sidebarOpen) {
+                        // Open sidebar
+                        sidebarOpen = true;
+                        sidebar.addClass('sidebar-open');
+                        contentArea.addClass('sidebar-open');
+                        if (sidebarCollapsed) {
+                            contentArea.addClass('sidebar-collapsed');
+                        }
+                    } else {
+                        // Toggle between expanded and collapsed
+                        sidebarCollapsed = !sidebarCollapsed;
+                        if (sidebarCollapsed) {
+                            sidebar.addClass('collapsed');
+                            contentArea.addClass('sidebar-collapsed');
+                        } else {
+                            sidebar.removeClass('collapsed');
+                            contentArea.removeClass('sidebar-collapsed');
+                        }
+                    }
+                } else {
+                    // Mobile behavior - toggle show/hide
+                    sidebarOpen = !sidebarOpen;
+                    if (sidebarOpen) {
+                        sidebar.addClass('sidebar-open');
+                        $('#sidebarOverlay').addClass('active');
+                    } else {
+                        sidebar.removeClass('sidebar-open');
+                        $('#sidebarOverlay').removeClass('active');
+                    }
+                }
+            });
+
+            // Close sidebar when clicking overlay (mobile)
+            $('#sidebarOverlay').click(function() {
+                const sidebar = $('.sidebar');
+                sidebarOpen = false;
+                sidebar.removeClass('sidebar-open');
+                $(this).removeClass('active');
+            });
+
+            // Handle window resize
+            $(window).resize(function() {
+                if ($(window).width() >= 769) {
+                    $('#sidebarOverlay').removeClass('active');
+                }
+            });
+
+            // Modern user dropdown functionality
+            $(document).ready(function() {
+                $('#userDropdownToggle').off('click').on('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const dropdown = $('#userDropdown');
+                    const arrow = $('.dropdown-arrow');
+                    
+                    console.log('Dropdown clicked', dropdown.length);
+                    console.log('Current classes:', dropdown.attr('class'));
+                    
+                    if (dropdown.hasClass('show')) {
+                        dropdown.removeClass('show');
+                        dropdown.css('display', '');
+                        arrow.removeClass('rotate');
+                        console.log('Hiding dropdown');
+                    } else {
+                        dropdown.addClass('show');
+                        dropdown.css('display', 'block');
+                        arrow.addClass('rotate');
+                        console.log('Showing dropdown');
+                        console.log('New classes:', dropdown.attr('class'));
+                        console.log('Display style:', dropdown.css('display'));
+                    }
+                });
+
+                // Close dropdown when clicking outside
+                $(document).on('click', function(event) {
+                    if (!$(event.target).closest('#userProfile').length) {
+                        $('#userDropdown').removeClass('show');
+                        $('.dropdown-arrow').removeClass('rotate');
+                    }
+                });
+                
+                // Prevent dropdown from closing when clicking inside
+                $('#userDropdown').on('click', function(e) {
+                    e.stopPropagation();
+                });
             });
         });
     </script>

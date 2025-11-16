@@ -74,6 +74,9 @@ try {
         case 'getWeeklyReports':
             getWeeklyReports();
             break;
+        case 'getDayReport':
+            getDayReportAdmin();
+            break;
         case 'saveReportDraft':
             saveReportDraft($studentId);
             break;
@@ -107,7 +110,7 @@ function getWeeklyReports() {
     // Get base URL
     $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF'], 2) . '/';
 
-    // Build the query based on filters
+    // Build the query based on filters - ADD HTE filtering for admin users
     $query = "
         SELECT r.*,
        i.SURNAME as student_name,
@@ -115,12 +118,27 @@ function getWeeklyReports() {
        ri.day_of_week
 FROM weekly_reports r
 LEFT JOIN interns_details i ON r.interns_id = i.INTERNS_ID
+LEFT JOIN intern_details itd ON i.INTERNS_ID = itd.INTERNS_ID
 LEFT JOIN report_images ri ON r.report_id = ri.report_id
 WHERE r.status = 'submitted'
   AND r.approval_status = 'pending'
     ";
 
     $params = [];
+
+    // Add HTE filtering for admin users
+    if ($_SESSION['user_type'] === 'admin') {
+        // Get admin's HTE_ID
+        $coordinatorId = $_SESSION['admin_user'];
+        $stmt = $conn->prepare("SELECT HTE_ID FROM coordinator WHERE COORDINATOR_ID = ?");
+        $stmt->execute([$coordinatorId]);
+        $coordinatorData = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($coordinatorData && $coordinatorData['HTE_ID']) {
+            $query .= " AND itd.HTE_ID = ?";
+            $params[] = $coordinatorData['HTE_ID'];
+        }
+    }
 
     if ($studentId && $studentId !== 'all') {
         $query .= " AND r.interns_id = ?";
@@ -306,6 +324,45 @@ function getReportByWeekDates($studentId, $weekStart, $weekEnd) {
     $result = $rows[0];
     // Remove image-specific fields from the main result
     unset($result['image_filename'], $result['day_of_week']);
+    
+    // Convert timestamps from UTC to Philippine timezone
+    $philippineTimezone = new DateTimeZone('Asia/Manila');
+    
+    if (!empty($result['created_at'])) {
+        try {
+            $result['created_at'] = (new DateTime($result['created_at'], new DateTimeZone('UTC')))
+                ->setTimezone($philippineTimezone)->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            // Keep original if conversion fails
+        }
+    }
+    
+    if (!empty($result['updated_at'])) {
+        try {
+            $result['updated_at'] = (new DateTime($result['updated_at'], new DateTimeZone('UTC')))
+                ->setTimezone($philippineTimezone)->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            // Keep original if conversion fails
+        }
+    }
+    
+    if (!empty($result['submitted_at'])) {
+        try {
+            $result['submitted_at'] = (new DateTime($result['submitted_at'], new DateTimeZone('UTC')))
+                ->setTimezone($philippineTimezone)->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            // Keep original if conversion fails
+        }
+    }
+    
+    if (!empty($result['approved_at'])) {
+        try {
+            $result['approved_at'] = (new DateTime($result['approved_at'], new DateTimeZone('UTC')))
+                ->setTimezone($philippineTimezone)->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            // Keep original if conversion fails
+        }
+    }
 
     // Process per-day content
     if (!empty($result['report_content'])) {
@@ -1236,5 +1293,64 @@ function generateWeeklyReportPDF($studentId) {
     // Output PDF to browser
     $pdf->Output('I', "Weekly_Report_{$studentName}_Week_{$week}.pdf");
     exit;
+}
+
+function getDayReportAdmin() {
+    global $conn;
+    
+    $reportId = $_POST['reportId'] ?? null;
+    $day = $_POST['day'] ?? null;
+    
+    if (!$reportId || !$day) {
+        echo json_encode(['status' => 'error', 'message' => 'Missing report ID or day']);
+        return;
+    }
+    
+    // Get base URL for image paths
+    $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF'], 2) . '/';
+    
+    try {
+        // Get report details
+        $stmt = $conn->prepare("
+            SELECT r.*, ri.image_filename, ri.day_of_week
+            FROM weekly_reports r
+            LEFT JOIN report_images ri ON r.report_id = ri.report_id AND ri.day_of_week = ?
+            WHERE r.report_id = ?
+        ");
+        $stmt->execute([$day, $reportId]);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (empty($results)) {
+            echo json_encode(['status' => 'error', 'message' => 'Report not found']);
+            return;
+        }
+        
+        $report = $results[0];
+        $dayData = [];
+        
+        // Get description for the specific day
+        $descriptionField = $day . '_description';
+        $dayData['description'] = $report[$descriptionField] ?? 'No description provided for this day.';
+        
+        // Get images for the specific day
+        $dayData['images'] = [];
+        foreach ($results as $row) {
+            if ($row['image_filename'] && $row['day_of_week'] === $day) {
+                $dayData['images'][] = [
+                    'filename' => $row['image_filename'],
+                    'url' => getImageUrl($row['image_filename'], $baseUrl)
+                ];
+            }
+        }
+        
+        echo json_encode([
+            'status' => 'success',
+            'dayData' => $dayData
+        ]);
+        
+    } catch (Exception $e) {
+        error_log("Error in getDayReportAdmin: " . $e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Database error']);
+    }
 }
 

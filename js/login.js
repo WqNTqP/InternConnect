@@ -18,28 +18,90 @@ function tryLogin() {
                 console.log(rv);
                 // Check response status for login validation
                 if (rv.status === "ALL OK") {
+                    // Show success message briefly before redirect
+                    showLoginMessage("Login successful! Redirecting...", "success");
+                    
                     // Redirect based on user role
-                    if (rv.data.role === 'SUPERADMIN') {
-                        document.location.replace("superadmin_dashboard.php"); // For Coordinator
-                    } else if (rv.data.role === 'COORDINATOR') {
-                        document.location.replace("mainDashboard.php");
-                    }
+                    setTimeout(() => {
+                        if (rv.data.role === 'SUPERADMIN') {
+                            document.location.replace("superadmin_dashboard.php");
+                        } else if (rv.data.role === 'COORDINATOR') {
+                            document.location.replace("mainDashboard.php");
+                        }
+                    }, 1000);
                 } else {
-                    $("#diverror").addClass("applyerrordiv");
-                    $("#diverror").text(rv.status); // Show the error message from the server
+                    // Enhanced error messages based on server response
+                    let errorMessage = "";
+                    switch(rv.status) {
+                        case "USER NAME DOES NOT EXIST":
+                            errorMessage = "No account found with this username. Please check your username and try again.";
+                            break;
+                        case "Wrong Password":
+                            errorMessage = "Incorrect password. Please check your password and try again.";
+                            break;
+                        case "Database Connection Failed":
+                            errorMessage = "Unable to connect to the database. Please try again later.";
+                            break;
+                        case "Database Error":
+                            errorMessage = "A database error occurred. Please contact support if this continues.";
+                            break;
+                        default:
+                            errorMessage = rv.status || "An unexpected error occurred. Please try again.";
+                    }
+                    showLoginMessage(errorMessage, "error");
                 }
             },
             error: function(xhr, status, error) {
                 $("#lockscreen").removeClass("applylockscreen");
-                $("#diverror").addClass("applyerrordiv");
-                $("#diverror").text("An error occurred: " + error); // General error message
+                
+                let errorMessage = "Connection error. Please check your internet connection and try again.";
+                if (xhr.status === 404) {
+                    errorMessage = "Login service not found. Please contact support.";
+                } else if (xhr.status === 500) {
+                    errorMessage = "Server error occurred. Please try again later.";
+                }
+                showLoginMessage(errorMessage, "error");
             }
         });
     } else {
         // Show error if either username or password is empty
-        $("#diverror").addClass("applyerrordiv");
-        $("#diverror").text("Please enter both username and password.");
+        showLoginMessage("Please enter both username and password.", "error");
     }
+}
+
+function showLoginMessage(message, type = "error") {
+    console.log('showLoginMessage called with:', message, type);
+    const errorDiv = $("#diverror");
+    const messageLabel = $("#errormessage");
+    
+    console.log('Error div found:', errorDiv.length);
+    console.log('Message label found:', messageLabel.length);
+    
+    // Set the message text
+    if (messageLabel.length > 0) {
+        messageLabel.text(message);
+    } else {
+        // Fallback: set text directly on error div
+        errorDiv.find('label').text(message);
+    }
+    
+    // Always show the error div
+    errorDiv.show().removeClass("hidden").addClass("block").css('display', 'block');
+    
+    if (type === "success") {
+        errorDiv.find(".border-red-500").removeClass("border-red-500").addClass("border-green-500");
+        errorDiv.find(".bg-red-50").removeClass("bg-red-50").addClass("bg-green-50");
+        errorDiv.find(".text-red-500").removeClass("text-red-500").addClass("text-green-500");
+        errorDiv.find(".text-red-700").removeClass("text-red-700").addClass("text-green-700");
+    } else {
+        // Reset to error styling (in case it was changed to success)
+        errorDiv.find(".border-green-500").removeClass("border-green-500").addClass("border-red-500");
+        errorDiv.find(".bg-green-50").removeClass("bg-green-50").addClass("bg-red-50");
+        errorDiv.find(".text-green-500").removeClass("text-green-500").addClass("text-red-500");
+        errorDiv.find(".text-green-700").removeClass("text-green-700").addClass("text-red-700");
+    }
+    
+    console.log('Error div classes after:', errorDiv.attr('class'));
 }
 
 $(document).ready(function() {

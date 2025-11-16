@@ -1,0 +1,39 @@
+InternConnect Database Backup Information
+========================================
+
+Backup Date: 2025-11-16 05:19:46
+Source: Railway.app MySQL Database
+Host: mainline.proxy.rlwy.net:31782
+Database: railway
+Total Tables: 20
+Total Records: 1,672
+File Size: 965,531 bytes
+
+Key Features in this backup:
+- ✅ No duplicate data (clean import)
+- ✅ All AUTO_INCREMENT columns properly configured
+- ✅ MOA functionality with 5 additional columns
+- ✅ Proper HTE filtering for coordinators
+- ✅ All 20 tables with correct relationships
+
+Tables included:
+- coordinator (5 records)
+- coordinator_evaluation (40 records)
+- evaluation_questions (37 records)
+- host_training_establishment (4 records)
+- intern_details (7 records)
+- interns_attendance (18 records)
+- interns_details (5 records)
+- internship_needs (4 records)
+- notifications (4 records)
+- past_data (1042 records)
+- pending_attendance (18 records)
+- post_analysis_summary (2 records)
+- post_assessment (134 records)
+- pre_assessment (6 records)
+- report_images (21 records)
+- session_details (2 records)
+- student_deletion_log (102 records)
+- student_evaluation (60 records)
+- student_questions (154 records)
+- weekly_reports (7 records)

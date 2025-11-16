@@ -77,9 +77,17 @@ function loadAllCompaniesData() {
     let cdrid = $("#hiddencdrid").val();
     
     if (!cdrid) {
-        $('#allCompaniesTableBody').html('<tr><td colspan="6" class="text-center text-red-500 py-6">Coordinator ID not found.</td></tr>');
+        // Show error state
+        $('#companiesLoadingState').addClass('hidden');
+        $('#companiesContent').addClass('hidden');
+        $('#companiesErrorState').removeClass('hidden');
         return;
     }
+
+    // Show loading state
+    $('#companiesLoadingState').removeClass('hidden');
+    $('#companiesContent').addClass('hidden');
+    $('#companiesErrorState').addClass('hidden');
 
     $.ajax({
         url: 'ajaxhandler/attendanceAJAX.php',
@@ -87,18 +95,26 @@ function loadAllCompaniesData() {
         dataType: 'json',
         data: { action: 'getHTEList', cdrid: cdrid },
         success: function(response) {
+            // Hide loading state, show content
+            $('#companiesLoadingState').addClass('hidden');
+            $('#companiesErrorState').addClass('hidden');
+            $('#companiesContent').removeClass('hidden');
+            
             if (response.success && response.htes && Array.isArray(response.htes)) {
                 if (response.htes.length > 0) {
                     renderCompaniesList(response.htes);
                 } else {
-                    $('#allCompaniesTableBody').html('<tr><td colspan="6" class="text-center text-gray-500 py-6">No companies assigned to you.</td></tr>');
+                    $('#allCompaniesTableBody').html('<tr><td colspan="7" class="text-center text-gray-500 py-6">No companies assigned to you.</td></tr>');
                 }
             } else {
-                $('#allCompaniesTableBody').html('<tr><td colspan="6" class="text-center text-gray-500 py-6">No companies found.</td></tr>');
+                $('#allCompaniesTableBody').html('<tr><td colspan="7" class="text-center text-gray-500 py-6">No companies found.</td></tr>');
             }
         },
         error: function() {
-            $('#allCompaniesTableBody').html('<tr><td colspan="6" class="text-center text-red-500 py-6">Error loading companies.</td></tr>');
+            // Show error state
+            $('#companiesLoadingState').addClass('hidden');
+            $('#companiesContent').addClass('hidden');
+            $('#companiesErrorState').removeClass('hidden');
         }
     });
 }
@@ -274,6 +290,12 @@ $(document).on('submit', '#singleStudentForm', function(e) {
     var $form = $(this);
     if ($form.data('submitted')) return;
     $form.data('submitted', true);
+    
+    // Show loading indicator on submit button
+    const $submitBtn = $form.find('button[type="submit"]');
+    const originalText = $submitBtn.text();
+    $submitBtn.prop('disabled', true).html('<span class="spinner">⏳</span> Adding Student...');
+    
     var formData = $form.serialize() + '&action=addStudent';
     // You may want to add session and HTE selection here if needed
     $.ajax({
@@ -286,13 +308,16 @@ $(document).on('submit', '#singleStudentForm', function(e) {
                 alert('Student added successfully!');
                 $form[0].reset();
                 $('#singleStudentFormWrapper').slideUp();
+                $submitBtn.text('✅ Student Added');
             } else {
                 alert(response.message || 'Error adding student.');
+                $submitBtn.prop('disabled', false).text(originalText);
             }
             $form.data('submitted', false);
         },
         error: function(xhr, status, error) {
             alert('An error occurred while adding the student.');
+            $submitBtn.prop('disabled', false).text(originalText);
             $form.data('submitted', false);
         }
     });
@@ -439,15 +464,8 @@ $(document).on('click', '.btnProfileStudent', function() {
                 
                 // Handle profile picture
                 if (student.profile_picture) {
-                    // Support both Cloudinary URLs and legacy local paths
-                    let profileUrl;
-                    if (student.profile_picture.startsWith('https://res.cloudinary.com/')) {
-                        // Cloudinary URL - use directly
-                        profileUrl = student.profile_picture;
-                    } else {
-                        // Legacy local path
-                        profileUrl = 'uploads/' + student.profile_picture;
-                    }
+                    // Use getImageUrl function to handle all URL types properly
+                    const profileUrl = getImageUrl(student.profile_picture);
                     $('#profilePicture img').attr('src', profileUrl).show();
                     $('#profilePicture div').hide();
                 } else {
@@ -772,6 +790,11 @@ $(document).on('submit', '#updateCompanyLogoForm', function(e) {
         alert('Please select a logo image to upload.');
         return;
     }
+    
+    // Show loading indicator on submit button
+    const $submitBtn = $(this).find('button[type="submit"]');
+    const originalText = $submitBtn.text();
+    $submitBtn.prop('disabled', true).html('<span class="spinner">⏳</span> Uploading Logo...');
     const formData = new FormData();
     formData.append('action', 'updateHTELogo');
     formData.append('hteId', hteId);
@@ -789,12 +812,15 @@ $(document).on('submit', '#updateCompanyLogoForm', function(e) {
                 $('#updateLogoFile').val('');
                 $('#updateLogoPreview').attr('src', '#').addClass('hidden');
                 loadAllCompaniesData();
+                $submitBtn.text('✅ Logo Updated');
             } else {
                 alert(response.message || 'Failed to update company logo.');
+                $submitBtn.prop('disabled', false).text(originalText);
             }
         },
         error: function() {
             alert('An error occurred while uploading the logo.');
+            $submitBtn.prop('disabled', false).text(originalText);
         }
     });
 });
@@ -930,7 +956,7 @@ $(document).on('submit', '#editHTEForm', function(e) {
     // Disable submit button to prevent double submission
     const submitBtn = $(this).find('button[type="submit"]');
     const originalText = submitBtn.text();
-    submitBtn.prop('disabled', true).text('Saving...');
+    submitBtn.prop('disabled', true).html('<span class="spinner">⏳</span> Updating HTE...');
 
     $.ajax({
         url: 'ajaxhandler/attendanceAJAX.php',
@@ -1177,16 +1203,34 @@ function loadSeassions() {
 
 // Document ready handler
 $(function() {
-    // Toggle user dropdown on profile click
-    $(document).on('click', '#userProfile', function(e) {
-        $('#userDropdown').toggle();
+    // Modern User Dropdown functionality
+    $(document).on('click', '#userDropdownToggle', function(e) {
+        e.preventDefault();
         e.stopPropagation();
+        
+        const dropdown = $('#userDropdown');
+        const arrow = $('#dropdownArrow');
+        
+        if (dropdown.hasClass('show')) {
+            dropdown.removeClass('show');
+            arrow.removeClass('rotated');
+        } else {
+            dropdown.addClass('show');
+            arrow.addClass('rotated');
+        }
     });
-    // Hide dropdown when clicking outside
+
+    // Close dropdown when clicking outside
     $(document).on('click', function(e) {
         if (!$(e.target).closest('#userProfile').length) {
-            $('#userDropdown').hide();
+            $('#userDropdown').removeClass('show');
+            $('#dropdownArrow').removeClass('rotated');
         }
+    });
+
+    // Prevent dropdown from closing when clicking inside
+    $(document).on('click', '#userDropdown', function(e) {
+        e.stopPropagation();
     });
     // Tab click event for sidebar
     $('.sidebar-item').click(function() {
@@ -1238,7 +1282,7 @@ $(function() {
         }
         html += `</div>`;
         html += `</div>`;
-        $('#postAssessmentTabContent').html(html);
+        $('#postAssessmentContentArea').html(html);
         // Restore focus and cursor position if search bar was focused
         if (window.shouldRefocusPostSearch) {
             const input = document.getElementById('postStudentSearch');
@@ -1257,9 +1301,11 @@ $(function() {
         let cdrid = $("#hiddencdrid").val();
         
         if (!cdrid) {
-            renderEmptyPostAssessmentState('Coordinator ID not found.');
+            showPostAssessmentError();
             return;
         }
+        
+        showPostAssessmentLoading();
 
         $.ajax({
             url: 'ajaxhandler/coordinatorPostAssessmentAjax.php',
@@ -1268,6 +1314,7 @@ $(function() {
             data: { coordinator_id: cdrid },
             success: function(response) {
                 if (response.success && response.students) {
+                    showPostAssessmentContent();
                     if (response.students.length > 0) {
                         allPostStudents = response.students;
                         renderPostStudentList(allPostStudents);
@@ -1276,13 +1323,14 @@ $(function() {
                         renderEmptyPostAssessmentState('No students assigned to you for post-assessment.');
                     }
                 } else {
+                    showPostAssessmentContent();
                     allPostStudents = [];
                     renderEmptyPostAssessmentState('No students found for post-assessment.');
                 }
             },
             error: function(xhr, status, error) {
+                showPostAssessmentError();
                 allPostStudents = [];
-                renderEmptyPostAssessmentState('Error loading students.');
             }
         });
     }
@@ -1308,12 +1356,12 @@ $(function() {
         `;
         html += `</div>`;
         html += `</div>`;
-        $('#postAssessmentTabContent').html(html);
+        $('#postAssessmentContentArea').html(html);
     }
 
     $(document).on('click', '#postAssessmentTabBtn', function() {
-    selectedPostStudentId = null;
-    loadPostAssessmentStudents();
+        selectedPostStudentId = null;
+        // Loading state will be shown by the tab handler
     });
 
     // Also populate on page load if tab is visible
@@ -1405,11 +1453,12 @@ function loadPostAssessmentEvaluation(studentId) {
                     $('#postEvalList').html('<div class="no-eval">Not rated yet by supervisor.</div>');
                 }
             } else {
-                $('#postEvalList').html('<div class="no-eval">No evaluation data found.</div>');
+                showPostAssessmentContent();
+                $('#postAssessmentContentArea').html('<div class="flex flex-col items-center justify-center py-16 text-center"><div class="text-gray-500">No evaluation data found.</div></div>');
             }
         },
         error: function() {
-            $('#postEvalList').html('<div class="no-eval">Error loading evaluation.</div>');
+            showPostAssessmentError();
         }
     });
 }
@@ -1437,14 +1486,195 @@ function loadPostAssessmentEvaluation(studentId) {
             }
         } else if (this.id === 'rateTabBtn') {
             $('#rateTabContent').show();
-            // Pre-assessment content already loaded on page load, just show it
+            // Show loading state and load pre-assessment data
+            showPreAssessmentLoading();
+            setTimeout(loadPreAssessmentData, 300);
         } else if (this.id === 'postAssessmentTabBtn') {
             $('#postAssessmentTabContent').show();
+            // Show loading state and load post-assessment data
+            showPostAssessmentLoading();
+            setTimeout(loadPostAssessmentData, 300);
         } else if (this.id === 'reviewTabBtn') {
             $('#reviewTabContent').show();
-            // Review content already loaded on page load, just show it
+            // Show loading state and load review data
+            showReviewLoading();
+            setTimeout(loadReviewData, 300);
         // Removed stats tab logic
         }
+    });
+
+    // Helper functions for evaluation loading states
+    function showPreAssessmentLoading() {
+        $('#preAssessmentLoadingState').removeClass('hidden');
+        $('#preAssessmentErrorState').addClass('hidden');
+        $('#preAssessmentContent').addClass('hidden');
+    }
+    
+    function showPreAssessmentError() {
+        $('#preAssessmentLoadingState').addClass('hidden');
+        $('#preAssessmentErrorState').removeClass('hidden');
+        $('#preAssessmentContent').addClass('hidden');
+    }
+    
+    function showPreAssessmentContent() {
+        $('#preAssessmentLoadingState').addClass('hidden');
+        $('#preAssessmentErrorState').addClass('hidden');
+        $('#preAssessmentContent').removeClass('hidden');
+    }
+    
+    function showPostAssessmentLoading() {
+        $('#postAssessmentLoadingState').removeClass('hidden');
+        $('#postAssessmentErrorState').addClass('hidden');
+        $('#postAssessmentContentArea').addClass('hidden');
+    }
+    
+    function showPostAssessmentError() {
+        $('#postAssessmentLoadingState').addClass('hidden');
+        $('#postAssessmentErrorState').removeClass('hidden');
+        $('#postAssessmentContentArea').addClass('hidden');
+    }
+    
+    function showPostAssessmentContent() {
+        $('#postAssessmentLoadingState').addClass('hidden');
+        $('#postAssessmentErrorState').addClass('hidden');
+        $('#postAssessmentContentArea').removeClass('hidden');
+    }
+    
+    function showReviewLoading() {
+        $('#reviewLoadingState').removeClass('hidden');
+        $('#reviewErrorState').addClass('hidden');
+        $('#reviewContentArea').addClass('hidden');
+    }
+    
+    function showReviewError() {
+        $('#reviewLoadingState').addClass('hidden');
+        $('#reviewErrorState').removeClass('hidden');
+        $('#reviewContentArea').addClass('hidden');
+    }
+    
+    function showReviewContent() {
+        $('#reviewLoadingState').addClass('hidden');
+        $('#reviewErrorState').addClass('hidden');
+        $('#reviewContentArea').removeClass('hidden');
+    }
+    
+    // Placeholder loading functions for evaluation tabs
+    function loadPreAssessmentData() {
+        // Simulate loading delay
+        setTimeout(() => {
+            showPreAssessmentContent();
+        }, 1000);
+    }
+    
+    function loadPostAssessmentData() {
+        loadPostAssessmentStudents();
+    }
+    
+    function loadReviewData() {
+        // Simulate loading delay
+        setTimeout(() => {
+            showReviewContent();
+        }, 1000);
+    }
+    
+    // Retry button handlers
+    $(document).on('click', '#retryLoadPreAssessment', function() {
+        loadPreAssessmentData();
+    });
+    
+    $(document).on('click', '#retryLoadPostAssessment', function() {
+        loadPostAssessmentData();
+    });
+    
+    $(document).on('click', '#retryLoadReview', function() {
+        loadReviewData();
+    });
+
+    // Helper functions for evaluation loading states
+    function showPreAssessmentLoading() {
+        $('#preAssessmentLoadingState').removeClass('hidden');
+        $('#preAssessmentErrorState').addClass('hidden');
+        $('#preAssessmentContent').addClass('hidden');
+    }
+    
+    function showPreAssessmentError() {
+        $('#preAssessmentLoadingState').addClass('hidden');
+        $('#preAssessmentErrorState').removeClass('hidden');
+        $('#preAssessmentContent').addClass('hidden');
+    }
+    
+    function showPreAssessmentContent() {
+        $('#preAssessmentLoadingState').addClass('hidden');
+        $('#preAssessmentErrorState').addClass('hidden');
+        $('#preAssessmentContent').removeClass('hidden');
+    }
+    
+    function showPostAssessmentLoading() {
+        $('#postAssessmentLoadingState').removeClass('hidden');
+        $('#postAssessmentErrorState').addClass('hidden');
+        $('#postAssessmentContentArea').addClass('hidden');
+    }
+    
+    function showPostAssessmentError() {
+        $('#postAssessmentLoadingState').addClass('hidden');
+        $('#postAssessmentErrorState').removeClass('hidden');
+        $('#postAssessmentContentArea').addClass('hidden');
+    }
+    
+    function showPostAssessmentContent() {
+        $('#postAssessmentLoadingState').addClass('hidden');
+        $('#postAssessmentErrorState').addClass('hidden');
+        $('#postAssessmentContentArea').removeClass('hidden');
+    }
+    
+    function showReviewLoading() {
+        $('#reviewLoadingState').removeClass('hidden');
+        $('#reviewErrorState').addClass('hidden');
+        $('#reviewContentArea').addClass('hidden');
+    }
+    
+    function showReviewError() {
+        $('#reviewLoadingState').addClass('hidden');
+        $('#reviewErrorState').removeClass('hidden');
+        $('#reviewContentArea').addClass('hidden');
+    }
+    
+    function showReviewContent() {
+        $('#reviewLoadingState').addClass('hidden');
+        $('#reviewErrorState').addClass('hidden');
+        $('#reviewContentArea').removeClass('hidden');
+    }
+    
+    // Placeholder loading functions for evaluation tabs
+    function loadPreAssessmentData() {
+        // Simulate loading delay
+        setTimeout(() => {
+            showPreAssessmentContent();
+        }, 1000);
+    }
+    
+    function loadPostAssessmentData() {
+        loadPostAssessmentStudents();
+    }
+    
+    function loadReviewData() {
+        // Simulate loading delay
+        setTimeout(() => {
+            showReviewContent();
+        }, 1000);
+    }
+    
+    // Retry button handlers
+    $(document).on('click', '#retryLoadPreAssessment', function() {
+        loadPreAssessmentData();
+    });
+    
+    $(document).on('click', '#retryLoadPostAssessment', function() {
+        loadPostAssessmentData();
+    });
+    
+    $(document).on('click', '#retryLoadReview', function() {
+        loadReviewData();
     });
 
     // Show default tab on page load
@@ -1965,12 +2195,11 @@ function loadApprovedReportsWithFilters() {
                 weekEnd: weekEnd
             },
             beforeSend: function() {
-                $("#approvedReportsList").html(`
-                    <div class="flex justify-center items-center py-12">
-                        <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500 border-b-4 border-gray-200"></div>
-                        <span class="ml-4 text-blue-600 text-lg font-semibold">Loading reports...</span>
-                    </div>
-                `);
+                // Show loading state, hide others
+                $('#reportsLoadingState').removeClass('hidden');
+                $('#approvedReportsList').addClass('hidden');
+                $('#reportsEmptyState').addClass('hidden');
+                $('#reportsErrorState').addClass('hidden');
             },
             success: function(rv) {
                 // Render reports from rv.reports if status is success
@@ -2046,6 +2275,10 @@ function loadApprovedReportsWithFilters() {
                             </div>
                         </div>
                     `;
+                    // Hide loading state, show content
+                    $('#reportsLoadingState').addClass('hidden');
+                    $('#reportsEmptyState').addClass('hidden');
+                    $('#reportsErrorState').addClass('hidden');
                     $("#approvedReportsList").html(html);
                     $("#approvedReportsList").removeClass("hidden");
                     // Modal JS
@@ -2079,8 +2312,11 @@ function loadApprovedReportsWithFilters() {
                     // Helper to capitalize day names
                     function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
                 } else {
-                    $("#approvedReportsList").html("<p>No approved reports found.</p>");
-                    $("#approvedReportsList").removeClass("hidden");
+                    // Hide loading state, show empty state
+                    $('#reportsLoadingState').addClass('hidden');
+                    $('#approvedReportsList').addClass('hidden');
+                    $('#reportsErrorState').addClass('hidden');
+                    $('#reportsEmptyState').removeClass('hidden');
                 }
 
                 // Helper to get week number from date
@@ -2092,7 +2328,11 @@ function loadApprovedReportsWithFilters() {
                 }
             },
             error: function() {
-                $("#approvedReportsList").html("<p>Error loading reports.</p>");
+                // Hide loading state, show error state
+                $('#reportsLoadingState').addClass('hidden');
+                $('#approvedReportsList').addClass('hidden');
+                $('#reportsEmptyState').addClass('hidden');
+                $('#reportsErrorState').removeClass('hidden');
             }
         });
     }
@@ -2102,6 +2342,12 @@ function loadApprovedReportsWithFilters() {
     let reportTabLoaded = false;
     $(document).on('click', '#reportTab', function() {
         if (!reportTabLoaded) {
+            // Show loading state immediately when tab is clicked
+            $('#reportsLoadingState').removeClass('hidden');
+            $('#approvedReportsList').addClass('hidden');
+            $('#reportsEmptyState').addClass('hidden');
+            $('#reportsErrorState').addClass('hidden');
+            
             loadStudentFilterDropdown();
             setTimeout(loadApprovedReportsWithFilters, 300); // slight delay to ensure dropdown is populated
             reportTabLoaded = true;
@@ -2115,6 +2361,11 @@ function loadApprovedReportsWithFilters() {
 
     // Apply filters button
     $(document).on('click', '#applyReportFilters', function() {
+        loadApprovedReportsWithFilters();
+    });
+
+    // Retry loading reports button
+    $(document).on('click', '#retryLoadReports', function() {
         loadApprovedReportsWithFilters();
     });
 
@@ -2672,7 +2923,7 @@ function loadApprovedReportsWithFilters() {
         }
 
         // Show loading state
-        $('#changePasswordForm button[type="submit"]').prop('disabled', true).text('Verifying...');
+        $('#changePasswordForm button[type="submit"]').prop('disabled', true).html('<span class="spinner">⏳</span> Verifying...');
         
         console.log("Starting password change for coordinator:", coordinatorId);
         
@@ -2693,7 +2944,7 @@ function loadApprovedReportsWithFilters() {
                 if (response.success) {
                     console.log("Password verified, proceeding with update");
                     // Password verified, now update it
-                    $('#changePasswordForm button[type="submit"]').text('Updating...');
+                    $('#changePasswordForm button[type="submit"]').html('<span class="spinner">⏳</span> Updating Password...');
                     
                     $.ajax({
                         url: "ajaxhandler/attendanceAJAX.php",
@@ -2836,9 +3087,19 @@ function loadApprovedReportsWithFilters() {
         let cdrid = $("#hiddencdrid").val();
 
         if (!cdrid) {
-            alert("Coordinator ID not found.");
+            // Show error state
+            $('#studentsLoadingState').addClass('hidden');
+            $('#studentsContent').addClass('hidden');
+            $('#studentsErrorState').removeClass('hidden');
+            $('#allStudentsContainer').fadeIn();
             return;
         }
+
+        // Show loading state
+        $('#studentsLoadingState').removeClass('hidden');
+        $('#studentsContent').addClass('hidden');
+        $('#studentsErrorState').addClass('hidden');
+        $('#allStudentsContainer').fadeIn();
 
         console.log('Making AJAX request with cdrid:', cdrid);
         $.ajax({
@@ -2850,17 +3111,27 @@ function loadApprovedReportsWithFilters() {
                 console.log('AJAX response received:', response);
                 if (response.success) {
                     console.log('Success - Displaying students data');
+                    // Hide loading state, show content
+                    $('#studentsLoadingState').addClass('hidden');
+                    $('#studentsErrorState').addClass('hidden');
+                    $('#studentsContent').removeClass('hidden');
                     // Handle both response.data and response.students for compatibility
                     const studentsData = response.students || response.data || [];
                     displayAllStudents(studentsData);
                 } else {
                     console.error('Error in response:', response.message);
-                    alert("Error: " + (response.message || "Unknown error occurred."));
+                    // Show error state
+                    $('#studentsLoadingState').addClass('hidden');
+                    $('#studentsContent').addClass('hidden');
+                    $('#studentsErrorState').removeClass('hidden');
                 }
             },
             error: function(xhr, status, error) {
                 console.error("AJAX error:", status, error);
-                alert("Error fetching students. Please check the console for more information.");
+                // Show error state
+                $('#studentsLoadingState').addClass('hidden');
+                $('#studentsContent').addClass('hidden');
+                $('#studentsErrorState').removeClass('hidden');
             }
         });
     }
@@ -2868,6 +3139,16 @@ function loadApprovedReportsWithFilters() {
     // View All Students button click handler
     $(document).on('click', '#btnViewAllStudents', function() {
         loadAllStudentsData();
+    });
+
+    // Retry loading students button
+    $(document).on('click', '#retryLoadStudents', function() {
+        loadAllStudentsData();
+    });
+
+    // Retry loading companies button
+    $(document).on('click', '#retryLoadCompanies', function() {
+        loadAllCompaniesData();
     });
 
     // Function to display all students under coordinator
@@ -3661,6 +3942,12 @@ $(function(e)
             // Check if a CSV file is selected
             if ($("#csvFile").get(0).files.length > 0) {
                 console.log($("#csvFile").get(0).files); // Log selected files
+                
+                // Show loading indicator on submit button
+                const $submitBtn = $(this).find('button[type="submit"]');
+                const originalText = $submitBtn.text();
+                $submitBtn.prop('disabled', true).html('<span class="spinner">⏳</span> Uploading CSV...');
+                
                 $("#studentForm input, #studentForm select").prop("disabled", true); // Disable form inputs during submission
 
                 // AJAX request to upload CSV
@@ -3678,12 +3965,15 @@ $(function(e)
                             let cdrid = $("#hiddencdrid").val();
                             let ondate = $("#dtpondate").val();
                             fetchStudentList(currentSessionId, currentHteId, cdrid, ondate); // Refresh the student list
+                            $submitBtn.text('✅ CSV Uploaded');
                         } else {
                             // Only show error if no students were inserted
                             if (!response.inserted || response.inserted === 0) {
                                 alert(response.message); // Show error message only if nothing was inserted
                             }
+                            $submitBtn.prop('disabled', false).text(originalText);
                         }
+                        $("#studentForm input, #studentForm select").prop("disabled", false);
                         $("#studentForm").data('submitted', false);
                     },
                     error: function(xhr, status, error) {
@@ -3692,6 +3982,8 @@ $(function(e)
                             console.log("CSV upload error response:", xhr.responseText);
                         }
                         alert("An error occurred while uploading the CSV file. Please check the console for details.");
+                        $submitBtn.prop('disabled', false).text(originalText);
+                        $("#studentForm input, #studentForm select").prop("disabled", false);
                         $("#studentForm").data('submitted', false);
                     }
                 });
@@ -4160,6 +4452,11 @@ $(document).ready(function() {
                     });
 
                     $(document).off('click', '#btnSaveAllQuestions').on('click', '#btnSaveAllQuestions', function() {
+                        // Show loading indicator on button
+                        const $saveBtn = $(this);
+                        const originalText = $saveBtn.text();
+                        $saveBtn.prop('disabled', true).html('<span class="spinner">⏳</span> Saving Questions...');
+                        
                         var questions = [];
                         $('.question-body[contenteditable="true"], .text-gray-700[contenteditable="true"]').each(function() {
                             var questionId = $(this).data('questionid');
@@ -4178,12 +4475,19 @@ $(document).ready(function() {
                             success: function(response) {
                                 if (response.success) {
                                     $status.text('All changes saved!').removeClass('bg-blue-100 text-blue-700 bg-red-100 text-red-700').addClass('bg-green-100 text-green-700');
+                                    $saveBtn.prop('disabled', false).text('✅ Questions Saved');
+                                    // Reset button text after 2 seconds
+                                    setTimeout(() => {
+                                        $saveBtn.text(originalText);
+                                    }, 2000);
                                 } else {
                                     $status.text('Failed to save changes.').removeClass('bg-blue-100 text-blue-700 bg-green-100 text-green-700').addClass('bg-red-100 text-red-700');
+                                    $saveBtn.prop('disabled', false).text(originalText);
                                 }
                             },
                             error: function() {
                                 $status.text('Error saving changes.').removeClass('bg-blue-100 text-blue-700 bg-green-100 text-green-700').addClass('bg-red-100 text-red-700');
+                                $saveBtn.prop('disabled', false).text(originalText);
                             }
                         });
                     });
@@ -4829,9 +5133,12 @@ $(document).ready(function() {
                         <p class="text-green-800 font-semibold">✓ This student has been rated. Check the Review tab for details.</p>
                     </div>`;
                 } else if (evaluationData.evaluations && evaluationData.evaluations.length > 0) {
-                    // Group evaluations by category
+                    // Group evaluations by category with improved filtering
                     const evaluationsByCategory = {
-                        'soft': evaluationData.evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('soft')),
+                        'soft': evaluationData.evaluations.filter(ev => ev.category && 
+                            (ev.category.toLowerCase().includes('soft') || 
+                             ev.category.toLowerCase().includes('personal') || 
+                             ev.category.toLowerCase().includes('interpersonal'))),
                         'comm': evaluationData.evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('comm')),
                         'tech': evaluationData.evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('technical'))
                     };
@@ -4846,7 +5153,7 @@ $(document).ready(function() {
                             <div class="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border">
                                 <label for="mainDashboardCategoryDropdown" class="text-sm font-semibold text-gray-700 whitespace-nowrap">Filter by Category:</label>
                                 <select id="mainDashboardCategoryDropdown" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white">
-                                    <option value="soft" selected>Soft Skills (${evaluationsByCategory.soft.length})</option>
+                                    <option value="soft" selected>Personal & Soft Skills (${evaluationsByCategory.soft.length})</option>
                                     <option value="comm">Communication Skills (${evaluationsByCategory.comm.length})</option>
                                     <option value="tech">Technical Skills (${evaluationsByCategory.tech.length})</option>
                                 </select>
@@ -5100,7 +5407,7 @@ $(document).ready(function() {
             return;
         }
         
-        $button.prop('disabled', true).text('Saving All Categories...');
+        $button.prop('disabled', true).html('<span class="spinner">⏳</span> Saving All Categories...');
         
         // Save all ratings with multiple AJAX calls
         let completedSaves = 0;
@@ -5127,13 +5434,13 @@ $(document).ready(function() {
             data: ratingsData,
             success: function(response) {
                 if (response.success) {
-                    $button.removeClass('bg-green-600 hover:bg-green-700')
+                    $button.removeClass('bg-green-600 hover:bg-green-700 bg-yellow-600 hover:bg-yellow-700')
                            .addClass('bg-green-800 hover:bg-green-900')
-                           .text('✓ All Ratings Saved')
+                           .text('✓ All Categories Saved')
                            .prop('disabled', true);
                     
-                    // Disable all radio buttons in the visible container
-                    visibleContainer.find('.likert-radio').prop('disabled', true);
+                    // Disable all radio buttons in ALL categories (not just visible one)
+                    $('.category-eval-container').find('.likert-radio').prop('disabled', true);
                     
                     // Refresh the reviewed students list and evaluation data so future selections show the correct message
                     $.ajax({
@@ -5170,17 +5477,17 @@ $(document).ready(function() {
                         }
                     });
                     
-                    alert(`All ${selectedRatings.length} ratings saved successfully across all categories! Pre-assessment averages updated for Soft Skills, Communication Skills, and Technical Skills.`);
+                    alert(`✅ SUCCESS: All ${selectedRatings.length} ratings saved successfully across ALL categories!\n\nPre-assessment averages updated for:\n• Personal & Soft Skills\n• Communication Skills\n• Technical Skills\n\n🎉 Evaluation complete!`);
                 } else {
-                    alert('Error saving ratings: ' + (response.message || 'Unknown error'));
-                    $button.removeClass('bg-green-800 hover:bg-green-900')
+                    alert('❌ Error saving ratings: ' + (response.message || 'Unknown error'));
+                    $button.removeClass('bg-green-800 hover:bg-green-900 bg-yellow-600 hover:bg-yellow-700')
                            .addClass('bg-green-600 hover:bg-green-700')
                            .prop('disabled', false).text('Save All Ratings');
                 }
             },
             error: function() {
-                alert('Network error saving ratings. Please try again.');
-                $button.removeClass('bg-green-800 hover:bg-green-900')
+                alert('❌ Network error saving ratings. Please try again.');
+                $button.removeClass('bg-green-800 hover:bg-green-900 bg-yellow-600 hover:bg-yellow-700')
                        .addClass('bg-green-600 hover:bg-green-700')
                        .prop('disabled', false).text('Save All Ratings');
             }
@@ -5205,23 +5512,49 @@ $(document).ready(function() {
         if (targetContainer) {
             $(targetContainer).show();
             
-            // Reset the Save All Ratings button for the new category
+            // Update the Save All Ratings button based on OVERALL progress (all categories)
             const $saveButton = $('#saveAllRatingsBtn');
             const visibleContainer = $(targetContainer);
-            const hasRatedQuestions = visibleContainer.find('.likert-radio:disabled').length > 0;
             
-            if (hasRatedQuestions) {
-                // Some questions already rated in this category
-                $saveButton.removeClass('bg-green-600 hover:bg-green-700')
+            // Check if ALL categories have been saved (not just the current one)
+            let allCategoriesSaved = true;
+            let totalQuestions = 0;
+            let totalRated = 0;
+            let totalSaved = 0;
+            
+            $('.category-eval-container').each(function() {
+                const $container = $(this);
+                const categoryQuestions = $container.find('input[type="radio"][value="5"]').length;
+                const categoryRated = $container.find('.likert-radio:checked').length;
+                const categorySaved = $container.find('.likert-radio:disabled').length;
+                
+                totalQuestions += categoryQuestions;
+                totalRated += categoryRated;
+                totalSaved += categorySaved;
+                
+                if (categorySaved < categoryQuestions && categoryQuestions > 0) {
+                    allCategoriesSaved = false;
+                }
+            });
+            
+            if (allCategoriesSaved && totalQuestions > 0) {
+                // ALL categories have been saved
+                $saveButton.removeClass('bg-green-600 hover:bg-green-700 bg-yellow-600 hover:bg-yellow-700')
                           .addClass('bg-green-800 hover:bg-green-900')
-                          .text('✓ All Ratings Saved')
+                          .text('✓ All Categories Saved')
                           .prop('disabled', true);
-            } else {
-                // Reset to default state for new category
-                $saveButton.removeClass('bg-green-800 hover:bg-green-900')
+            } else if (totalRated === totalQuestions && totalQuestions > 0) {
+                // All questions rated but not yet saved
+                $saveButton.removeClass('bg-green-800 hover:bg-green-900 bg-yellow-600 hover:bg-yellow-700')
                           .addClass('bg-green-600 hover:bg-green-700')
-                          .text('Save All Ratings')
+                          .text('Save All Categories')
                           .prop('disabled', false);
+            } else {
+                // Still need to rate more questions
+                $saveButton.removeClass('bg-green-600 hover:bg-green-700 bg-green-800 hover:bg-green-900')
+                          .addClass('bg-yellow-600 hover:bg-yellow-700')
+                          .text(`Rate All Categories (${totalRated}/${totalQuestions})`)
+                          .prop('disabled', true);
             }
         } else {
             console.warn('[WARNING] No container found for category:', selectedCategory);
@@ -5319,7 +5652,7 @@ $(document).ready(function() {
                 <label for="reviewCategoryDropdown" class="block text-sm font-medium text-gray-700 mb-2">Filter by Category:</label>
                 <select id="reviewCategoryDropdown" class="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     <option value="all">All Categories</option>
-                    <option value="soft">Soft Skills</option>
+                    <option value="soft">Personal & Soft Skills</option>
                     <option value="comm">Communication Skills</option>
                     <option value="tech">Technical Skills</option>
                 </select>
@@ -5413,9 +5746,12 @@ $(document).ready(function() {
             contentType: 'application/json',
             success: function(response) {
                 if (response.success && response.evaluations && response.evaluations.length > 0) {
-                    // Group evaluations by category
+                    // Group evaluations by category with improved filtering
                     const evalsByCategory = {
-                        'Soft Skills': response.evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('soft')),
+                        'Personal & Soft Skills': response.evaluations.filter(ev => ev.category && 
+                            (ev.category.toLowerCase().includes('soft') || 
+                             ev.category.toLowerCase().includes('personal') || 
+                             ev.category.toLowerCase().includes('interpersonal'))),
                         'Communication Skills': response.evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('comm')),
                         'Technical Skills': response.evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('technical'))
                     };

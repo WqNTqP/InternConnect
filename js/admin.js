@@ -1,43 +1,125 @@
 function tryLogin() {
-    let un = $("#txtAdminEmail").val(); // Change to the correct ID for email
-    let pw = $("#txtAdminPassword").val(); // Change to the correct ID for password
+    let un = $("#txtAdminEmail").val();
+    let pw = $("#txtAdminPassword").val();
     
-    // Check if username and password are not empty
     if (un.trim() !== "" && pw.trim() !== "") {
+        // Trigger loading state
+        window.setAdminLoading(true);
+        
         $.ajax({
-            url: "ajaxhandler/adminLoginAjax.php", // Adjust path if needed
+            url: "ajaxhandler/adminLoginAjax.php",
             type: "POST",
             dataType: "json",
-            data: { user_name: un, password: pw, action: "verifyUser" }, // Send username, password, and action
+            data: { user_name: un, password: pw, action: "verifyUser" },
             beforeSend: function() {
-                $("#diverror").removeClass("applyerrordiv");
-                $("#lockscreen").addClass("applylockscreen");
+                $("#diverror").hide();
+                $("#diverror").removeClass("block").addClass("hidden");
             },
             success: function(rv) {
-                $("#lockscreen").removeClass("applylockscreen");
+                // Hide loading state
+                window.setAdminLoading(false);
                 
-                // Check response status for login validation
                 if (rv.status === "ALL OK") {
-                    // Redirect based on user role
+                    showMessage("Login successful! Redirecting...", "success");
+                    
                     if (rv.data.role === 'ADMIN') {
-                        document.location.replace("admindashboard.php"); // For Coordinator
+                        setTimeout(() => {
+                            document.location.replace("admindashboard.php");
+                        }, 1000);
                     } 
                 } else {
-                    $("#diverror").addClass("applyerrordiv");
-                    $("#diverror").text(rv.status); // Show the error message from the server
+                    let errorMessage = "";
+                    switch(rv.status) {
+                        case "USER NAME DOES NOT EXIST":
+                            errorMessage = "No account found with this email address. Please check your email and try again.";
+                            break;
+                        case "Wrong Password":
+                            errorMessage = "Incorrect password. Please check your password and try again.";
+                            break;
+                        case "Database Connection Failed":
+                            errorMessage = "Unable to connect to the database. Please try again later.";
+                            break;
+                        case "Database Error":
+                            errorMessage = "A database error occurred. Please contact support if this continues.";
+                            break;
+                        default:
+                            errorMessage = rv.status || "An unexpected error occurred. Please try again.";
+                    }
+                    showMessage(errorMessage, "error");
                 }
             },
             error: function(xhr, status, error) {
-                $("#lockscreen").removeClass("applylockscreen");
-                $("#diverror").addClass("applyerrordiv");
-                $("#diverror").text("An error occurred: " + error); // General error message
+                window.setAdminLoading(false);
+                
+                let errorMessage = "Connection error. Please check your internet connection and try again.";
+                if (xhr.status === 404) {
+                    errorMessage = "Login service not found. Please contact support.";
+                } else if (xhr.status === 500) {
+                    errorMessage = "Server error occurred. Please try again later.";
+                }
+                showMessage(errorMessage, "error");
             }
         });
     } else {
-        // Show error if either username or password is empty
-        $("#diverror").addClass("applyerrordiv");
-        $("#diverror").text("Please enter both username and password.");
+        showMessage("Please enter both email and password.", "error");
     }
+}
+
+function showMessage(message, type = "error") {
+    console.log('showMessage called with:', message, type);
+    const errorDiv = $("#diverror");
+    const messageLabel = $("#errormessage");
+    
+    console.log('Error div found:', errorDiv.length);
+    console.log('Message label found:', messageLabel.length);
+    
+    // Multiple approaches to set the message text
+    if (messageLabel.length > 0) {
+        messageLabel.text(message);
+        console.log('Message set via messageLabel');
+    } else {
+        // Fallback 1: Find label by ID
+        const labelById = errorDiv.find('#errormessage');
+        if (labelById.length > 0) {
+            labelById.text(message);
+            console.log('Message set via labelById');
+        } else {
+            // Fallback 2: Find any label
+            const anyLabel = errorDiv.find('label');
+            if (anyLabel.length > 0) {
+                anyLabel.text(message);
+                console.log('Message set via anyLabel');
+            } else {
+                // Fallback 3: Create a simple error display
+                errorDiv.html('<div class="p-4 text-red-700 font-medium">' + message + '</div>');
+                console.log('Message set via HTML fallback');
+            }
+        }
+    }
+    
+    // Multiple approaches to show the error div
+    errorDiv.removeClass("hidden").addClass("block").show().css({
+        'display': 'block',
+        'visibility': 'visible',
+        'opacity': '1'
+    });
+    
+    if (type === "success") {
+        errorDiv.find(".border-red-500").removeClass("border-red-500").addClass("border-green-500");
+        errorDiv.find(".bg-red-50").removeClass("bg-red-50").addClass("bg-green-50");
+        errorDiv.find(".text-red-500").removeClass("text-red-500").addClass("text-green-500");
+        errorDiv.find(".text-red-700").removeClass("text-red-700").addClass("text-green-700");
+    } else {
+        // Reset to error styling (in case it was changed to success)
+        errorDiv.find(".border-green-500").removeClass("border-green-500").addClass("border-red-500");
+        errorDiv.find(".bg-green-50").removeClass("bg-green-50").addClass("bg-red-50");
+        errorDiv.find(".text-green-500").removeClass("text-green-500").addClass("text-red-500");
+        errorDiv.find(".text-green-700").removeClass("text-green-700").addClass("text-red-700");
+    }
+    
+    console.log('Error div visible?', errorDiv.is(':visible'));
+    console.log('Error div classes after:', errorDiv.attr('class'));
+    console.log('Error div HTML after:', errorDiv.html());
 }
 
 $(document).ready(function() {
@@ -53,4 +135,9 @@ $(document).ready(function() {
             tryLogin(); // Call the login function
         }
     });
+
+    // Test function to ensure error display works
+    window.testAdminError = function() {
+        showMessage("Test error message for admin login", "error");
+    };
 });

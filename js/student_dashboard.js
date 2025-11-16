@@ -194,6 +194,11 @@ $(document).ready(function() {
     });
     // Save Questions button logic for post-assessment
     $('#saveQuestionsBtn').on('click', function() {
+        // Show loading indicator and disable button immediately
+        const $saveBtn = $(this);
+        const originalText = $saveBtn.text();
+        $saveBtn.prop('disabled', true).html('<span class="spinner">⏳</span> Saving...');
+        
         const categories = [
             { id: 'sysdevCategory', prefix: 'sysdev', label: 'System Development' },
             { id: 'researchCategory', prefix: 'research', label: 'Research' },
@@ -237,6 +242,8 @@ $(document).ready(function() {
                 msg += 'Missing:<br>' + missing.join('<br>');
             }
             $('#postAssessmentFormMessage').html(msg).css('color', 'orange');
+            // Restore button state on validation error
+            $saveBtn.prop('disabled', false).text(originalText);
             return;
         }
         // Get student_id from the hidden field
@@ -249,14 +256,21 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     $('#postAssessmentFormMessage').text('Questions saved! You can edit them before submitting ratings.').css('color', 'green');
+                    $saveBtn.prop('disabled', false).text('✅ Saved');
+                    // Reset button text after 2 seconds
+                    setTimeout(() => {
+                        $saveBtn.text(originalText);
+                    }, 2000);
                 } else {
                     $('#postAssessmentFormMessage').text('Error: ' + (response.error || 'Unknown error')).css('color', 'red');
+                    $saveBtn.prop('disabled', false).text(originalText);
                 }
             },
             error: function(xhr) {
                 let msg = 'Error saving questions.';
                 if (xhr.responseJSON && xhr.responseJSON.error) msg += ' ' + xhr.responseJSON.error;
                 $('#postAssessmentFormMessage').text(msg).css('color', 'red');
+                $saveBtn.prop('disabled', false).text(originalText);
             }
         });
     });
@@ -264,6 +278,13 @@ $(document).ready(function() {
     $(document).off('submit', '#postAssessmentForm');
     $(document).on('submit', '#postAssessmentForm', function(e) {
         e.preventDefault();
+        
+        // Show loading indicator and disable submit button immediately
+        const $submitBtn = $('#submitPostAssessmentBtn, button[type="submit"]', this);
+        const originalText = $submitBtn.first().text();
+        $submitBtn.prop('disabled', true).html('<span class="spinner">⏳</span> Submitting...');
+        $('#postAssessmentFormMessage').html('<span style="color:blue;font-weight:bold;">⏳ Submitting post-assessment, please wait...</span>');
+        
         const categories = [
             { id: 'sysdevCategory', prefix: 'sysdev', label: 'System Development' },
             { id: 'researchCategory', prefix: 'research', label: 'Research' },
@@ -316,6 +337,8 @@ $(document).ready(function() {
                 msg += 'Missing:<br>' + missing.join('<br>');
             }
             $('#postAssessmentFormMessage').html(msg).css('color', 'red');
+            // Restore button state on validation error
+            $submitBtn.prop('disabled', false).text(originalText);
             return;
         }
         $.ajax({
@@ -325,7 +348,8 @@ $(document).ready(function() {
             data: JSON.stringify({ questions }),
             success: function(response) {
                 if (response.success) {
-                    $('#postAssessmentFormMessage').text('Post-assessment saved successfully!').css('color', 'green');
+                    $('#postAssessmentFormMessage').html('<span style="color:green;font-weight:bold;">✅ Post-assessment submitted successfully!</span>');
+                    $submitBtn.text('✅ Submitted Successfully');
                     // Set radio buttons to saved ratings, including personal skills
                     if (response.saved && Array.isArray(response.saved)) {
                         response.saved.forEach(function(item, idx) {
@@ -343,12 +367,14 @@ $(document).ready(function() {
                     }
                 } else {
                     $('#postAssessmentFormMessage').text('Error: ' + (response.error || 'Unknown error')).css('color', 'red');
+                    $submitBtn.prop('disabled', false).text(originalText);
                 }
             },
             error: function(xhr) {
                 let msg = 'Error saving post-assessment.';
                 if (xhr.responseJSON && xhr.responseJSON.error) msg += ' ' + xhr.responseJSON.error;
                 $('#postAssessmentFormMessage').text(msg).css('color', 'red');
+                $submitBtn.prop('disabled', false).text(originalText);
             }
         });
     });
@@ -2970,8 +2996,8 @@ function submitFinalReport() {
         // Send existing images per day
         formData.append('existingImages', JSON.stringify(existingImagesPerDay));
 
-        // Show submitting state
-        $("#submitReportBtn").text('Submitting...').prop('disabled', true);
+        // Show submitting state with spinner
+        $("#submitReportBtn").html('<span class="spinner">⏳</span> Submitting...').prop('disabled', true);
         
         // Clear any existing return reason message
         $('#returnReasonContainer').empty();
@@ -3104,6 +3130,12 @@ $(document).ready(function() {
             $('#evaluationFormMessage').html('<span style="color:red;font-weight:bold;">Student ID not found.</span>');
             return;
         }
+        // Show loading indicator and disable submit button immediately
+        const $submitBtn = $('#evaluationForm button[type="submit"], #submitEvaluationBtn, #submitAnswersBtn, #submitBtn, #submitAnswers');
+        const originalText = $submitBtn.first().text();
+        $submitBtn.prop('disabled', true).text('Submitting...');
+        $('#evaluationFormMessage').html('<span style="color:blue;font-weight:bold;">⏳ Submitting your answers, please wait...</span>');
+        
         // AJAX submit
         $.ajax({
             url: 'ajaxhandler/studentEvaluationAjax.php',
@@ -3114,17 +3146,22 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     evaluationSubmitted = true;
-                    // Disable submit button
-                    $('#evaluationForm button[type="submit"], #submitEvaluationBtn, #submitAnswersBtn, #submitBtn, #submitAnswers').prop('disabled', true);
+                    // Keep submit button disabled and show success message
+                    $submitBtn.text('✅ Submitted Successfully');
+                    $('#evaluationFormMessage').html('<span style="color:green;font-weight:bold;">✅ Answers submitted successfully! Please refresh the page.</span>');
                     // Show modal instructing to refresh the page
                     showRefreshModal();
                     $('#evaluationForm')[0].reset();
                 } else {
+                    // Re-enable button on error and restore original text
+                    $submitBtn.prop('disabled', false).text(originalText);
                     $('#evaluationFormMessage').html('<span style="color:red;font-weight:bold;">' + (response.message || 'Failed to submit answers.') + '</span>');
                 }
             },
             error: function() {
-                $('#evaluationFormMessage').html('<span style="color:red;font-weight:bold;">Error submitting answers.</span>');
+                // Re-enable button on error and restore original text  
+                $submitBtn.prop('disabled', false).text(originalText);
+                $('#evaluationFormMessage').html('<span style="color:red;font-weight:bold;">Error submitting answers. Please try again.</span>');
             }
         });
 // Modal instructing user to refresh the page after submission

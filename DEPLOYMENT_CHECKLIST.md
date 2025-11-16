@@ -37,10 +37,10 @@
 2. **Render Environment Variables:**
    Set these in your Render dashboard:
    ```
-   DB_HOST=sql3.freesqldatabase.com:3306
-   DB_USERNAME=sql3806785
-   DB_PASSWORD=DAl9FGjxvF
-   DB_NAME=sql3806785
+   DB_HOST=sql102.infinityfree.com:3306
+   DB_USERNAME=if0_40429035
+   DB_PASSWORD=bRXtz7w8GIW8X
+   DB_NAME=if0_40429035_internconnect
    ```
 
 3. **Deploy:**
@@ -52,6 +52,6 @@
 - **Production URL:** `https://your-app.onrender.com`
 - **Flask API:** Internal on port 5000 (not directly accessible)
 - **API Calls:** Go through PHP proxies (`api/predict.php`, `api/post_analysis.php`)
-- **Database:** Both Flask and PHP use the same FreeSQLDatabase
+- **Database:** Both Flask and PHP use the same InfinityFree MySQL database
 
 ## ✅ Ready to Deploy!

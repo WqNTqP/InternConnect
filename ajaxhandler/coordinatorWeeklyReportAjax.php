@@ -78,6 +78,9 @@ try {
         case 'getWeeklyReports':
             getWeeklyReports();
             break;
+        case 'getDayReport':
+            getDayReport();
+            break;
         case 'saveReportDraft':
             saveReportDraft($studentId);
             break;
@@ -1223,5 +1226,64 @@ function generateWeeklyReportPDF($studentId) {
     // Output PDF to browser
     $pdf->Output('I', "Weekly_Report_{$studentName}_Week_{$week}.pdf");
     exit;
+}
+
+function getDayReport() {
+    global $conn;
+    
+    $reportId = $_POST['reportId'] ?? null;
+    $day = $_POST['day'] ?? null;
+    
+    if (!$reportId || !$day) {
+        echo json_encode(['status' => 'error', 'message' => 'Missing report ID or day']);
+        return;
+    }
+    
+    // Get base URL for image paths
+    $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF'], 2) . '/';
+    
+    try {
+        // Get report details
+        $stmt = $conn->prepare("
+            SELECT r.*, ri.image_filename, ri.day_of_week
+            FROM weekly_reports r
+            LEFT JOIN report_images ri ON r.report_id = ri.report_id AND ri.day_of_week = ?
+            WHERE r.report_id = ?
+        ");
+        $stmt->execute([$day, $reportId]);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (empty($results)) {
+            echo json_encode(['status' => 'error', 'message' => 'Report not found']);
+            return;
+        }
+        
+        $report = $results[0];
+        $dayData = [];
+        
+        // Get description for the specific day
+        $descriptionField = $day . '_description';
+        $dayData['description'] = $report[$descriptionField] ?? 'No description provided for this day.';
+        
+        // Get images for the specific day
+        $dayData['images'] = [];
+        foreach ($results as $row) {
+            if ($row['image_filename'] && $row['day_of_week'] === $day) {
+                $dayData['images'][] = [
+                    'filename' => $row['image_filename'],
+                    'url' => getImageUrl($row['image_filename'], $baseUrl)
+                ];
+            }
+        }
+        
+        echo json_encode([
+            'status' => 'success',
+            'dayData' => $dayData
+        ]);
+        
+    } catch (Exception $e) {
+        error_log("Error in getDayReport: " . $e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Database error']);
+    }
 }
 

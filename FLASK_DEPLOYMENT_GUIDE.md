@@ -29,10 +29,10 @@ InternConnect-API/
 
 3. **Set Environment Variables**:
    ```
-   DB_HOST=sql3.freesqldatabase.com:3306
-   DB_USERNAME=sql3806785
-   DB_PASSWORD=DAl9FGjxvF
-   DB_NAME=sql3806785
+   DB_HOST=sql102.infinityfree.com:3306
+   DB_USERNAME=if0_40429035
+   DB_PASSWORD=bRXtz7w8GIW8X
+   DB_NAME=if0_40429035_internconnect
    ```
 
 4. **Deploy**: Your API will be available at:

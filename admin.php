@@ -176,8 +176,17 @@
                         </div>
                         
                         <button type="submit" id="btnAdminLogin" 
-                            class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
-                            LOGIN
+                            class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center font-semibold"
+                            x-bind:class="{ 'opacity-75 cursor-wait': loading }"
+                            x-bind:disabled="loading">
+                            <span x-show="!loading">LOGIN</span>
+                            <div x-show="loading" class="flex items-center">
+                                <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Signing in...</span>
+                            </div>
                         </button>
                     </form>
 
@@ -206,6 +215,33 @@
 
     <script src="js/jquery.js"></script>
     <script src="js/admin.js"></script>
+    
+    <script>
+        // Global function to control Alpine.js loading state
+        window.setAdminLoading = function(state) {
+            const alpineComponent = document.querySelector('[x-data]');
+            if (alpineComponent && alpineComponent._x_dataStack && alpineComponent._x_dataStack[0]) {
+                alpineComponent._x_dataStack[0].loading = state;
+            }
+        };
+
+        // Debug function to test error display
+        window.testErrorDisplay = function() {
+            console.log('Testing error display...');
+            setTimeout(function() {
+                if (typeof showMessage === 'function') {
+                    showMessage("Test error message - this should be visible!", "error");
+                } else {
+                    console.error('showMessage function not found!');
+                }
+            }, 100);
+        };
+
+        // Auto-test after page load
+        $(document).ready(function() {
+            console.log('Admin page loaded. You can call testErrorDisplay() in console to test error display.');
+        });
+    </script>
 </body>
 </html>
     </div>

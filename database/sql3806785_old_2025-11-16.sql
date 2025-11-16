@@ -1,13 +1,14 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 4.7.1
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Generation Time: Nov 08, 2025 at 06:12 PM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Host: sql3.freesqldatabase.com
+-- Generation Time: Nov 13, 2025 at 03:30 AM
+-- Server version: 5.5.54-0ubuntu0.12.04.1
+-- PHP Version: 7.0.33-0ubuntu0.16.04.16
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET AUTOCOMMIT = 0;
 START TRANSACTION;
 SET time_zone = "+00:00";
 
@@ -18,7 +19,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `attendancetrackernp`
+-- Database: `sql3806785`
 --
 
 -- --------------------------------------------------------
@@ -38,16 +39,16 @@ CREATE TABLE `coordinator` (
   `ROLE` enum('COORDINATOR','ADMIN','SUPERADMIN') NOT NULL DEFAULT 'COORDINATOR',
   `PROFILE` varchar(255) DEFAULT NULL,
   `HTE_ID` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `coordinator`
 --
 
 INSERT INTO `coordinator` (`COORDINATOR_ID`, `NAME`, `EMAIL`, `CONTACT_NUMBER`, `DEPARTMENT`, `USERNAME`, `PASSWORD`, `ROLE`, `PROFILE`, `HTE_ID`) VALUES
-(123456, 'Kim Charles', 'shadowd6163@gmail.com', '09513762404', 'IT', 'kim', '123456', 'ADMIN', NULL, 31),
+(123456, 'Kim Charles', 'shadowd6163@gmail.com', '09513762404', 'IT', 'kim', '123456', 'COORDINATOR', NULL, NULL),
 (59828994, 'Kim Charles', 'shadowd6163@gmail.com', '09513762404', 'IT', 'shadow', '123456', 'ADMIN', '68db8cd8ec14c_59828994.jpg', 1),
-(59828996, 'KIM CHARLES', 'kimcharles.emping@hcdc.edu.ph', '09513762404', 'IT_DEPARTMENT', 'kimcharles', '123456', 'COORDINATOR', '690cead8f28fa_59828996.jpg', NULL),
+(59828996, 'KIM CHARLES1', 'kimcharles.emping@hcdc.edu.ph', '09513762404', 'IT_DEPARTMENT', 'kimcharles', '123456', 'COORDINATOR', 'https://res.cloudinary.com/dubq3bubx/image/upload/v1762816735/uploads/admin_profiles/hjoslzgbz7btrjpt9eui.png', NULL),
 (59828997, 'Christine Gumia', 'christine.gumia@hcdc.edu.ph', '09513762404', 'IT', 'Christine', '123456', 'ADMIN', NULL, 30),
 (59828999, 'superadmin', 'superadmin@gmail.com', '09513762404', 'IT', 'super', 'admin', 'SUPERADMIN', NULL, NULL);
 
@@ -63,94 +64,54 @@ CREATE TABLE `coordinator_evaluation` (
   `STUDENT_ID` int(11) DEFAULT NULL,
   `coordinator_id` varchar(20) NOT NULL,
   `rating` int(11) NOT NULL,
-  `timestamp` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `coordinator_evaluation`
 --
 
 INSERT INTO `coordinator_evaluation` (`id`, `student_evaluation_id`, `STUDENT_ID`, `coordinator_id`, `rating`, `timestamp`) VALUES
-(643, 404, 59828881, '59828996', 5, '2025-10-17 22:29:56'),
-(644, 405, 59828881, '59828996', 4, '2025-10-17 22:29:56'),
-(645, 406, 59828881, '59828996', 5, '2025-10-17 22:29:56'),
-(646, 407, 59828881, '59828996', 4, '2025-10-17 22:29:56'),
-(647, 408, 59828881, '59828996', 5, '2025-10-17 22:29:56'),
-(648, 409, 59828881, '59828996', 4, '2025-10-17 22:29:56'),
-(649, 410, 59828881, '59828996', 5, '2025-10-17 22:29:56'),
-(650, 411, 59828881, '59828996', 4, '2025-10-17 22:29:56'),
-(651, 412, 59828881, '59828996', 5, '2025-10-17 22:29:56'),
-(652, 413, 59828881, '59828996', 4, '2025-10-17 22:29:56'),
-(653, 414, 59828881, '59828996', 5, '2025-10-17 22:29:56'),
-(654, 415, 59828881, '59828996', 4, '2025-10-17 22:29:56'),
-(655, 416, 59828881, '59828996', 5, '2025-10-17 22:29:56'),
-(656, 417, 59828881, '59828996', 4, '2025-10-17 22:29:56'),
-(657, 418, 59828881, '59828996', 5, '2025-10-17 22:29:56'),
-(658, 419, 59828881, '59828996', 4, '2025-10-17 22:29:56'),
-(659, 420, 59828881, '59828996', 5, '2025-10-17 22:29:56'),
-(660, 421, 59828881, '59828996', 4, '2025-10-17 22:29:56'),
-(661, 422, 59828881, '59828996', 5, '2025-10-17 22:29:56'),
-(662, 423, 59828881, '59828996', 4, '2025-10-17 22:29:56'),
-(663, 464, 59829532, '59828996', 4, '2025-10-18 14:40:26'),
-(664, 465, 59829532, '59828996', 5, '2025-10-18 14:40:26'),
-(665, 466, 59829532, '59828996', 4, '2025-10-18 14:40:26'),
-(666, 467, 59829532, '59828996', 5, '2025-10-18 14:40:26'),
-(667, 468, 59829532, '59828996', 4, '2025-10-18 14:40:26'),
-(668, 469, 59829532, '59828996', 5, '2025-10-18 14:40:26'),
-(669, 470, 59829532, '59828996', 4, '2025-10-18 14:40:26'),
-(670, 471, 59829532, '59828996', 5, '2025-10-18 14:40:26'),
-(671, 472, 59829532, '59828996', 4, '2025-10-18 14:40:26'),
-(672, 473, 59829532, '59828996', 5, '2025-10-18 14:40:26'),
-(673, 474, 59829532, '59828996', 4, '2025-10-18 14:40:26'),
-(674, 475, 59829532, '59828996', 3, '2025-10-18 14:40:26'),
-(675, 476, 59829532, '59828996', 4, '2025-10-18 14:40:26'),
-(676, 477, 59829532, '59828996', 5, '2025-10-18 14:40:26'),
-(677, 478, 59829532, '59828996', 4, '2025-10-18 14:40:26'),
-(678, 479, 59829532, '59828996', 3, '2025-10-18 14:40:26'),
-(679, 480, 59829532, '59828996', 5, '2025-10-18 14:40:26'),
-(680, 481, 59829532, '59828996', 4, '2025-10-18 14:40:26'),
-(681, 482, 59829532, '59828996', 5, '2025-10-18 14:40:26'),
-(682, 483, 59829532, '59828996', 4, '2025-10-18 14:40:26'),
-(683, 484, 59829663, '59828996', 5, '2025-10-18 20:06:14'),
-(684, 485, 59829663, '59828996', 4, '2025-10-18 20:06:14'),
-(685, 486, 59829663, '59828996', 5, '2025-10-18 20:06:14'),
-(686, 487, 59829663, '59828996', 4, '2025-10-18 20:06:14'),
-(687, 488, 59829663, '59828996', 5, '2025-10-18 20:06:14'),
-(688, 489, 59829663, '59828996', 4, '2025-10-18 20:06:14'),
-(689, 490, 59829663, '59828996', 5, '2025-10-18 20:06:14'),
-(690, 491, 59829663, '59828996', 4, '2025-10-18 20:06:14'),
-(691, 492, 59829663, '59828996', 5, '2025-10-18 20:06:14'),
-(692, 493, 59829663, '59828996', 4, '2025-10-18 20:06:14'),
-(693, 494, 59829663, '59828996', 5, '2025-10-18 20:06:14'),
-(694, 495, 59829663, '59828996', 4, '2025-10-18 20:06:14'),
-(695, 496, 59829663, '59828996', 5, '2025-10-18 20:06:14'),
-(696, 497, 59829663, '59828996', 4, '2025-10-18 20:06:14'),
-(697, 498, 59829663, '59828996', 5, '2025-10-18 20:06:14'),
-(698, 499, 59829663, '59828996', 4, '2025-10-18 20:06:14'),
-(699, 500, 59829663, '59828996', 5, '2025-10-18 20:06:14'),
-(700, 501, 59829663, '59828996', 4, '2025-10-18 20:06:14'),
-(701, 502, 59829663, '59828996', 5, '2025-10-18 20:06:14'),
-(702, 503, 59829663, '59828996', 4, '2025-10-18 20:06:14'),
-(703, 524, 67890, '59828996', 3, '2025-10-20 12:47:56'),
-(704, 525, 67890, '59828996', 4, '2025-10-20 12:47:56'),
-(705, 526, 67890, '59828996', 5, '2025-10-20 12:47:56'),
-(706, 527, 67890, '59828996', 4, '2025-10-20 12:47:56'),
-(707, 528, 67890, '59828996', 5, '2025-10-20 12:47:56'),
-(708, 529, 67890, '59828996', 4, '2025-10-20 12:47:57'),
-(709, 530, 67890, '59828996', 3, '2025-10-20 12:47:57'),
-(710, 531, 67890, '59828996', 5, '2025-10-20 12:47:57'),
-(711, 532, 67890, '59828996', 4, '2025-10-20 12:47:57'),
-(712, 533, 67890, '59828996', 4, '2025-10-20 12:47:57'),
-(713, 534, 67890, '59828996', 3, '2025-10-20 12:47:57'),
-(714, 535, 67890, '59828996', 4, '2025-10-20 12:47:57'),
-(715, 536, 67890, '59828996', 5, '2025-10-20 12:47:57'),
-(716, 537, 67890, '59828996', 4, '2025-10-20 12:47:57'),
-(717, 538, 67890, '59828996', 4, '2025-10-20 12:47:57'),
-(718, 539, 67890, '59828996', 5, '2025-10-20 12:47:57'),
-(719, 540, 67890, '59828996', 4, '2025-10-20 12:47:57'),
-(720, 541, 67890, '59828996', 5, '2025-10-20 12:47:57'),
-(721, 542, 67890, '59828996', 4, '2025-10-20 12:47:57'),
-(722, 543, 67890, '59828996', 5, '2025-10-20 12:47:57');
+(643, 404, 59828881, '59828996', 5, '2025-10-17 14:29:56'),
+(644, 405, 59828881, '59828996', 4, '2025-10-17 14:29:56'),
+(645, 406, 59828881, '59828996', 5, '2025-10-17 14:29:56'),
+(646, 407, 59828881, '59828996', 4, '2025-10-17 14:29:56'),
+(647, 408, 59828881, '59828996', 5, '2025-10-17 14:29:56'),
+(648, 409, 59828881, '59828996', 4, '2025-10-17 14:29:56'),
+(649, 410, 59828881, '59828996', 5, '2025-10-17 14:29:56'),
+(650, 411, 59828881, '59828996', 4, '2025-10-17 14:29:56'),
+(651, 412, 59828881, '59828996', 5, '2025-10-17 14:29:56'),
+(652, 413, 59828881, '59828996', 4, '2025-10-17 14:29:56'),
+(653, 414, 59828881, '59828996', 5, '2025-10-17 14:29:56'),
+(654, 415, 59828881, '59828996', 4, '2025-10-17 14:29:56'),
+(655, 416, 59828881, '59828996', 5, '2025-10-17 14:29:56'),
+(656, 417, 59828881, '59828996', 4, '2025-10-17 14:29:56'),
+(657, 418, 59828881, '59828996', 5, '2025-10-17 14:29:56'),
+(658, 419, 59828881, '59828996', 4, '2025-10-17 14:29:56'),
+(659, 420, 59828881, '59828996', 5, '2025-10-17 14:29:56'),
+(660, 421, 59828881, '59828996', 4, '2025-10-17 14:29:56'),
+(661, 422, 59828881, '59828996', 5, '2025-10-17 14:29:56'),
+(662, 423, 59828881, '59828996', 4, '2025-10-17 14:29:56'),
+(663, 464, 59829532, '59828996', 4, '2025-10-18 06:40:26'),
+(664, 465, 59829532, '59828996', 5, '2025-10-18 06:40:26'),
+(665, 466, 59829532, '59828996', 4, '2025-10-18 06:40:26'),
+(666, 467, 59829532, '59828996', 5, '2025-10-18 06:40:26'),
+(667, 468, 59829532, '59828996', 4, '2025-10-18 06:40:26'),
+(668, 469, 59829532, '59828996', 5, '2025-10-18 06:40:26'),
+(669, 470, 59829532, '59828996', 4, '2025-10-18 06:40:26'),
+(670, 471, 59829532, '59828996', 5, '2025-10-18 06:40:26'),
+(671, 472, 59829532, '59828996', 4, '2025-10-18 06:40:26'),
+(672, 473, 59829532, '59828996', 5, '2025-10-18 06:40:26'),
+(673, 474, 59829532, '59828996', 4, '2025-10-18 06:40:26'),
+(674, 475, 59829532, '59828996', 3, '2025-10-18 06:40:26'),
+(675, 476, 59829532, '59828996', 4, '2025-10-18 06:40:26'),
+(676, 477, 59829532, '59828996', 5, '2025-10-18 06:40:26'),
+(677, 478, 59829532, '59828996', 4, '2025-10-18 06:40:26'),
+(678, 479, 59829532, '59828996', 3, '2025-10-18 06:40:26'),
+(679, 480, 59829532, '59828996', 5, '2025-10-18 06:40:26'),
+(680, 481, 59829532, '59828996', 4, '2025-10-18 06:40:26'),
+(681, 482, 59829532, '59828996', 5, '2025-10-18 06:40:26'),
+(682, 483, 59829532, '59828996', 4, '2025-10-18 06:40:26');
 
 -- --------------------------------------------------------
 
@@ -163,7 +124,7 @@ CREATE TABLE `evaluation_questions` (
   `category` varchar(50) NOT NULL,
   `question_text` text NOT NULL,
   `status` enum('active','inactive') DEFAULT 'active'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `evaluation_questions`
@@ -196,7 +157,17 @@ INSERT INTO `evaluation_questions` (`question_id`, `category`, `question_text`, 
 (24, 'Personal and Interpersonal Skills', 'Demonstrated adequate knowledge of work done.', 'active'),
 (25, 'Personal and Interpersonal Skills', 'Demonstrated promptness and active attendance.', 'active'),
 (26, 'Personal and Interpersonal Skills', 'Demonstrated skills in inter-personal relations.', 'active'),
-(27, 'Personal and Interpersonal Skills', 'Demonstrated overall performance proficiency.', 'active');
+(27, 'Personal and Interpersonal Skills', 'Demonstrated overall performance proficiency.', 'active'),
+(28, 'Technical Skills', 'Walk me through your systematic approach to debugging a program that produces unexpected results or crashes intermittently.', 'active'),
+(29, 'Technical Skills', 'How do you ensure your code is readable and maintainable? What specific practices do you follow?', 'active'),
+(30, 'Technical Skills', 'Describe your workflow when collaborating on code with other developers using version control systems like Git.', 'active'),
+(31, 'Technical Skills', 'What types of testing do you consider essential for ensuring software quality? How do you approach writing test cases?', 'active'),
+(32, 'Technical Skills', 'How would you approach optimizing a slow-performing database query or application feature?', 'active'),
+(33, 'Technical Skills', 'Explain how you would break down a complex programming problem into smaller, manageable components.', 'active'),
+(34, 'Technical Skills', 'What security considerations do you keep in mind when developing web applications?', 'active'),
+(35, 'Technical Skills', 'How do you stay updated with new technologies and programming best practices in your field?', 'active'),
+(36, 'Technical Skills', 'Describe your approach to code review. What do you look for when reviewing others code?', 'active'),
+(37, 'Technical Skills', 'How would you design a system to handle increasing user load and ensure scalability?', 'active');
 
 -- --------------------------------------------------------
 
@@ -213,7 +184,7 @@ CREATE TABLE `host_training_establishment` (
   `CONTACT_PERSON` varchar(50) NOT NULL,
   `CONTACT_NUMBER` varchar(20) NOT NULL,
   `LOGO` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `host_training_establishment`
@@ -222,8 +193,8 @@ CREATE TABLE `host_training_establishment` (
 INSERT INTO `host_training_establishment` (`HTE_ID`, `NAME`, `INDUSTRY`, `ADDRESS`, `CONTACT_EMAIL`, `CONTACT_PERSON`, `CONTACT_NUMBER`, `LOGO`) VALUES
 (1, 'JairoSoft', 'CET', 'UNAHAN SA AGDAO', 'RASTAMAN@GMAIL.COM', 'RASTAMAN', '09513762404', NULL),
 (30, 'InfoSoft', 'IT', 'testing St.', 'testing@gmail.com', 'Mr.testing', '+63 951 375 2404', NULL),
-(31, 'Holy Cross', 'IT', 'Davao City', 'holycross@hcdc.edu.ph', 'Christine', '091234232151', 'hte_logo_690f270e98911.jpg'),
-(39, 'Dadong', 'Bruh', 'BRuh st', 'bruh@gmail.com', 'Mr.Bruh', '+63 951 375 2404', 'hte_logo_690f27585896c.jpg');
+(31, 'Holy Cross', 'IT', 'Davao City', 'holycross@hcdc.edu.ph', 'Christine', '091234232151', 'https://res.cloudinary.com/dubq3bubx/image/upload/v1762814701/uploads/hte_logos/dymfczgvweg41isdmkq0.jpg'),
+(39, 'Dadong', 'Bruh', 'BRuh st', 'bruh@gmail.com', 'Mr.Bruh', '+63 951 375 2404', 'https://res.cloudinary.com/dubq3bubx/image/upload/v1762814914/uploads/hte_logos/qtogfrqdiej9pq2jdzat.jpg');
 
 -- --------------------------------------------------------
 
@@ -235,7 +206,7 @@ CREATE TABLE `internship_needs` (
   `HTE_ID` int(11) NOT NULL,
   `COORDINATOR_ID` int(11) NOT NULL,
   `SESSION_ID` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `internship_needs`
@@ -261,7 +232,7 @@ CREATE TABLE `interns_attendance` (
   `ON_DATE` date NOT NULL,
   `TIMEIN` time DEFAULT NULL,
   `TIMEOUT` time DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `interns_attendance`
@@ -304,7 +275,7 @@ CREATE TABLE `interns_details` (
   `PASSWORD` varchar(255) DEFAULT NULL,
   `CONTACT_NUMBER` varchar(15) NOT NULL,
   `profile_picture` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `interns_details`
@@ -312,23 +283,10 @@ CREATE TABLE `interns_details` (
 
 INSERT INTO `interns_details` (`INTERNS_ID`, `STUDENT_ID`, `NAME`, `SURNAME`, `AGE`, `GENDER`, `EMAIL`, `PASSWORD`, `CONTACT_NUMBER`, `profile_picture`) VALUES
 (190, 59828881, 'Kim Charles', 'Emping', 23, 'Male', 'shadowd6163@gmail.com', '123456', '09513762404', '68db79d64cdc5_190.jpg'),
-(288, 59829536, 'Urien Adriane ', 'Suico', 23, 'male', 'urienadriane.suico@hcdc.edu.ph', NULL, '9284554063', NULL),
 (289, 59829532, 'James Harold', 'Roble', 21, 'male', 'jameharold.roble@hcdc.edu.ph', '123456', '9665375692', '68f334f1acaa2_289.jpg'),
-(290, 59829663, 'Christine ', 'Serdan', 21, 'female ', 'christine.serdan@hcdc.edu.ph', NULL, '9656328642', NULL),
-(291, 12345, 'John', 'Doe', 21, 'Male', 'johndoe@email.com', NULL, '09123456789', NULL),
-(292, 67890, 'Jane', 'Smith', 22, 'Female', 'janesmith@email.com', NULL, '09987654321', NULL),
-(294, 59828118, 'Shadow', 'Shaman', 23, 'Male', 'ShadowShaman@gmail.com', NULL, '+63 951 376 240', NULL);
-
---
--- Triggers `interns_details`
---
-DELIMITER $$
-CREATE TRIGGER `log_student_deletion` AFTER DELETE ON `interns_details` FOR EACH ROW BEGIN
-    INSERT INTO student_deletion_log (intern_id, student_id, name, deleted_at)
-    VALUES (OLD.INTERNS_ID, OLD.STUDENT_ID, OLD.NAME, NOW());
-END
-$$
-DELIMITER ;
+(310, 12345, 'John', 'Doe', 21, 'Male', 'johndoe@email.com', NULL, '09123456789', NULL),
+(311, 67890, 'Jane', 'Smith', 22, 'Female', 'janesmith@email.com', NULL, '09987654321', NULL),
+(312, 59828684, 'Sean Michael', 'Doinog', 23, 'Male', 'seanmichael.doinog@hcdc.edu.ph', NULL, '+63 992 032 995', NULL);
 
 -- --------------------------------------------------------
 
@@ -340,7 +298,7 @@ CREATE TABLE `intern_details` (
   `INTERNS_ID` int(11) NOT NULL,
   `SESSION_ID` int(11) NOT NULL,
   `HTE_ID` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `intern_details`
@@ -348,11 +306,10 @@ CREATE TABLE `intern_details` (
 
 INSERT INTO `intern_details` (`INTERNS_ID`, `SESSION_ID`, `HTE_ID`) VALUES
 (190, 1, 1),
-(288, 1, 30),
 (289, 1, 30),
-(290, 1, 30),
-(291, 1, 31),
-(292, 1, 31);
+(312, 1, 31),
+(310, 9, 39),
+(311, 9, 39);
 
 -- --------------------------------------------------------
 
@@ -370,10 +327,10 @@ CREATE TABLE `notifications` (
   `message` text NOT NULL,
   `reference_id` int(11) DEFAULT NULL,
   `reference_type` varchar(50) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_read` tinyint(1) DEFAULT '0',
   `notification_type` varchar(50) DEFAULT 'report'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `notifications`
@@ -416,7 +373,7 @@ CREATE TABLE `past_data` (
   `CAP 102` int(11) DEFAULT NULL,
   `SP 101` int(11) DEFAULT NULL,
   `OJT Placement` varchar(50) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `past_data`
@@ -1483,9 +1440,9 @@ CREATE TABLE `pending_attendance` (
   `TIMEIN` time DEFAULT NULL,
   `TIMEOUT` time DEFAULT NULL,
   `STATUS` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `pending_attendance`
@@ -1506,7 +1463,9 @@ INSERT INTO `pending_attendance` (`ID`, `INTERNS_ID`, `HTE_ID`, `ON_DATE`, `TIME
 (54, 190, 1, '2025-09-04', '12:52:00', '12:52:00', 'approved', '2025-09-05 08:28:03', '2025-09-05 08:28:03'),
 (62, 190, 1, '2025-09-11', '14:03:00', '14:03:00', 'approved', '2025-09-11 06:03:38', '2025-09-11 06:04:03'),
 (64, 190, 1, '2025-09-15', '15:26:00', '15:26:00', 'approved', '2025-09-15 07:26:10', '2025-09-15 07:26:19'),
-(67, 289, 30, '2025-10-18', '08:00:00', '14:37:00', 'approved', '2025-10-18 06:34:48', '2025-10-18 06:37:27');
+(67, 289, 30, '2025-10-18', '08:00:00', '14:37:00', 'approved', '2025-10-18 06:34:48', '2025-10-18 06:37:27'),
+(68, 190, 1, '2025-11-09', '13:19:00', '13:19:00', 'pending', '2025-11-09 05:19:11', '2025-11-09 05:19:20'),
+(69, 190, 1, '2025-11-13', '10:01:00', '10:01:00', 'pending', '2025-11-13 02:01:03', '2025-11-13 02:01:10');
 
 -- --------------------------------------------------------
 
@@ -1518,22 +1477,23 @@ CREATE TABLE `post_analysis_summary` (
   `id` int(11) NOT NULL,
   `student_id` int(11) NOT NULL,
   `placement` varchar(255) DEFAULT NULL,
-  `reasoning` text DEFAULT NULL,
-  `supervisor_comment` text DEFAULT NULL,
-  `comparative_analysis` text DEFAULT NULL,
-  `strengths_post_assessment` text DEFAULT NULL,
-  `correlation_analysis` text DEFAULT NULL,
-  `conclusion_recommendation` text DEFAULT NULL,
-  `averages_json` text DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `reasoning` text,
+  `supervisor_comment` text,
+  `comparative_analysis` text,
+  `strengths_post_assessment` text,
+  `correlation_analysis` text,
+  `conclusion_recommendation` text,
+  `averages_json` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `post_analysis_summary`
 --
 
 INSERT INTO `post_analysis_summary` (`id`, `student_id`, `placement`, `reasoning`, `supervisor_comment`, `comparative_analysis`, `strengths_post_assessment`, `correlation_analysis`, `conclusion_recommendation`, `averages_json`, `created_at`) VALUES
-(1, 59828881, 'Business Operations', 'Recommended for Business Operations due to strong performance in: SP 101: 94, IM 102: 93, IM 101: 85.\n\nBoth soft skill and communication skill ratings reinforce the suitability of this placement.', 'testing', 'The predicted placement based on academic results is <b>Business Operations</b>. For this placement, the supervisor gave a rating of <b>Very Good</b> and the student gave <b>Good</b>. Either the supervisor or the student gave a high mark for this placement, so the prediction is at least partly supported by the real work experience.', '<b>Supervisor:</b> Research (<b>Very Good</b>)<br><b>Self:</b> Systems Development (<b>Good</b>)<br><br>The supervisor identified <b>Research</b> as the student\'s greatest strength, while the student self-identified <b>Systems Development</b>. This highlights versatility and capability in multiple areas.', 'Supervisor rating in predicted category is Very Good, higher than average of other categories. Self rating in predicted category is Good, equal to the average of other categories. \nThe correlation is mixed: supervisor and self ratings differ in relation to the prediction.', 'Supervisor and student see strengths in different areas: <b>Research</b> and <b>Systems Development</b> respectively. A career in either <b>Research</b> or <b>Systems Development</b> is a strong possibility.<!--JOBS:Research Assistant, Data Analyst,Software Developer, Web Developer-->', '[{\"category\":\"Systems Development\",\"self_avg\":3,\"supervisor_avg\":4.2},{\"category\":\"Research\",\"self_avg\":3,\"supervisor_avg\":4.6},{\"category\":\"Business Operations\",\"self_avg\":3,\"supervisor_avg\":4.6},{\"category\":\"Technical Support\",\"self_avg\":3,\"supervisor_avg\":4.4}]', '2025-11-08 21:38:42');
+(1, 59828881, 'Business Operations', 'Recommended for Business Operations due to strong performance in: SP 101: 94, IM 102: 93, IM 101: 85.\n\nBoth soft skill and communication skill ratings reinforce the suitability of this placement.', 'testing', 'The predicted placement based on academic results is <b>Business Operations</b>. For this placement, the supervisor gave a rating of <b>Very Good</b> and the student gave <b>Good</b>. Either the supervisor or the student gave a high mark for this placement, so the prediction is at least partly supported by the real work experience.', '<b>Supervisor:</b> Research (<b>Very Good</b>)<br><b>Self:</b> Systems Development (<b>Good</b>)<br><br>The supervisor identified <b>Research</b> as the student\'s greatest strength, while the student self-identified <b>Systems Development</b>. This highlights versatility and capability in multiple areas.', 'Supervisor rating in predicted category is Very Good, higher than average of other categories. Self rating in predicted category is Good, equal to the average of other categories. \nThe correlation is mixed: supervisor and self ratings differ in relation to the prediction.', 'Supervisor and student see strengths in different areas: <b>Research</b> and <b>Systems Development</b> respectively. A career in either <b>Research</b> or <b>Systems Development</b> is a strong possibility.<!--JOBS:Research Assistant, Data Analyst,Software Developer, Web Developer-->', '[{\"category\":\"Systems Development\",\"self_avg\":3,\"supervisor_avg\":4.2},{\"category\":\"Research\",\"self_avg\":3,\"supervisor_avg\":4.6},{\"category\":\"Business Operations\",\"self_avg\":3,\"supervisor_avg\":4.6},{\"category\":\"Technical Support\",\"self_avg\":3,\"supervisor_avg\":4.4}]', '2025-11-08 13:38:42'),
+(4, 59829532, 'Technical Support', 'Recommended for Technical Support due to strong performance in: NET 101: 92, IAS 101: 90, NET 102: 84.\n\nAdditionally, the student\'s high soft skill rating further strengthens this recommendation.', 'Keep Up the Good Work!!!', 'According to academic results, <b>Technical Support</b> was the recommended placement. For this placement, the supervisor gave a rating of <b>Very Good</b> and the student gave <b>Very Good</b>. Both the supervisor and the student gave high marks for this placement, showing a strong match between the prediction and the real work experience.', '<b>Supervisor:</b> Business Operations (<b>Excellent</b>)<br><b>Self:</b> Research (<b>Very Good</b>)<br><br>The supervisor identified <b>Business Operations</b> as the student\'s greatest strength, while the student self-identified <b>Research</b>. This highlights versatility and capability in multiple areas.', 'Supervisor rating in predicted category is Very Good, lower than average of other categories. Self rating in predicted category is Very Good, higher than average of other categories. \nThe correlation is mixed: supervisor and self ratings differ in relation to the prediction.', 'The supervisor sees the student\'s main strength in <b>Business Operations</b>, while the student self-identified <b>Research</b>. Both <b>Business Analyst, Operations Coordinator</b> and <b>Research Assistant, Data Analyst</b> roles are worth exploring.<!--JOBS:Business Analyst, Operations Coordinator,Research Assistant, Data Analyst-->', '[{\"category\":\"Systems Development\",\"self_avg\":4.4,\"supervisor_avg\":4.2},{\"category\":\"Research\",\"self_avg\":4.6,\"supervisor_avg\":4.6},{\"category\":\"Business Operations\",\"self_avg\":4.4,\"supervisor_avg\":4.8},{\"category\":\"Technical Support\",\"self_avg\":4.6,\"supervisor_avg\":4.4}]', '2025-11-09 12:50:37');
 
 -- --------------------------------------------------------
 
@@ -1549,9 +1509,9 @@ CREATE TABLE `post_assessment` (
   `category` varchar(50) DEFAULT NULL,
   `supervisor_id` int(11) DEFAULT NULL,
   `supervisor_rating` int(11) DEFAULT NULL,
-  `comment` text DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `comment` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `post_assessment`
@@ -1724,9 +1684,10 @@ CREATE TABLE `pre_assessment` (
   `SP 101` int(11) DEFAULT NULL,
   `soft_skill` float DEFAULT NULL,
   `communication_skill` float DEFAULT NULL,
+  `technical_skill` decimal(5,2) DEFAULT NULL,
   `ojt_placement` varchar(255) DEFAULT NULL,
-  `prediction_reasoning` text DEFAULT NULL,
-  `prediction_probabilities` text DEFAULT NULL,
+  `prediction_reasoning` text,
+  `prediction_probabilities` text,
   `post_systems_development_avg` float DEFAULT NULL,
   `post_research_avg` float DEFAULT NULL,
   `post_business_operations_avg` float DEFAULT NULL,
@@ -1735,20 +1696,18 @@ CREATE TABLE `pre_assessment` (
   `self_research_avg` float DEFAULT NULL,
   `self_business_operations_avg` float DEFAULT NULL,
   `self_technical_support_avg` float DEFAULT NULL,
-  `supervisor_comment` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `supervisor_comment` text
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `pre_assessment`
 --
 
-INSERT INTO `pre_assessment` (`id`, `STUDENT_ID`, `CC 102`, `CC 103`, `PF 101`, `CC 104`, `IPT 101`, `IPT 102`, `CC 106`, `CC 105`, `IM 101`, `IM 102`, `HCI 101`, `HCI 102`, `WS 101`, `NET 101`, `NET 102`, `IAS 101`, `IAS 102`, `CAP 101`, `CAP 102`, `SP 101`, `soft_skill`, `communication_skill`, `ojt_placement`, `prediction_reasoning`, `prediction_probabilities`, `post_systems_development_avg`, `post_research_avg`, `post_business_operations_avg`, `post_technical_support_avg`, `self_systems_development_avg`, `self_research_avg`, `self_business_operations_avg`, `self_technical_support_avg`, `supervisor_comment`) VALUES
-(24, 59828881, 92, 91, 92, 92, 83, 96, 89, 83, 85, 93, 87, 91, 96, 86, 79, 91, 89, 83, 85, 94, 4.5, 4.5, 'Business Operations', 'Recommended for Business Operations due to strong performance in: SP 101: 94, IM 102: 93, IM 101: 85.\n\nBoth soft skill and communication skill ratings reinforce the suitability of this placement.', '{\"Business Operations\":43,\"Research\":2,\"Systems Development\":41,\"Technical Support\":14}', 4.2, 4.6, 4.6, 4.4, 3, 3, 3, 3, 'testing'),
-(28, 59829536, 89, 91, 92, 89, 78, 92, 85, 81, 81, 85, 87, 86, 95, 91, 81, 87, 88, 81, 85, 94, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(29, 59829532, 84, 89, 89, 93, 83, 93, 91, 84, 83, 92, 86, 87, 90, 92, 84, 90, 77, 81, 85, 93, 4.5, 4.1, 'Technical Support', 'Recommended for Technical Support due to strong performance in: NET 101: 92, IAS 101: 90, NET 102: 84.\n\nAdditionally, the student\'s high soft skill rating further strengthens this recommendation.', '{\"Business Operations\":31,\"Research\":6,\"Systems Development\":20,\"Technical Support\":43}', 4.2, 4.6, 4.8, 4.4, 4.4, 4.6, 4.4, 4.6, 'Keep Up the Good Work!!!'),
-(30, 59829663, 90, 89, 87, 90, 85, 92, 90, 81, 80, 92, 93, 91, 93, 93, 80, 92, 89, 81, 85, 94, 4.5, 4.5, 'Technical Support', 'Recommended for Technical Support due to strong performance in: NET 101: 93, IAS 101: 92, IAS 102: 89.\n\nBoth soft skill and communication skill ratings reinforce the suitability of this placement.', '{\"Business Operations\":29,\"Research\":3,\"Systems Development\":24,\"Technical Support\":44}', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(31, 12345, 85, 88, 90, 87, 92, 89, 91, 86, 90, 88, 87, 85, 90, 92, 88, 91, 89, 90, 87, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(32, 67890, 90, 92, 88, 91, 87, 90, 89, 92, 91, 90, 88, 89, 92, 91, 90, 88, 89, 92, 91, 92, 4.1, 4.3, 'Technical Support', 'Recommended for Technical Support due to strong performance in: NET 101: 91, NET 102: 90, IAS 102: 89.\n\nStrong communication skills play a key role in backing up this placement recommendation.', '{\"Business Operations\":20,\"Research\":17,\"Systems Development\":28,\"Technical Support\":35}', 4.4, 4.6, 4.4, 4.2, 4.4, 4.2, 4, 4.4, 'Approachable, avoid being late.');
+INSERT INTO `pre_assessment` (`id`, `STUDENT_ID`, `CC 102`, `CC 103`, `PF 101`, `CC 104`, `IPT 101`, `IPT 102`, `CC 106`, `CC 105`, `IM 101`, `IM 102`, `HCI 101`, `HCI 102`, `WS 101`, `NET 101`, `NET 102`, `IAS 101`, `IAS 102`, `CAP 101`, `CAP 102`, `SP 101`, `soft_skill`, `communication_skill`, `technical_skill`, `ojt_placement`, `prediction_reasoning`, `prediction_probabilities`, `post_systems_development_avg`, `post_research_avg`, `post_business_operations_avg`, `post_technical_support_avg`, `self_systems_development_avg`, `self_research_avg`, `self_business_operations_avg`, `self_technical_support_avg`, `supervisor_comment`) VALUES
+(24, 59828881, 92, 91, 92, 92, 83, 96, 89, 83, 85, 93, 87, 91, 96, 86, 79, 91, 89, 83, 85, 94, 4.5, 4.5, NULL, 'Business Operations', 'Recommended for Business Operations due to strong performance in: SP 101: 94, IM 102: 93, IM 101: 85.\n\nBoth soft skill and communication skill ratings reinforce the suitability of this placement.', '{\"Business Operations\":43,\"Research\":2,\"Systems Development\":41,\"Technical Support\":14}', 4.2, 4.6, 4.6, 4.4, 3, 3, 3, 3, 'testing'),
+(29, 59829532, 84, 89, 89, 93, 83, 93, 91, 84, 83, 92, 86, 87, 90, 92, 84, 90, 77, 81, 85, 93, 4.5, 4.1, NULL, 'Technical Support', 'Recommended for Technical Support due to strong performance in: NET 101: 92, IAS 101: 90, NET 102: 84.\n\nAdditionally, the student\'s high soft skill rating further strengthens this recommendation.', '{\"Business Operations\":31,\"Research\":6,\"Systems Development\":20,\"Technical Support\":43}', 4.2, 4.6, 4.8, 4.4, 4.4, 4.6, 4.4, 4.6, 'Keep Up the Good Work!!!'),
+(36, 12345, 85, 88, 90, 87, 92, 89, 91, 86, 90, 88, 87, 85, 90, 92, 88, 91, 89, 90, 87, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(37, 67890, 90, 92, 88, 91, 87, 90, 89, 92, 91, 90, 88, 89, 92, 91, 90, 88, 89, 92, 91, 92, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1761,9 +1720,9 @@ CREATE TABLE `report_images` (
   `report_id` int(11) NOT NULL,
   `image_filename` varchar(255) NOT NULL,
   `day_of_week` enum('monday','tuesday','wednesday','thursday','friday') DEFAULT NULL,
-  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `image_data` longblob DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `uploaded_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `image_data` longblob
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `report_images`
@@ -1803,7 +1762,7 @@ CREATE TABLE `session_details` (
   `ID` int(11) NOT NULL,
   `YEAR` int(11) NOT NULL,
   `TERM` varchar(50) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `session_details`
@@ -1824,105 +1783,117 @@ CREATE TABLE `student_deletion_log` (
   `intern_id` int(11) DEFAULT NULL,
   `student_id` varchar(50) DEFAULT NULL,
   `name` varchar(255) DEFAULT NULL,
-  `deleted_at` datetime DEFAULT current_timestamp(),
+  `deleted_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `reason` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `student_deletion_log`
 --
 
 INSERT INTO `student_deletion_log` (`log_id`, `intern_id`, `student_id`, `name`, `deleted_at`, `reason`) VALUES
-(1, 199, '59828887', 'GEMEL', '2024-11-27 00:36:57', NULL),
-(2, 200, '59828841', 'DADONG', '2024-11-27 00:37:01', NULL),
-(3, 201, '59828887', 'GEMEL', '2024-11-27 10:54:55', NULL),
-(4, 202, '59828841', 'DADONG', '2024-11-27 10:55:22', NULL),
-(5, 204, '59828841', 'DADONG', '2024-11-29 02:02:47', NULL),
-(6, 203, '59828887', 'GEMEL', '2024-11-29 02:03:04', NULL),
-(7, 205, '59828887', 'GEMEL', '2024-11-30 23:38:43', NULL),
-(8, 251, '59823607', 'Anna', '2025-07-01 14:25:03', NULL),
-(9, 229, '59823585', 'Alteia', '2025-07-01 14:26:56', NULL),
-(10, 230, '59823586', 'Eugene', '2025-07-01 14:27:33', NULL),
-(11, 250, '59823606', 'Karen', '2025-07-01 14:28:20', NULL),
-(12, 257, '59828110', 'ch', '2025-07-01 23:19:43', NULL),
-(13, 256, '598289111', 'Kim', '2025-07-02 00:26:39', NULL),
-(14, 258, '59828110', 'Kim', '2025-08-22 18:42:30', NULL),
-(15, 255, '59828996', 'Kim', '2025-08-22 18:55:44', NULL),
-(16, 249, '59823605', 'Carlo', '2025-08-24 14:06:16', NULL),
-(17, 248, '59823604', 'Jin', '2025-08-24 14:06:53', NULL),
-(18, 260, '12345678', 'test', '2025-09-10 14:28:04', NULL),
-(19, 261, '12345678', 'tset', '2025-09-10 19:00:45', NULL),
-(20, 262, '12345678', 'test', '2025-09-10 19:29:36', NULL),
-(21, 263, '12345678', 'test', '2025-09-24 14:09:33', NULL),
-(22, 264, '12345', 'John Doe', '2025-10-03 14:01:20', NULL),
-(23, 265, '67890', 'Jane Smith', '2025-10-03 14:01:20', NULL),
-(24, 266, '12345', 'John Doe', '2025-10-03 14:07:15', NULL),
-(25, 267, '67890', 'Jane Smith', '2025-10-03 14:07:15', NULL),
-(26, 268, '12345', 'John Doe', '2025-10-03 14:17:31', NULL),
-(27, 269, '67890', 'Jane Smith', '2025-10-03 14:17:31', NULL),
-(28, 270, '12345', 'John Doe', '2025-10-03 14:29:36', NULL),
-(29, 271, '67890', 'Jane Smith', '2025-10-03 14:29:36', NULL),
-(30, 272, '12345', 'John', '2025-10-03 14:44:52', NULL),
-(31, 273, '67890', 'Jane', '2025-10-03 14:44:52', NULL),
-(32, 274, '12345', 'John', '2025-10-03 15:00:15', NULL),
-(33, 275, '67890', 'Jane', '2025-10-03 15:00:15', NULL),
-(34, 276, '12345', 'John', '2025-10-03 15:06:39', NULL),
-(35, 277, '67890', 'Jane', '2025-10-03 15:06:39', NULL),
-(36, 259, '598289964', 'Ako', '2025-10-10 00:46:41', NULL),
-(37, 209, '59829332', 'Urie', '2025-10-10 00:54:46', NULL),
-(38, 208, '59823526', 'Adriane', '2025-10-10 00:59:10', NULL),
-(39, 233, '59823589', 'Amy', '2025-10-10 00:59:10', NULL),
-(40, 225, '59823581', 'Anita', '2025-10-10 00:59:10', NULL),
-(41, 246, '59823602', 'Austin', '2025-10-10 00:59:10', NULL),
-(42, 212, '59832356', 'Bob', '2025-10-10 00:59:10', NULL),
-(43, 213, '59852427', 'Charles', '2025-10-10 00:59:10', NULL),
-(44, 222, '59823578', 'Christian', '2025-10-10 00:59:10', NULL),
-(45, 243, '59823599', 'Emilie', '2025-10-10 00:59:10', NULL),
-(46, 211, '59823962', 'Emman', '2025-10-10 00:59:10', NULL),
-(47, 218, '59823574', 'Ernest', '2025-10-10 00:59:10', NULL),
-(48, 237, '59823593', 'Hannah', '2025-10-10 00:59:10', NULL),
-(49, 226, '59823582', 'Jake', '2025-10-10 00:59:10', NULL),
-(50, 228, '59823584', 'Jane', '2025-10-10 00:59:10', NULL),
-(51, 241, '59823597', 'Jessica', '2025-10-10 00:59:10', NULL),
-(52, 227, '59823583', 'Joel', '2025-10-10 00:59:10', NULL),
-(53, 223, '59823579', 'John', '2025-10-10 00:59:10', NULL),
-(54, 210, '59832925', 'Joy', '2025-10-10 00:59:10', NULL),
-(55, 238, '59823594', 'Joyce', '2025-10-10 00:59:10', NULL),
-(56, 234, '59823590', 'Justin', '2025-10-10 00:59:10', NULL),
-(57, 231, '59823587', 'Karl', '2025-10-10 00:59:10', NULL),
-(58, 240, '59823596', 'Kate', '2025-10-10 00:59:10', NULL),
-(59, 245, '59823601', 'Kimberly', '2025-10-10 00:59:10', NULL),
-(60, 214, '59834987', 'Kristine', '2025-10-10 00:59:10', NULL),
-(61, 221, '59823577', 'Lynn', '2025-10-10 00:59:10', NULL),
-(62, 239, '59823595', 'Mark', '2025-10-10 00:59:10', NULL),
-(63, 220, '59823576', 'Mary', '2025-10-10 00:59:10', NULL),
-(64, 244, '59823600', 'Nate', '2025-10-10 00:59:10', NULL),
-(65, 232, '59823588', 'Nicole', '2025-10-10 00:59:10', NULL),
-(66, 236, '59823592', 'Paul', '2025-10-10 00:59:10', NULL),
-(67, 247, '59823603', 'Prince', '2025-10-10 00:59:10', NULL),
-(68, 215, '59829572', 'Robin', '2025-10-10 00:59:10', NULL),
-(69, 217, '59823573', 'Sara', '2025-10-10 00:59:10', NULL),
-(70, 219, '59823575', 'Sophia', '2025-10-10 00:59:10', NULL),
-(71, 235, '59823591', 'Stefan', '2025-10-10 00:59:10', NULL),
-(72, 224, '59823580', 'Steve', '2025-10-10 00:59:10', NULL),
-(73, 242, '59823598', 'Tristan', '2025-10-10 00:59:10', NULL),
-(74, 216, '59823572', 'Kanye', '2025-10-17 21:16:53', NULL),
-(75, 252, '59823608', 'Kylie', '2025-10-17 21:16:53', NULL),
-(76, 253, '59823609', 'Ken', '2025-10-17 21:16:53', NULL),
-(77, 254, '59823610', 'Maya', '2025-10-17 21:16:53', NULL),
-(78, 279, '67890', 'Jane', '2025-10-17 21:33:39', NULL),
-(79, 206, '59829532', 'JAMES', '2025-10-17 21:46:15', NULL),
-(80, 207, '59832315', 'Harold', '2025-10-17 21:46:15', NULL),
-(81, 278, '12345', 'John', '2025-10-17 21:46:15', NULL),
-(82, 280, '59829536', 'Urien Adriane ', '2025-10-17 21:46:27', NULL),
-(83, 281, '59829663', 'Christine ', '2025-10-17 21:46:27', NULL),
-(84, 284, '59829663', 'Christine ', '2025-10-18 12:58:16', NULL),
-(85, 283, '59829532', 'James Harold', '2025-10-18 12:58:16', NULL),
-(86, 282, '59829536', 'Urien Adriane ', '2025-10-18 12:58:16', NULL),
-(87, 287, '59829663', 'Christine ', '2025-10-18 14:28:30', NULL),
-(88, 286, '59829532', 'James Harold', '2025-10-18 14:28:30', NULL),
-(89, 285, '59829536', 'Urien Adriane ', '2025-10-18 14:28:30', NULL),
-(90, 293, '59828118', 'Shadow', '2025-11-07 20:33:14', NULL);
+(1, 199, '59828887', 'GEMEL', '2024-11-26 16:36:57', NULL),
+(2, 200, '59828841', 'DADONG', '2024-11-26 16:37:01', NULL),
+(3, 201, '59828887', 'GEMEL', '2024-11-27 02:54:55', NULL),
+(4, 202, '59828841', 'DADONG', '2024-11-27 02:55:22', NULL),
+(5, 204, '59828841', 'DADONG', '2024-11-28 18:02:47', NULL),
+(6, 203, '59828887', 'GEMEL', '2024-11-28 18:03:04', NULL),
+(7, 205, '59828887', 'GEMEL', '2024-11-30 15:38:43', NULL),
+(8, 251, '59823607', 'Anna', '2025-07-01 06:25:03', NULL),
+(9, 229, '59823585', 'Alteia', '2025-07-01 06:26:56', NULL),
+(10, 230, '59823586', 'Eugene', '2025-07-01 06:27:33', NULL),
+(11, 250, '59823606', 'Karen', '2025-07-01 06:28:20', NULL),
+(12, 257, '59828110', 'ch', '2025-07-01 15:19:43', NULL),
+(13, 256, '598289111', 'Kim', '2025-07-01 16:26:39', NULL),
+(14, 258, '59828110', 'Kim', '2025-08-22 10:42:30', NULL),
+(15, 255, '59828996', 'Kim', '2025-08-22 10:55:44', NULL),
+(16, 249, '59823605', 'Carlo', '2025-08-24 06:06:16', NULL),
+(17, 248, '59823604', 'Jin', '2025-08-24 06:06:53', NULL),
+(18, 260, '12345678', 'test', '2025-09-10 06:28:04', NULL),
+(19, 261, '12345678', 'tset', '2025-09-10 11:00:45', NULL),
+(20, 262, '12345678', 'test', '2025-09-10 11:29:36', NULL),
+(21, 263, '12345678', 'test', '2025-09-24 06:09:33', NULL),
+(22, 264, '12345', 'John Doe', '2025-10-03 06:01:20', NULL),
+(23, 265, '67890', 'Jane Smith', '2025-10-03 06:01:20', NULL),
+(24, 266, '12345', 'John Doe', '2025-10-03 06:07:15', NULL),
+(25, 267, '67890', 'Jane Smith', '2025-10-03 06:07:15', NULL),
+(26, 268, '12345', 'John Doe', '2025-10-03 06:17:31', NULL),
+(27, 269, '67890', 'Jane Smith', '2025-10-03 06:17:31', NULL),
+(28, 270, '12345', 'John Doe', '2025-10-03 06:29:36', NULL),
+(29, 271, '67890', 'Jane Smith', '2025-10-03 06:29:36', NULL),
+(30, 272, '12345', 'John', '2025-10-03 06:44:52', NULL),
+(31, 273, '67890', 'Jane', '2025-10-03 06:44:52', NULL),
+(32, 274, '12345', 'John', '2025-10-03 07:00:15', NULL),
+(33, 275, '67890', 'Jane', '2025-10-03 07:00:15', NULL),
+(34, 276, '12345', 'John', '2025-10-03 07:06:39', NULL),
+(35, 277, '67890', 'Jane', '2025-10-03 07:06:39', NULL),
+(36, 259, '598289964', 'Ako', '2025-10-09 16:46:41', NULL),
+(37, 209, '59829332', 'Urie', '2025-10-09 16:54:46', NULL),
+(38, 208, '59823526', 'Adriane', '2025-10-09 16:59:10', NULL),
+(39, 233, '59823589', 'Amy', '2025-10-09 16:59:10', NULL),
+(40, 225, '59823581', 'Anita', '2025-10-09 16:59:10', NULL),
+(41, 246, '59823602', 'Austin', '2025-10-09 16:59:10', NULL),
+(42, 212, '59832356', 'Bob', '2025-10-09 16:59:10', NULL),
+(43, 213, '59852427', 'Charles', '2025-10-09 16:59:10', NULL),
+(44, 222, '59823578', 'Christian', '2025-10-09 16:59:10', NULL),
+(45, 243, '59823599', 'Emilie', '2025-10-09 16:59:10', NULL),
+(46, 211, '59823962', 'Emman', '2025-10-09 16:59:10', NULL),
+(47, 218, '59823574', 'Ernest', '2025-10-09 16:59:10', NULL),
+(48, 237, '59823593', 'Hannah', '2025-10-09 16:59:10', NULL),
+(49, 226, '59823582', 'Jake', '2025-10-09 16:59:10', NULL),
+(50, 228, '59823584', 'Jane', '2025-10-09 16:59:10', NULL),
+(51, 241, '59823597', 'Jessica', '2025-10-09 16:59:10', NULL),
+(52, 227, '59823583', 'Joel', '2025-10-09 16:59:10', NULL),
+(53, 223, '59823579', 'John', '2025-10-09 16:59:10', NULL),
+(54, 210, '59832925', 'Joy', '2025-10-09 16:59:10', NULL),
+(55, 238, '59823594', 'Joyce', '2025-10-09 16:59:10', NULL),
+(56, 234, '59823590', 'Justin', '2025-10-09 16:59:10', NULL),
+(57, 231, '59823587', 'Karl', '2025-10-09 16:59:10', NULL),
+(58, 240, '59823596', 'Kate', '2025-10-09 16:59:10', NULL),
+(59, 245, '59823601', 'Kimberly', '2025-10-09 16:59:10', NULL),
+(60, 214, '59834987', 'Kristine', '2025-10-09 16:59:10', NULL),
+(61, 221, '59823577', 'Lynn', '2025-10-09 16:59:10', NULL),
+(62, 239, '59823595', 'Mark', '2025-10-09 16:59:10', NULL),
+(63, 220, '59823576', 'Mary', '2025-10-09 16:59:10', NULL),
+(64, 244, '59823600', 'Nate', '2025-10-09 16:59:10', NULL),
+(65, 232, '59823588', 'Nicole', '2025-10-09 16:59:10', NULL),
+(66, 236, '59823592', 'Paul', '2025-10-09 16:59:10', NULL),
+(67, 247, '59823603', 'Prince', '2025-10-09 16:59:10', NULL),
+(68, 215, '59829572', 'Robin', '2025-10-09 16:59:10', NULL),
+(69, 217, '59823573', 'Sara', '2025-10-09 16:59:10', NULL),
+(70, 219, '59823575', 'Sophia', '2025-10-09 16:59:10', NULL),
+(71, 235, '59823591', 'Stefan', '2025-10-09 16:59:10', NULL),
+(72, 224, '59823580', 'Steve', '2025-10-09 16:59:10', NULL),
+(73, 242, '59823598', 'Tristan', '2025-10-09 16:59:10', NULL),
+(74, 216, '59823572', 'Kanye', '2025-10-17 13:16:53', NULL),
+(75, 252, '59823608', 'Kylie', '2025-10-17 13:16:53', NULL),
+(76, 253, '59823609', 'Ken', '2025-10-17 13:16:53', NULL),
+(77, 254, '59823610', 'Maya', '2025-10-17 13:16:53', NULL),
+(78, 279, '67890', 'Jane', '2025-10-17 13:33:39', NULL),
+(79, 206, '59829532', 'JAMES', '2025-10-17 13:46:15', NULL),
+(80, 207, '59832315', 'Harold', '2025-10-17 13:46:15', NULL),
+(81, 278, '12345', 'John', '2025-10-17 13:46:15', NULL),
+(82, 280, '59829536', 'Urien Adriane ', '2025-10-17 13:46:27', NULL),
+(83, 281, '59829663', 'Christine ', '2025-10-17 13:46:27', NULL),
+(84, 284, '59829663', 'Christine ', '2025-10-18 04:58:16', NULL),
+(85, 283, '59829532', 'James Harold', '2025-10-18 04:58:16', NULL),
+(86, 282, '59829536', 'Urien Adriane ', '2025-10-18 04:58:16', NULL),
+(87, 287, '59829663', 'Christine ', '2025-10-18 06:28:30', NULL),
+(88, 286, '59829532', 'James Harold', '2025-10-18 06:28:30', NULL),
+(89, 285, '59829536', 'Urien Adriane ', '2025-10-18 06:28:30', NULL),
+(90, 293, '59828118', 'Shadow', '2025-11-07 12:33:14', NULL),
+(91, 306, '59828118', 'Shadow', '2025-11-09 04:17:21', NULL),
+(92, 290, '59829663', 'Christine ', '2025-11-10 20:48:52', NULL),
+(93, 292, '67890', 'Jane', '2025-11-10 22:05:53', NULL),
+(94, 291, '12345', 'John', '2025-11-10 22:05:53', NULL),
+(95, 291, '12345', 'John', '2025-11-10 22:06:37', NULL),
+(96, 292, '67890', 'Jane', '2025-11-10 22:07:18', NULL),
+(97, 289, '59829532', 'James Harold', '2025-11-10 22:09:14', NULL),
+(98, 288, '59829536', 'Urien Adriane ', '2025-11-10 22:09:20', NULL),
+(99, 289, '59829532', 'James Harold', '2025-11-10 22:09:45', NULL),
+(100, 309, '67890', 'Jane', '2025-11-10 22:29:14', NULL),
+(101, 308, '12345', 'John', '2025-11-10 22:29:14', NULL),
+(102, 307, '59829536', 'Urien Adriane ', '2025-11-10 22:29:14', NULL);
 
 -- --------------------------------------------------------
 
@@ -1935,114 +1906,74 @@ CREATE TABLE `student_evaluation` (
   `STUDENT_ID` int(11) NOT NULL,
   `question_id` int(11) NOT NULL,
   `answer` text NOT NULL,
-  `timestamp` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `student_evaluation`
 --
 
 INSERT INTO `student_evaluation` (`id`, `STUDENT_ID`, `question_id`, `answer`, `timestamp`) VALUES
-(404, 59828881, 1, '1', '2025-10-03 21:46:28'),
-(405, 59828881, 2, '1', '2025-10-03 21:46:28'),
-(406, 59828881, 3, '1', '2025-10-03 21:46:28'),
-(407, 59828881, 4, '1', '2025-10-03 21:46:28'),
-(408, 59828881, 5, '1', '2025-10-03 21:46:28'),
-(409, 59828881, 6, '1', '2025-10-03 21:46:28'),
-(410, 59828881, 7, '1', '2025-10-03 21:46:28'),
-(411, 59828881, 8, '1', '2025-10-03 21:46:28'),
-(412, 59828881, 9, '1', '2025-10-03 21:46:28'),
-(413, 59828881, 10, '1', '2025-10-03 21:46:28'),
-(414, 59828881, 11, '1', '2025-10-03 21:46:28'),
-(415, 59828881, 12, '1', '2025-10-03 21:46:28'),
-(416, 59828881, 13, '1', '2025-10-03 21:46:28'),
-(417, 59828881, 14, '1', '2025-10-03 21:46:28'),
-(418, 59828881, 15, '1', '2025-10-03 21:46:28'),
-(419, 59828881, 16, '1', '2025-10-03 21:46:28'),
-(420, 59828881, 17, '1', '2025-10-03 21:46:28'),
-(421, 59828881, 18, '1', '2025-10-03 21:46:28'),
-(422, 59828881, 19, '1', '2025-10-03 21:46:28'),
-(423, 59828881, 20, '1', '2025-10-03 21:46:28'),
-(464, 59829532, 1, 'answer', '2025-10-18 14:39:28'),
-(465, 59829532, 2, 'answer', '2025-10-18 14:39:28'),
-(466, 59829532, 3, 'answer', '2025-10-18 14:39:28'),
-(467, 59829532, 4, 'answer', '2025-10-18 14:39:28'),
-(468, 59829532, 5, 'answer', '2025-10-18 14:39:28'),
-(469, 59829532, 6, 'answer', '2025-10-18 14:39:28'),
-(470, 59829532, 7, 'answer', '2025-10-18 14:39:28'),
-(471, 59829532, 8, 'answer', '2025-10-18 14:39:28'),
-(472, 59829532, 9, 'answer', '2025-10-18 14:39:28'),
-(473, 59829532, 10, 'answer', '2025-10-18 14:39:28'),
-(474, 59829532, 11, 'answer', '2025-10-18 14:39:28'),
-(475, 59829532, 12, 'answer', '2025-10-18 14:39:28'),
-(476, 59829532, 13, 'answer', '2025-10-18 14:39:28'),
-(477, 59829532, 14, 'answer', '2025-10-18 14:39:28'),
-(478, 59829532, 15, 'answer', '2025-10-18 14:39:28'),
-(479, 59829532, 16, 'answer', '2025-10-18 14:39:28'),
-(480, 59829532, 17, 'answer', '2025-10-18 14:39:28'),
-(481, 59829532, 18, 'answer', '2025-10-18 14:39:28'),
-(482, 59829532, 19, 'answer', '2025-10-18 14:39:28'),
-(483, 59829532, 20, 'answer', '2025-10-18 14:39:28'),
-(484, 59829663, 1, 'awe', '2025-10-18 20:05:30'),
-(485, 59829663, 2, 'awe', '2025-10-18 20:05:30'),
-(486, 59829663, 3, 'awe', '2025-10-18 20:05:30'),
-(487, 59829663, 4, 'awe', '2025-10-18 20:05:30'),
-(488, 59829663, 5, 'awe', '2025-10-18 20:05:30'),
-(489, 59829663, 6, 'awe', '2025-10-18 20:05:30'),
-(490, 59829663, 7, 'awe', '2025-10-18 20:05:30'),
-(491, 59829663, 8, 'awe', '2025-10-18 20:05:30'),
-(492, 59829663, 9, 'awe', '2025-10-18 20:05:30'),
-(493, 59829663, 10, 'awe', '2025-10-18 20:05:30'),
-(494, 59829663, 11, 'awe', '2025-10-18 20:05:30'),
-(495, 59829663, 12, 'awe', '2025-10-18 20:05:30'),
-(496, 59829663, 13, 'awe', '2025-10-18 20:05:30'),
-(497, 59829663, 14, 'awe', '2025-10-18 20:05:30'),
-(498, 59829663, 15, 'awe', '2025-10-18 20:05:30'),
-(499, 59829663, 16, 'awe', '2025-10-18 20:05:30'),
-(500, 59829663, 17, 'awe', '2025-10-18 20:05:30'),
-(501, 59829663, 18, 'awe', '2025-10-18 20:05:30'),
-(502, 59829663, 19, 'awe', '2025-10-18 20:05:30'),
-(503, 59829663, 20, 'awe', '2025-10-18 20:05:30'),
-(504, 12345, 1, 'answer', '2025-10-20 12:33:57'),
-(505, 12345, 2, 'answer', '2025-10-20 12:33:57'),
-(506, 12345, 3, 'answer', '2025-10-20 12:33:57'),
-(507, 12345, 4, 'answer', '2025-10-20 12:33:57'),
-(508, 12345, 5, 'answer', '2025-10-20 12:33:57'),
-(509, 12345, 6, 'answer', '2025-10-20 12:33:57'),
-(510, 12345, 7, 'answer', '2025-10-20 12:33:57'),
-(511, 12345, 8, 'answer', '2025-10-20 12:33:57'),
-(512, 12345, 9, 'answer', '2025-10-20 12:33:57'),
-(513, 12345, 10, 'answer', '2025-10-20 12:33:57'),
-(514, 12345, 11, 'answer', '2025-10-20 12:33:57'),
-(515, 12345, 12, 'answer', '2025-10-20 12:33:57'),
-(516, 12345, 13, 'answer', '2025-10-20 12:33:57'),
-(517, 12345, 14, 'answer', '2025-10-20 12:33:57'),
-(518, 12345, 15, 'answer', '2025-10-20 12:33:57'),
-(519, 12345, 16, 'answer', '2025-10-20 12:33:57'),
-(520, 12345, 17, 'answer', '2025-10-20 12:33:57'),
-(521, 12345, 18, 'answer', '2025-10-20 12:33:57'),
-(522, 12345, 19, 'answer', '2025-10-20 12:33:57'),
-(523, 12345, 20, 'answer', '2025-10-20 12:33:57'),
-(524, 67890, 1, 'I once work on a team where i build a monitoring system and we communicate smoothly.', '2025-10-20 12:44:21'),
-(525, 67890, 2, '67890', '2025-10-20 12:44:21'),
-(526, 67890, 3, '67890', '2025-10-20 12:44:21'),
-(527, 67890, 4, '67890', '2025-10-20 12:44:21'),
-(528, 67890, 5, '67890', '2025-10-20 12:44:21'),
-(529, 67890, 6, '67890', '2025-10-20 12:44:21'),
-(530, 67890, 7, '67890', '2025-10-20 12:44:21'),
-(531, 67890, 8, '67890', '2025-10-20 12:44:21'),
-(532, 67890, 9, '67890', '2025-10-20 12:44:21'),
-(533, 67890, 10, '67890', '2025-10-20 12:44:21'),
-(534, 67890, 11, '67890', '2025-10-20 12:44:21'),
-(535, 67890, 12, '67890', '2025-10-20 12:44:21'),
-(536, 67890, 13, '67890', '2025-10-20 12:44:21'),
-(537, 67890, 14, '67890', '2025-10-20 12:44:21'),
-(538, 67890, 15, '67890', '2025-10-20 12:44:21'),
-(539, 67890, 16, '67890', '2025-10-20 12:44:21'),
-(540, 67890, 17, '67890', '2025-10-20 12:44:21'),
-(541, 67890, 18, '67890', '2025-10-20 12:44:21'),
-(542, 67890, 19, '67890', '2025-10-20 12:44:21'),
-(543, 67890, 20, '67890', '2025-10-20 12:44:21');
+(404, 59828881, 1, '1', '2025-10-03 13:46:28'),
+(405, 59828881, 2, '1', '2025-10-03 13:46:28'),
+(406, 59828881, 3, '1', '2025-10-03 13:46:28'),
+(407, 59828881, 4, '1', '2025-10-03 13:46:28'),
+(408, 59828881, 5, '1', '2025-10-03 13:46:28'),
+(409, 59828881, 6, '1', '2025-10-03 13:46:28'),
+(410, 59828881, 7, '1', '2025-10-03 13:46:28'),
+(411, 59828881, 8, '1', '2025-10-03 13:46:28'),
+(412, 59828881, 9, '1', '2025-10-03 13:46:28'),
+(413, 59828881, 10, '1', '2025-10-03 13:46:28'),
+(414, 59828881, 11, '1', '2025-10-03 13:46:28'),
+(415, 59828881, 12, '1', '2025-10-03 13:46:28'),
+(416, 59828881, 13, '1', '2025-10-03 13:46:28'),
+(417, 59828881, 14, '1', '2025-10-03 13:46:28'),
+(418, 59828881, 15, '1', '2025-10-03 13:46:28'),
+(419, 59828881, 16, '1', '2025-10-03 13:46:28'),
+(420, 59828881, 17, '1', '2025-10-03 13:46:28'),
+(421, 59828881, 18, '1', '2025-10-03 13:46:28'),
+(422, 59828881, 19, '1', '2025-10-03 13:46:28'),
+(423, 59828881, 20, '1', '2025-10-03 13:46:28'),
+(464, 59829532, 1, 'answer', '2025-10-18 06:39:28'),
+(465, 59829532, 2, 'answer', '2025-10-18 06:39:28'),
+(466, 59829532, 3, 'answer', '2025-10-18 06:39:28'),
+(467, 59829532, 4, 'answer', '2025-10-18 06:39:28'),
+(468, 59829532, 5, 'answer', '2025-10-18 06:39:28'),
+(469, 59829532, 6, 'answer', '2025-10-18 06:39:28'),
+(470, 59829532, 7, 'answer', '2025-10-18 06:39:28'),
+(471, 59829532, 8, 'answer', '2025-10-18 06:39:28'),
+(472, 59829532, 9, 'answer', '2025-10-18 06:39:28'),
+(473, 59829532, 10, 'answer', '2025-10-18 06:39:28'),
+(474, 59829532, 11, 'answer', '2025-10-18 06:39:28'),
+(475, 59829532, 12, 'answer', '2025-10-18 06:39:28'),
+(476, 59829532, 13, 'answer', '2025-10-18 06:39:28'),
+(477, 59829532, 14, 'answer', '2025-10-18 06:39:28'),
+(478, 59829532, 15, 'answer', '2025-10-18 06:39:28'),
+(479, 59829532, 16, 'answer', '2025-10-18 06:39:28'),
+(480, 59829532, 17, 'answer', '2025-10-18 06:39:28'),
+(481, 59829532, 18, 'answer', '2025-10-18 06:39:28'),
+(482, 59829532, 19, 'answer', '2025-10-18 06:39:28'),
+(483, 59829532, 20, 'answer', '2025-10-18 06:39:28'),
+(544, 59828684, 1, 'Midnight time', '2025-11-11 10:59:28'),
+(545, 59828684, 2, 'by doing it on time', '2025-11-11 10:59:28'),
+(546, 59828684, 3, 'random', '2025-11-11 10:59:28'),
+(547, 59828684, 4, '.', '2025-11-11 10:59:28'),
+(548, 59828684, 5, '.', '2025-11-11 10:59:28'),
+(549, 59828684, 6, '.', '2025-11-11 10:59:28'),
+(550, 59828684, 7, '.', '2025-11-11 10:59:28'),
+(551, 59828684, 8, '.', '2025-11-11 10:59:29'),
+(552, 59828684, 9, '.', '2025-11-11 10:59:29'),
+(553, 59828684, 10, '.', '2025-11-11 10:59:29'),
+(554, 59828684, 11, '.', '2025-11-11 10:59:29'),
+(555, 59828684, 12, '.', '2025-11-11 10:59:29'),
+(556, 59828684, 13, '.', '2025-11-11 10:59:29'),
+(557, 59828684, 14, '.', '2025-11-11 10:59:29'),
+(558, 59828684, 15, '.', '2025-11-11 10:59:29'),
+(559, 59828684, 16, '.', '2025-11-11 10:59:29'),
+(560, 59828684, 17, '.', '2025-11-11 10:59:29'),
+(561, 59828684, 18, '.', '2025-11-11 10:59:29'),
+(562, 59828684, 19, '.', '2025-11-11 10:59:29'),
+(563, 59828684, 20, '.', '2025-11-11 10:59:29');
 
 -- --------------------------------------------------------
 
@@ -2056,8 +1987,8 @@ CREATE TABLE `student_questions` (
   `category` varchar(50) NOT NULL,
   `question_text` text NOT NULL,
   `question_number` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `student_questions`
@@ -2230,21 +2161,21 @@ CREATE TABLE `weekly_reports` (
   `interns_id` int(11) NOT NULL,
   `week_start` date NOT NULL,
   `week_end` date NOT NULL,
-  `report_content` text DEFAULT NULL,
+  `report_content` text,
   `status` enum('draft','submitted') DEFAULT 'draft',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `monday_description` text DEFAULT NULL,
-  `tuesday_description` text DEFAULT NULL,
-  `wednesday_description` text DEFAULT NULL,
-  `thursday_description` text DEFAULT NULL,
-  `friday_description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `monday_description` text,
+  `tuesday_description` text,
+  `wednesday_description` text,
+  `thursday_description` text,
+  `friday_description` text,
   `approval_status` enum('pending','approved','returned') DEFAULT 'pending',
   `approved_at` datetime DEFAULT NULL,
   `approved_by` int(11) DEFAULT NULL,
-  `return_reason` text DEFAULT NULL,
-  `notification_sent` tinyint(1) DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `return_reason` text,
+  `notification_sent` tinyint(1) DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `weekly_reports`
@@ -2255,7 +2186,9 @@ INSERT INTO `weekly_reports` (`report_id`, `interns_id`, `week_start`, `week_end
 (9, 190, '2025-09-22', '2025-09-28', '[]', 'submitted', '2025-09-22 10:27:29', '2025-09-25 02:51:07', 'aweaweawe', 'aweawe', 'aweawrtasd', 'fasfasf', 'ehwerhsdf', 'approved', '2025-09-25 10:51:07', 59828994, 'awr', 0),
 (11, 190, '2025-09-29', '2025-10-05', '[]', 'submitted', '2025-09-30 06:22:05', '2025-09-30 07:59:05', 'HTHCG', 'adawdawdawdawdawd', 'wadawdaw', 'dawdawd', 'aggag', 'approved', '2025-09-30 15:59:05', 59828994, 'awdawdawd', 0),
 (13, 289, '2025-10-13', '2025-10-19', '[]', 'submitted', '2025-10-18 06:53:26', '2025-10-18 07:26:09', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'approved', '2025-10-18 15:26:09', 59828997, 'change friday photo', 0),
-(14, 190, '2025-10-13', '2025-10-19', '[]', 'draft', '2025-10-18 09:42:13', '2025-10-18 10:54:34', 'wae', 'waewe', '', '', '', 'pending', NULL, NULL, NULL, 0);
+(14, 190, '2025-10-13', '2025-10-19', '[]', 'draft', '2025-10-18 09:42:13', '2025-10-18 10:54:34', 'wae', 'waewe', '', '', '', 'pending', NULL, NULL, NULL, 0),
+(15, 289, '2025-11-03', '2025-11-09', '[]', 'draft', '2025-11-09 13:13:02', '2025-11-09 13:14:24', '', '', '', '', '', 'pending', NULL, NULL, NULL, 0),
+(16, 190, '2025-11-10', '2025-11-16', '[]', 'draft', '2025-11-13 02:52:32', NULL, '', '', '', '', '', NULL, NULL, NULL, NULL, 0);
 
 --
 -- Indexes for dumped tables
@@ -2407,97 +2340,81 @@ ALTER TABLE `weekly_reports`
 --
 ALTER TABLE `coordinator`
   MODIFY `COORDINATOR_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=123456791;
-
 --
 -- AUTO_INCREMENT for table `coordinator_evaluation`
 --
 ALTER TABLE `coordinator_evaluation`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=723;
-
 --
 -- AUTO_INCREMENT for table `evaluation_questions`
 --
 ALTER TABLE `evaluation_questions`
-  MODIFY `question_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
-
+  MODIFY `question_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 --
 -- AUTO_INCREMENT for table `host_training_establishment`
 --
 ALTER TABLE `host_training_establishment`
   MODIFY `HTE_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
-
 --
 -- AUTO_INCREMENT for table `interns_details`
 --
 ALTER TABLE `interns_details`
-  MODIFY `INTERNS_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=295;
-
+  MODIFY `INTERNS_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=313;
 --
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
   MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
-
 --
 -- AUTO_INCREMENT for table `pending_attendance`
 --
 ALTER TABLE `pending_attendance`
-  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
-
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
 --
 -- AUTO_INCREMENT for table `post_analysis_summary`
 --
 ALTER TABLE `post_analysis_summary`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 --
 -- AUTO_INCREMENT for table `post_assessment`
 --
 ALTER TABLE `post_assessment`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=942;
-
 --
 -- AUTO_INCREMENT for table `pre_assessment`
 --
 ALTER TABLE `pre_assessment`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
-
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 --
 -- AUTO_INCREMENT for table `report_images`
 --
 ALTER TABLE `report_images`
-  MODIFY `image_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=449;
-
+  MODIFY `image_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=454;
 --
 -- AUTO_INCREMENT for table `session_details`
 --
 ALTER TABLE `session_details`
   MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
-
 --
 -- AUTO_INCREMENT for table `student_deletion_log`
 --
 ALTER TABLE `student_deletion_log`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
-
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
 --
 -- AUTO_INCREMENT for table `student_evaluation`
 --
 ALTER TABLE `student_evaluation`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=544;
-
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=564;
 --
 -- AUTO_INCREMENT for table `student_questions`
 --
 ALTER TABLE `student_questions`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=195;
-
 --
 -- AUTO_INCREMENT for table `weekly_reports`
 --
 ALTER TABLE `weekly_reports`
-  MODIFY `report_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
-
+  MODIFY `report_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 --
 -- Constraints for dumped tables
 --
@@ -2553,13 +2470,13 @@ ALTER TABLE `notifications`
 --
 ALTER TABLE `pending_attendance`
   ADD CONSTRAINT `pending_attendance_ibfk_1` FOREIGN KEY (`INTERNS_ID`) REFERENCES `interns_details` (`INTERNS_ID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `pending_attendance_ibfk_2` FOREIGN KEY (`hte_id`) REFERENCES `host_training_establishment` (`HTE_ID`);
+  ADD CONSTRAINT `pending_attendance_ibfk_2` FOREIGN KEY (`HTE_ID`) REFERENCES `host_training_establishment` (`HTE_ID`);
 
 --
 -- Constraints for table `post_analysis_summary`
 --
 ALTER TABLE `post_analysis_summary`
-  ADD CONSTRAINT `post_analysis_summary_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `interns_details` (`STUDENT_ID`);
+  ADD CONSTRAINT `post_analysis_summary_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `interns_details` (`STUDENT_ID`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `post_assessment`

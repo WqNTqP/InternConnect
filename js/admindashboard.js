@@ -9,8 +9,92 @@ const URLs = {
     predictions: "ajaxhandler/predictionAjax.php"
 };
 
+// Helper function to get proper image URL (Cloudinary, absolute, or local)
+function getImageUrl(filename) {
+    if (!filename) return '';
+    const f = String(filename).trim();
+    if (/^https?:\/\//i.test(f)) return f;                    // Full URL (Cloudinary)
+    if (f.startsWith('//')) return window.location.protocol + f; // Protocol-relative
+    if (f.startsWith('/')) return window.location.protocol + '//' + window.location.host + f; // Absolute path
+    return 'uploads/' + f;                                    // Local file with uploads path
+}
+
 // Global variable to store current report ID for modal operations
 let currentReportId = null;
+
+// Function to view individual day report in admin dashboard
+function viewDayReportAdmin(reportId, day, studentName) {
+    // Create modal HTML
+    const modalHtml = `
+        <div id="dayReportModalAdmin" class="modal-overlay">
+            <div class="modal-content-admin">
+                <div class="modal-header-admin">
+                    <h3>${studentName} - ${day.charAt(0).toUpperCase() + day.slice(1)} Report</h3>
+                    <button onclick="closeDayModalAdmin()" class="modal-close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="dayReportContentAdmin" class="modal-body-admin">
+                    <div class="loading-content">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading report details...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    $('#dayReportModalAdmin').remove();
+    
+    // Add modal to body
+    $('body').append(modalHtml);
+    
+    // Load report details via AJAX
+    $.ajax({
+        url: URLs.weeklyReports,
+        type: 'POST',
+        dataType: 'json',
+        data: { 
+            action: 'getDayReport',
+            reportId: reportId,
+            day: day
+        },
+        success: function(response) {
+            if (response.status === 'success' && response.dayData) {
+                const dayData = response.dayData;
+                let content = '<div class="day-detail-admin">';
+                
+                // Images section
+                if (dayData.images && dayData.images.length > 0) {
+                    content += '<div class="images-section"><h4>Images</h4>';
+                    content += '<div class="images-grid">';
+                    dayData.images.forEach(img => {
+                        content += `<img src="${img.url}" alt="${day} activity" class="detail-image">`;
+                    });
+                    content += '</div></div>';
+                }
+                
+                // Description section
+                content += '<div class="description-section"><h4>Description</h4>';
+                content += `<div class="description-content"><p>${dayData.description || 'No description provided for this day.'}</p></div>`;
+                content += '</div></div>';
+                
+                $('#dayReportContentAdmin').html(content);
+            } else {
+                $('#dayReportContentAdmin').html('<p class="error-message">Error loading report details.</p>');
+            }
+        },
+        error: function() {
+            $('#dayReportContentAdmin').html('<p class="error-message">Error loading report details.</p>');
+        }
+    });
+}
+
+// Function to close day modal in admin dashboard
+function closeDayModalAdmin() {
+    $('#dayReportModalAdmin').remove();
+}
 
 // Function to handle returning a report
 function returnReport(reportId) {
@@ -294,6 +378,15 @@ $(function () {
         // Hide all tab contents
         $('.tab-content').hide();
         
+        // Hide reports container when switching away from reports tab
+        $('#reportsContainer').hide();
+        $('#reportsList').hide();
+        $('#noReports').hide();
+        $('#reportsLoading').hide();
+        
+        // Hide history loading when switching away from history tab
+        $('#historyLoading').hide();
+        
         // Show the selected tab content
         if (tabId === 'pendingTab') {
             $('#pendingTabContent').show();
@@ -301,6 +394,9 @@ $(function () {
             $('#dashboardTabContent').show();
         } else if (tabId === 'historyTab') {
             $('#historyTabContent').show();
+            // Show loading spinner immediately
+            $('#historyLoading').show();
+            $('#historySummary').hide();
             // Auto-load current date when history tab is opened
             const today = new Date().toISOString().split('T')[0];
             const dateInput = document.getElementById('historyDate');
@@ -308,6 +404,7 @@ $(function () {
             loadHistoryRecords(today);
         } else if (tabId === 'reportsTab') {
             $('#reportsTabContent').show();
+            $('#reportsContainer').show();
                // Automatically load the current week's report when Reports tab is opened
                const today = new Date().toISOString().split('T')[0];
                const dateInput = document.getElementById('dateFilter');
@@ -329,20 +426,57 @@ $(function () {
                window.currentWeekEnd = formattedWeekEnd;
                if (isNaN(studentId) && studentId !== "") {
                    const options = document.getElementById('studentList').options;
+                   let matchFound = false;
+                   
+                   // First try exact match
                    for (let i = 0; i < options.length; i++) {
                        if (options[i].value === studentId) {
                            studentId = options[i].getAttribute('data-intern-id');
+                           matchFound = true;
                            break;
                        }
+                   }
+                   
+                   // If no exact match, try partial match (case insensitive)
+                   if (!matchFound && studentId.trim() !== '') {
+                       const searchTerm = studentId.toLowerCase().trim();
+                       for (let i = 0; i < options.length; i++) {
+                           const optionValue = options[i].value.toLowerCase();
+                           if (optionValue.includes(searchTerm)) {
+                               studentId = options[i].getAttribute('data-intern-id');
+                               // Update the input field with the matched option
+                               document.getElementById('studentFilter').value = options[i].value;
+                               matchFound = true;
+                               break;
+                           }
+                       }
+                   }
+                   
+                   // If no match found, use special flag to show no results
+                   if (!matchFound) {
+                       studentId = "NO_MATCH_FOUND";
                    }
                }
                const weekNumber = getWeekNumber(new Date(window.currentWeekStart));
                loadWeeklyReports(studentId, weekNumber);
         } else if (tabId === 'evaluationTab') {
             $('#evaluationTabContent').show();
+            // Reset evaluation tab to initial empty state if no student is selected
+            if (!$('.admin-eval-student.active').length) {
+                $('.admin-eval-loading').hide();
+                $('.admin-eval-content').hide();
+                $('.admin-eval-empty-state').show();
+            }
         } else if (tabId === 'contralTab') {
             $('#contralTabContent').show();
+            
+            // Debug: Check if admin data is available before loading
+            console.log('Control tab opened - checking admin data...');
+            console.log('userName element exists:', $('#userName').length > 0);
+            console.log('data-admin-id attribute value:', $('[data-admin-id]').first().attr('data-admin-id'));
+            
             loadCompaniesMOAData(); // Load MOA data when control tab is opened
+            loadSystemInformation(); // Load system information
         }
         
         // Update active tab
@@ -518,11 +652,44 @@ $(function () {
         // If studentId is not a number (because user typed a name), try to find matching INTERNS_ID from datalist options
         if (isNaN(studentId) && studentId !== "") {
             const options = document.getElementById('studentList').options;
+            let matchFound = false;
+            
+            // First try exact match
             for (let i = 0; i < options.length; i++) {
                 if (options[i].value === studentId) {
                     studentId = options[i].getAttribute('data-intern-id');
+                    matchFound = true;
                     break;
                 }
+            }
+            
+            // If no exact match, try partial match (case insensitive)
+            if (!matchFound && studentId.trim() !== '') {
+                const searchTerm = studentId.toLowerCase().trim();
+                for (let i = 0; i < options.length; i++) {
+                    const optionValue = options[i].value.toLowerCase();
+                    // Check if search term matches the beginning of surname or anywhere in the name
+                    const names = optionValue.split(',');
+                    const surname = names[0] ? names[0].trim() : '';
+                    const firstName = names[1] ? names[1].trim() : '';
+                    
+                    if (optionValue.includes(searchTerm) || 
+                        surname.startsWith(searchTerm) || 
+                        firstName.startsWith(searchTerm) ||
+                        (surname + ' ' + firstName).includes(searchTerm)) {
+                        studentId = options[i].getAttribute('data-intern-id');
+                        // Update the input field with the matched option for better UX
+                        document.getElementById('studentFilter').value = options[i].value;
+                        matchFound = true;
+                        break;
+                    }
+                }
+            }
+            
+            // If still no match found, use a special flag to indicate no results should be shown
+            if (!matchFound) {
+                studentId = "NO_MATCH_FOUND";
+                console.log('No matching student found for: ' + studentId);
             }
         }
 
@@ -541,20 +708,23 @@ $(function () {
                 date: date 
             },
             beforeSend: function() {
-                // Show loading state
-                document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Loading...</td></tr>';
-                document.getElementById('historyTable').style.display = 'table';
+                // Show loading spinner and hide other content
+                $('#historyLoading').show();
+                $('#historySummary').hide();
                 document.getElementById('historyNoRecords').style.display = 'none';
             },
             success: function(response) {
+                // Hide loading spinner
+                $('#historyLoading').hide();
+                
                 if (response.status === 'success') {
-                    // Update summary
+                    // Update summary and show content
                     document.getElementById('selectedDate').textContent = date;
                     document.getElementById('historyPresent').textContent = response.summary.present || 0;
                     document.getElementById('historyOnTime').textContent = response.summary.on_time || 0;
                     document.getElementById('historyLate').textContent = response.summary.late || 0;
                     document.getElementById('historyTotal').textContent = response.summary.total || 0;
-                    document.getElementById('historySummary').style.display = 'block';
+                    $('#historySummary').show();
 
                     // Populate student lists
                     function populateList(listId, students) {
@@ -628,6 +798,8 @@ $(function () {
                 }
             },
             error: function(xhr, status, error) {
+                // Hide loading spinner on error
+                $('#historyLoading').hide();
                 console.error('AJAX Error:', error);
                 alert('An error occurred while loading history records.');
             }
@@ -746,6 +918,34 @@ let isLoadingReports = false;
 
 // Function to load weekly reports via AJAX
 function loadWeeklyReports(studentId, weekNumber) {
+    // Check if no matching student was found
+    if (studentId === "NO_MATCH_FOUND") {
+        // Hide loading and reports list
+        $('#reportsLoading').hide();
+        $('#reportsList').hide();
+        
+        // Update the no reports message to be more specific
+        const searchValue = document.getElementById('studentFilter').value;
+        const noReportsDiv = $('#noReports');
+        const emptyStateTitle = noReportsDiv.find('.empty-state-title');
+        const emptyStateMessage = noReportsDiv.find('.empty-state-message');
+        
+        if (emptyStateTitle.length && emptyStateMessage.length) {
+            emptyStateTitle.text('Student Not Found');
+            emptyStateMessage.html(`No student found matching "${searchValue}".<br>Please check the spelling or select from the dropdown list.`);
+        }
+        
+        // Add visual feedback to the search input
+        const searchInput = document.getElementById('studentFilter');
+        if (searchInput) {
+            searchInput.style.borderColor = '#e74c3c';
+            searchInput.style.backgroundColor = 'rgba(231, 76, 60, 0.05)';
+        }
+        
+        noReportsDiv.show();
+        return;
+    }
+    
     // Allow the request if it's after a return, regardless of loading state
     if (isLoadingReports && !window.isAfterReturn) {
         console.log('Reports are already being loaded, skipping this request...');
@@ -817,11 +1017,15 @@ function loadWeeklyReports(studentId, weekNumber) {
                     document.getElementById('reportsList').style.display = 'block';
                     document.getElementById('noReports').style.display = 'none';
                 } else {
+                    // Reset the empty state message to default
+                    resetEmptyStateMessage();
                     document.getElementById('reportsList').style.display = 'none';
                     document.getElementById('noReports').style.display = 'block';
                 }
             } else {
                 alert('Error loading reports: ' + response.message);
+                // Reset the empty state message to default
+                resetEmptyStateMessage();
                 document.getElementById('reportsList').style.display = 'none';
                 document.getElementById('noReports').style.display = 'block';
             }
@@ -829,6 +1033,8 @@ function loadWeeklyReports(studentId, weekNumber) {
         error: function(xhr, status, error) {
             console.error('AJAX Error:', error);
             alert('An error occurred while loading weekly reports.');
+            // Reset the empty state message to default
+            resetEmptyStateMessage();
             document.getElementById('reportsLoading').style.display = 'none';
             document.getElementById('reportsList').style.display = 'none';
             document.getElementById('noReports').style.display = 'block';
@@ -836,6 +1042,26 @@ function loadWeeklyReports(studentId, weekNumber) {
             isLoadingReports = false;
         }
     });
+}
+
+// Function to reset empty state message to default
+function resetEmptyStateMessage() {
+    const noReportsDiv = $('#noReports');
+    const emptyStateTitle = noReportsDiv.find('.empty-state-title');
+    const emptyStateMessage = noReportsDiv.find('.empty-state-message');
+    
+    // Reset to original empty state message
+    if (emptyStateTitle.length && emptyStateMessage.length) {
+        emptyStateTitle.text('No Weekly Reports Found');
+        emptyStateMessage.html('No reports match your current search criteria.<br>Try adjusting the date range or selecting a different student.');
+    }
+    
+    // Reset search input styling
+    const searchInput = document.getElementById('studentFilter');
+    if (searchInput) {
+        searchInput.style.borderColor = '';
+        searchInput.style.backgroundColor = '';
+    }
 }
 
 // Function to calculate week number from date
@@ -915,76 +1141,30 @@ function displayWeeklyReports(reports) {
                 </div>
             </div>
 
-            <div class="report-grid">
-                <div class="day-section monday">
-                    <h4>Monday</h4>
-                    <div class="day-content">
-                        <div class="day-images">
-                            ${imagesPerDay.monday.map(image => `
-                                <img src="${image.url ? image.url : (image.image_path ? image.image_path : '')}" alt="Monday activity" class="activity-image">
-                            `).join('')}
+            <div class="report-grid-compact">
+                ${['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].map(day => {
+                    const dayImages = imagesPerDay[day] || [];
+                    const dayDesc = report[day + '_description'] || 'No description provided';
+                    const shortDesc = dayDesc.length > 50 ? dayDesc.substring(0, 50) + '...' : dayDesc;
+                    
+                    return `
+                        <div class='day-section-compact ${day}'>
+                            <h4>${day.charAt(0).toUpperCase() + day.slice(1)}</h4>
+                            <div class='day-content-compact'>
+                                <div class='day-image-preview'>
+                                    ${dayImages.length > 0 ? 
+                                        `<img src='${dayImages[0].url || dayImages[0].image_path || ''}' alt='${day} activity' class='preview-image'>` : 
+                                        `<div class='no-image-placeholder'>No image</div>`
+                                    }
+                                </div>
+                                <div class='day-description-preview'><p>${shortDesc}</p></div>
+                                <button class='btn-view-day' onclick='viewDayReportAdmin(${report.report_id}, "${day}", "${report.student_name}")'>
+                                    <i class='fas fa-eye'></i> View
+                                </button>
+                            </div>
                         </div>
-                        <div class="day-description">
-                            <p>${report.monday_description || 'No description provided for Monday'}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="day-section tuesday">
-                    <h4>Tuesday</h4>
-                    <div class="day-content">
-                        <div class="day-images">
-                            ${imagesPerDay.tuesday.map(image => `
-                                <img src="${image.url ? image.url : (image.image_path ? image.image_path : '')}" alt="Tuesday activity" class="activity-image">
-                            `).join('')}
-                        </div>
-                        <div class="day-description">
-                            <p>${report.tuesday_description || 'No description provided for Tuesday'}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="day-section wednesday">
-                    <h4>Wednesday</h4>
-                    <div class="day-content">
-                        <div class="day-images">
-                            ${imagesPerDay.wednesday.map(image => `
-                                <img src="${image.url ? image.url : (image.image_path ? image.image_path : '')}" alt="Wednesday activity" class="activity-image">
-                            `).join('')}
-                        </div>
-                        <div class="day-description">
-                            <p>${report.wednesday_description || 'No description provided for Wednesday'}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="day-section thursday">
-                    <h4>Thursday</h4>
-                    <div class="day-content">
-                        <div class="day-images">
-                            ${imagesPerDay.thursday.map(image => `
-                                <img src="${image.url ? image.url : (image.image_path ? image.image_path : '')}" alt="Thursday activity" class="activity-image">
-                            `).join('')}
-                        </div>
-                        <div class="day-description">
-                            <p>${report.thursday_description || 'No description provided for Thursday'}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="day-section friday">
-                    <h4>Friday</h4>
-                    <div class="day-content">
-                        <div class="day-images">
-                            ${imagesPerDay.friday.map(image => `
-                                <img src="${image.url ? image.url : (image.image_path ? image.image_path : '')}" alt="Friday activity" class="activity-image">
-                            `).join('')}
-                        </div>
-                        <div class="day-description">
-                            <p>${report.friday_description || 'No description provided for Friday'}</p>
-                        </div>
-                    </div>
-                </div>
+                    `;
+                }).join('')}
             </div>
 
             <div class="report-footer">
@@ -1011,6 +1191,9 @@ function loadAdminProfileDetails() {
     $('#profileModalContent').html('<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading profile details...</div>');
     $('#profileModal').css('display', 'flex');
     
+    // Get admin ID from the user dropdown span
+    const adminId = $('[data-admin-id]').data('admin-id');
+    
     // Fetch profile data from server
     $.ajax({
         url: URLs.adminDashboard,
@@ -1018,7 +1201,7 @@ function loadAdminProfileDetails() {
         dataType: 'json',
         data: {
             action: 'getAdminDetails',
-            adminId: $('#userName').data('admin-id')
+            adminId: adminId
         },
         success: function(response) {
             if (response.status === 'success') {
@@ -1148,13 +1331,34 @@ $(document).ready(function() {
 
     // Evaluation tab: load questions and ratings for selected student
     $(document).on('click', '.admin-eval-student', function() {
-        $('.admin-eval-student').removeClass('active').css({'background':'#fff','font-weight':'normal'});
-        $(this).addClass('active').css({'background':'#e0e7ff','font-weight':'bold'});
+        $('.admin-eval-student').removeClass('active').css({
+            'background':'#fff',
+            'color':'#374151',
+            'font-weight':'500',
+            'border':'2px solid #e5e7eb'
+        }).find('i').css('color', '#9ca3af');
+        $(this).addClass('active').css({
+            'background':'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+            'color':'#fff',
+            'font-weight':'600',
+            'border':'2px solid transparent'
+        }).find('i').css('color', '#93c5fd');
         var studentId = $(this).data('student-id');
+        
+        // Hide empty state and show loading
+        $('.admin-eval-empty-state').hide();
+        $('.admin-eval-content').hide();
+        $('.admin-eval-loading').show();
+        
         $.get('ajaxhandler/getStudentQuestionsAndRatingsAjax.php', {student_id: studentId}, function(data) {
             var result = {};
             try { result = JSON.parse(data); } catch(e) { result = {}; }
-            var $main = $('.admin-eval-main');
+            
+            // Hide loading and show content
+            $('.admin-eval-loading').hide();
+            $('.admin-eval-content').show();
+            
+            var $main = $('.admin-eval-content');
             $main.empty();
             var hasCategories = false;
             $.each(result, function(category, catData) {
@@ -1223,16 +1427,23 @@ $(document).ready(function() {
                     $main.append(commentsTable);
                 }
             if(hasCategories) {
-                $main.append('<button class="admin-eval-save-btn" style="background:#2563eb;color:#fff;border:none;border-radius:4px;padding:12px 32px;font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 1px 4px rgba(37,99,235,0.08);transition:background 0.2s;">Save Evaluation</button>');
+                $main.append('<div class="admin-eval-actions" style="margin-top: 32px; padding-top: 24px; border-top: 2px solid #f3f4f6; text-align: center;"><button class="admin-eval-save-btn">Save Evaluation</button></div>');
             } else {
-                $main.append('<div style="padding:32px;text-align:center;color:#374151;">No questions or ratings found for this student.</div>');
+                $main.append('<div class="admin-eval-no-data" style="padding: 60px 20px; text-align: center; color: #6b7280;"><div style="margin-bottom: 16px; color: #9ca3af;"><i class="fas fa-info-circle" style="font-size: 48px;"></i></div><h4 style="color: #374151; margin-bottom: 8px; font-size: 18px; font-weight: 600;">No Evaluation Data Available</h4><p style="font-size: 14px;">This student hasn\'t completed their self-assessment yet, so there are no questions or ratings to display.</p><p style="font-size: 13px; color: #9ca3af; margin-top: 8px;">Please check back after the student completes their evaluation forms.</p></div>');
             }
+        }).fail(function(xhr, status, error) {
+            // Handle AJAX error
+            $('.admin-eval-loading').hide();
+            $('.admin-eval-content').show();
+            var $main = $('.admin-eval-content');
+            $main.html('<div class="admin-eval-error" style="padding: 60px 20px; text-align: center; color: #dc2626;"><div style="margin-bottom: 16px; color: #ef4444;"><i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i></div><h4 style="color: #dc2626; margin-bottom: 8px; font-size: 18px; font-weight: 600;">Error Loading Evaluation Data</h4><p style="font-size: 14px;">Unable to load evaluation information for this student.</p><p style="font-size: 13px; color: #9ca3af; margin-top: 8px;">Please try refreshing the page or contact your administrator if the problem persists.</p><button onclick="location.reload()" style="margin-top: 16px; padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">Refresh Page</button></div>');
         });
     });
         // Save Evaluation button handler
         $(document).on('click', '.admin-eval-save-btn', function() {
-            var $main = $('.admin-eval-main');
+            var $main = $('.admin-eval-content');
             var studentId = $('.admin-eval-student.active').data('student-id');
+            var $saveBtn = $(this);
             if(!studentId) {
                 alert('No student selected.');
                 return;
@@ -1331,6 +1542,11 @@ $(document).ready(function() {
             });
 
             console.log('DEBUG: Ratings to send:', ratings);
+            
+            // Show loading state on button
+            var originalText = $saveBtn.text();
+            $saveBtn.html('<i class="fas fa-spinner fa-spin"></i> Saving...').prop('disabled', true);
+            
             // Get comment
             var comment = $main.find('.admin-eval-comment-input').val();
             // Send AJAX to save
@@ -1345,13 +1561,19 @@ $(document).ready(function() {
                 },
                 success: function(resp) {
                     if(resp.status==='success') {
-                        alert('Evaluation saved successfully!');
+                        // Show success feedback
+                        $saveBtn.html('<i class="fas fa-check"></i> Saved Successfully!').css('background', 'linear-gradient(135deg, #10b981, #059669)');
+                        setTimeout(function() {
+                            $saveBtn.text(originalText).prop('disabled', false).css('background', '');
+                        }, 2000);
                     } else {
                         alert('Error saving evaluation: '+resp.message);
+                        $saveBtn.text(originalText).prop('disabled', false);
                     }
                 },
                 error: function(xhr, status, error) {
                     alert('AJAX error: '+error);
+                    $saveBtn.text(originalText).prop('disabled', false);
                 }
             });
         });
@@ -1523,8 +1745,8 @@ function submitReturnReport() {
 
 // Function to display admin profile details
 function displayAdminProfileDetails(data) {
-    // Check if profile picture exists
-    const profilePicture = data.PROFILE ? `uploads/${data.PROFILE}` : null;
+    // Check if profile picture exists and use proper URL handling
+    const profilePicture = data.PROFILE ? getImageUrl(data.PROFILE) : null;
     
     const html = `
         <div class="profile-card">
@@ -1695,16 +1917,39 @@ function calculateMOAStatus(startDate, endDate) {
 
 // Load admin's assigned company MOA data for admin control panel
 function loadCompaniesMOAData() {
-    // Get admin ID from the userName data attribute
-    const adminId = $('#userName').data('admin-id');
+    // Get admin ID from the userName data attribute (try multiple methods)
+    let adminId = $('#userName').data('admin-id');
+    
+    // Fallback: try direct attribute access
+    if (!adminId) {
+        adminId = $('#userName').attr('data-admin-id');
+    }
+    
+    // Another fallback: try finding any element with data-admin-id
+    if (!adminId) {
+        adminId = $('[data-admin-id]').first().data('admin-id') || $('[data-admin-id]').first().attr('data-admin-id');
+    }
+    
+    // Debug: Log what we're getting
+    console.log('loadCompaniesMOAData - adminId:', adminId);
+    console.log('loadCompaniesMOAData - userName element:', $('#userName'));
+    console.log('loadCompaniesMOAData - userName exists:', $('#userName').length);
+    console.log('loadCompaniesMOAData - userName data-admin-id attr:', $('#userName').attr('data-admin-id'));
     
     if (!adminId) {
         $('#companiesMOATableBody').html(`
             <tr>
-                <td colspan="6" style="padding: 40px; text-align: center; color: #dc3545;">
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
-                        <p>Admin ID not found. Please log in again.</p>
+                <td colspan="6">
+                    <div class="error-state" style="padding: 60px 20px; text-align: center; color: #dc2626;">
+                        <div style="margin-bottom: 20px; color: #ef4444;">
+                            <i class="fas fa-user-times" style="font-size: 48px;"></i>
+                        </div>
+                        <h4 style="color: #dc2626; margin-bottom: 8px; font-size: 18px; font-weight: 600;">Authentication Error</h4>
+                        <p style="font-size: 14px; margin-bottom: 8px;">Admin ID not found in session data.</p>
+                        <p style="font-size: 13px; color: #9ca3af; margin-bottom: 16px;">Please refresh the page or log in again.</p>
+                        <button onclick="location.reload()" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-redo"></i> Refresh Page
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -1719,11 +1964,14 @@ function loadCompaniesMOAData() {
         data: { action: 'getAllHTEList', adminId: adminId }, // Get admin's assigned HTE
         beforeSend: function() {
             $('#companiesMOATableBody').html(`
-                <tr>
-                    <td colspan="6" style="padding: 40px; text-align: center; color: #666;">
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                            <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #007bff;"></i>
-                            <p>Loading companies...</p>
+                <tr class="loading-row">
+                    <td colspan="6">
+                        <div class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text">
+                                <h4>Loading Company Information</h4>
+                                <p>Retrieving your assigned company details...</p>
+                            </div>
                         </div>
                     </td>
                 </tr>
@@ -1737,10 +1985,14 @@ function loadCompaniesMOAData() {
                 } else {
                     $('#companiesMOATableBody').html(`
                         <tr>
-                            <td colspan="6" style="padding: 40px; text-align: center; color: #666;">
-                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                    <i class="fas fa-building" style="font-size: 24px; color: #6c757d;"></i>
-                                    <p>No company assigned to your account</p>
+                            <td colspan="6">
+                                <div class="empty-state" style="padding: 60px 20px; text-align: center; color: #6b7280;">
+                                    <div style="margin-bottom: 20px; color: #9ca3af;">
+                                        <i class="fas fa-building" style="font-size: 48px;"></i>
+                                    </div>
+                                    <h4 style="color: #374151; margin-bottom: 8px; font-size: 18px; font-weight: 600;">No Company Assigned</h4>
+                                    <p style="font-size: 14px; margin-bottom: 8px;">You don't have any company assigned to your account yet.</p>
+                                    <p style="font-size: 13px; color: #9ca3af;">Please contact your administrator to assign a company.</p>
                                 </div>
                             </td>
                         </tr>
@@ -1749,10 +2001,16 @@ function loadCompaniesMOAData() {
             } else {
                 $('#companiesMOATableBody').html(`
                     <tr>
-                        <td colspan="6" style="padding: 40px; text-align: center; color: #dc3545;">
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
-                                <p>Error loading company: ${response.message || 'Unknown error'}</p>
+                        <td colspan="6">
+                            <div class="error-state" style="padding: 60px 20px; text-align: center; color: #dc2626;">
+                                <div style="margin-bottom: 20px; color: #ef4444;">
+                                    <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+                                </div>
+                                <h4 style="color: #dc2626; margin-bottom: 8px; font-size: 18px; font-weight: 600;">Error Loading Company Data</h4>
+                                <p style="font-size: 14px; margin-bottom: 16px;">Unable to load company information: ${response.message || 'Unknown error'}</p>
+                                <button onclick="loadCompaniesMOAData()" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                    <i class="fas fa-redo"></i> Try Again
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -1763,10 +2021,16 @@ function loadCompaniesMOAData() {
             console.error('Error loading companies:', error);
             $('#companiesMOATableBody').html(`
                 <tr>
-                    <td colspan="6" style="padding: 40px; text-align: center; color: #dc3545;">
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                            <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
-                            <p>Error loading your assigned company. Please try again.</p>
+                    <td colspan="6">
+                        <div class="error-state" style="padding: 60px 20px; text-align: center; color: #dc2626;">
+                            <div style="margin-bottom: 20px; color: #ef4444;">
+                                <i class="fas fa-wifi" style="font-size: 48px;"></i>
+                            </div>
+                            <h4 style="color: #dc2626; margin-bottom: 8px; font-size: 18px; font-weight: 600;">Connection Error</h4>
+                            <p style="font-size: 14px; margin-bottom: 16px;">Unable to connect to the server. Please check your internet connection.</p>
+                            <button onclick="loadCompaniesMOAData()" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-redo"></i> Retry Connection
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -1800,20 +2064,47 @@ function renderCompaniesMOATable(companies) {
         }
         
         html += `
-            <tr data-company-id="${company.HTE_ID}" style="border-bottom: 1px solid #eee;">
-                <td style="padding: 12px; color: #333;">${company.NAME || '-'}</td>
-                <td style="padding: 12px; color: #666;">${company.INDUSTRY || '-'}</td>
-                <td style="padding: 12px; color: #666;">${company.CONTACT_PERSON || '-'}</td>
-                <td style="padding: 12px;">
-                    <span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; 
-                        background-color: ${moaStatus.color}20; color: ${moaStatus.color};">
-                        ${moaStatus.status}
+            <tr data-company-id="${company.HTE_ID}">
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 16px;">
+                            ${(company.NAME || 'N').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; color: #1f2937; margin-bottom: 2px;">${company.NAME || 'No Name'}</div>
+                            <div style="font-size: 12px; color: #6b7280;">${company.HTE_ID}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span style="padding: 4px 12px; background: #f3f4f6; border-radius: 20px; font-size: 13px; color: #374151;">
+                        ${company.INDUSTRY || 'Not specified'}
                     </span>
                 </td>
-                <td style="padding: 12px; color: #666; font-size: 14px;">${moaDatesText}</td>
-                <td style="padding: 12px;">
-                    <div style="display: flex; gap: 5px; align-items: center;">
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-user" style="color: #9ca3af; font-size: 14px;"></i>
+                        <span>${company.CONTACT_PERSON || 'Not assigned'}</span>
+                    </div>
+                </td>
+                <td>
+                    <span style="padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; 
+                        background-color: ${moaStatus.color}20; color: ${moaStatus.color}; border: 1px solid ${moaStatus.color}30;">
+                        <i class="fas ${getStatusIcon(moaStatus.status)}"></i> ${moaStatus.status}
+                    </span>
+                </td>
+                <td>
+                    <div style="font-size: 13px; color: #374151;">
+                        ${moaDatesText}
+                    </div>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 8px; align-items: center;">
                         ${moaViewBtn}
+                        <button class="company-info-btn" data-company='${JSON.stringify(company)}' 
+                            style="padding: 6px 12px; background: #f3f4f6; color: #374151; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                            <i class="fas fa-info-circle"></i> Details
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -1874,5 +2165,163 @@ $(document).ready(function() {
         }
     });
     
-    // Company details view removed - unnecessary for admin interface
+    // Company details modal
+    $(document).on('click', '.company-info-btn', function() {
+        const company = JSON.parse($(this).data('company'));
+        showCompanyDetailsModal(company);
+    });
 });
+
+// Helper function to get status icon
+function getStatusIcon(status) {
+    switch(status) {
+        case 'Active': return 'fa-check-circle';
+        case 'Expiring Soon': return 'fa-clock';
+        case 'Expired': return 'fa-exclamation-triangle';
+        case 'No MOA': return 'fa-times-circle';
+        default: return 'fa-question-circle';
+    }
+}
+
+// Load system information
+function loadSystemInformation() {
+    // Get admin info from username element
+    const adminName = $('#userName').text() || 'Unknown Admin';
+    let adminId = $('#userName').data('admin-id');
+    
+    // Fallback: try direct attribute access
+    if (!adminId) {
+        adminId = $('#userName').attr('data-admin-id');
+    }
+    
+    // Another fallback: try finding any element with data-admin-id
+    if (!adminId) {
+        adminId = $('[data-admin-id]').first().data('admin-id') || $('[data-admin-id]').first().attr('data-admin-id');
+    }
+    
+    // Debug: Log what we're getting
+    console.log('loadSystemInformation - adminId:', adminId);
+    console.log('loadSystemInformation - adminName:', adminName);
+    
+    // Update admin role info
+    $('#adminRoleInfo').text('OJT Coordinator - ' + adminName);
+    
+    // Update last login (current date as placeholder)
+    const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    $('#lastLoginInfo').text(currentDate);
+    
+    // Load managed students count
+    if (adminId) {
+        $.ajax({
+            url: 'ajaxhandler/attendanceAJAX.php',
+            type: 'POST',
+            dataType: 'json',
+            data: { action: 'getStudentCount', adminId: adminId },
+            success: function(response) {
+                if (response.success) {
+                    $('#managedStudentsInfo').text(response.count + ' students');
+                } else {
+                    $('#managedStudentsInfo').text('Unable to load');
+                }
+            },
+            error: function() {
+                $('#managedStudentsInfo').text('Unable to load');
+            }
+        });
+    } else {
+        $('#managedStudentsInfo').text('Unable to load');
+    }
+}
+
+// Show company details modal
+function showCompanyDetailsModal(company) {
+    const moaStatus = calculateMOAStatus(company.MOA_START_DATE, company.MOA_END_DATE);
+    
+    let moaDatesHtml = 'Not available';
+    if (company.MOA_START_DATE && company.MOA_END_DATE) {
+        const startDate = new Date(company.MOA_START_DATE).toLocaleDateString();
+        const endDate = new Date(company.MOA_END_DATE).toLocaleDateString();
+        moaDatesHtml = `
+            <div style="margin-bottom: 8px;"><strong>Start Date:</strong> ${startDate}</div>
+            <div><strong>End Date:</strong> ${endDate}</div>
+        `;
+    }
+    
+    const modalContent = `
+        <div style="padding: 20px;">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px;">
+                    ${(company.NAME || 'N').charAt(0).toUpperCase()}
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #1f2937;">${company.NAME || 'No Name'}</h3>
+                    <p style="margin: 4px 0 0 0; color: #6b7280;">Company ID: ${company.HTE_ID}</p>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                    <h4 style="margin: 0 0 8px 0; color: #1f2937;"><i class="fas fa-industry"></i> Industry</h4>
+                    <p style="margin: 0; color: #6b7280;">${company.INDUSTRY || 'Not specified'}</p>
+                </div>
+                
+                <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #10b981;">
+                    <h4 style="margin: 0 0 8px 0; color: #1f2937;"><i class="fas fa-user"></i> Contact Person</h4>
+                    <p style="margin: 0; color: #6b7280;">${company.CONTACT_PERSON || 'Not assigned'}</p>
+                </div>
+                
+                <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid ${moaStatus.color};">
+                    <h4 style="margin: 0 0 8px 0; color: #1f2937;"><i class="fas fa-file-contract"></i> MOA Status</h4>
+                    <p style="margin: 0; color: ${moaStatus.color}; font-weight: 600;">${moaStatus.status}</p>
+                </div>
+                
+                <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                    <h4 style="margin: 0 0 8px 0; color: #1f2937;"><i class="fas fa-calendar-alt"></i> Agreement Period</h4>
+                    <div style="color: #6b7280; font-size: 14px;">${moaDatesHtml}</div>
+                </div>
+            </div>
+            
+            ${company.MOA_FILE_URL ? `
+                <div style="margin-top: 24px; text-align: center;">
+                    <button onclick="window.open('${company.MOA_FILE_URL}', '_blank')" 
+                        style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-file-pdf"></i> View MOA Document
+                    </button>
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    // Create or update modal
+    if ($('#companyDetailsModal').length === 0) {
+        $('body').append(`
+            <div id="companyDetailsModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; backdrop-filter: blur(4px);">
+                <div class="modal-dialog" style="position: relative; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                    <div class="modal-header" style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; color: #1f2937;">Company Details</h2>
+                        <button class="modal-close" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="companyDetailsModalBody"></div>
+                </div>
+            </div>
+        `);
+        
+        // Close modal handlers
+        $('#companyDetailsModal .modal-close, #companyDetailsModal').on('click', function(e) {
+            if (e.target === this) {
+                $('#companyDetailsModal').fadeOut();
+            }
+        });
+    }
+    
+    $('#companyDetailsModalBody').html(modalContent);
+    $('#companyDetailsModal').fadeIn();
+}

@@ -18,11 +18,11 @@ public function __construct() {
     $isProduction = isset($_SERVER['RENDER']) || !file_exists(__DIR__ . '/../.env');
     
     if ($isProduction) {
-        // Production: Use Render environment variables or hardcoded FreeSQLDatabase
-        $this->servername = getenv('DB_HOST') ?: 'sql3.freesqldatabase.com:3306';
-        $this->username = getenv('DB_USERNAME') ?: 'sql3806785';
-        $this->password = getenv('DB_PASSWORD') ?: 'DAl9FGjxvF';
-        $this->dbname = getenv('DB_NAME') ?: 'sql3806785';
+        // Production: Use Render environment variables or hardcoded InfinityFree
+        $this->servername = getenv('DB_HOST') ?: 'mainline.proxy.rlwy.net:31782';
+        $this->username = getenv('DB_USERNAME') ?: 'root';
+        $this->password = getenv('DB_PASSWORD') ?: 'LYeUTqrnaDxpSAdWiirrGhFAcVVyNMGJ';
+        $this->dbname = getenv('DB_NAME') ?: 'railway';
     } else {
         // Local development: Try localhost first, fallback to live DB if needed
         $this->servername = $_ENV['DB_HOST'] ?? 'localhost:3306';
@@ -33,10 +33,10 @@ public function __construct() {
     
     // Store fallback credentials for local development
     $this->fallbackConfig = [
-        'servername' => 'sql3.freesqldatabase.com:3306',
-        'username' => 'sql3806785',
-        'password' => 'DAl9FGjxvF',
-        'dbname' => 'sql3806785'
+        'servername' => 'mainline.proxy.rlwy.net:31782',
+        'username' => 'root',
+        'password' => 'LYeUTqrnaDxpSAdWiirrGhFAcVVyNMGJ',
+        'dbname' => 'railway'
     ];
     
     // Connection established using environment variables

@@ -690,14 +690,29 @@ switch ($action) {
             $reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $result = [];
             foreach ($reports as $report) {
+                // Convert timestamps to Philippine timezone
+                $philippineTimezone = new DateTimeZone('Asia/Manila');
+                
+                $createdAt = $report['created_at'] ? 
+                    (new DateTime($report['created_at'], new DateTimeZone('UTC')))->setTimezone($philippineTimezone)->format('Y-m-d H:i:s') : 
+                    null;
+                
+                $updatedAt = $report['updated_at'] ? 
+                    (new DateTime($report['updated_at'], new DateTimeZone('UTC')))->setTimezone($philippineTimezone)->format('Y-m-d H:i:s') : 
+                    null;
+                
+                $approvedAt = $report['approved_at'] ? 
+                    (new DateTime($report['approved_at'], new DateTimeZone('UTC')))->setTimezone($philippineTimezone)->format('Y-m-d H:i:s') : 
+                    null;
+                
                 $result[] = [
                     'week_start' => $report['week_start'],
                     'week_end' => $report['week_end'],
                     'status' => $report['status'],
                     'approval_status' => $report['approval_status'],
-                    'created_at' => $report['created_at'],
-                    'updated_at' => $report['updated_at'],
-                    'approved_at' => $report['approved_at']
+                    'created_at' => $createdAt,
+                    'updated_at' => $updatedAt,
+                    'approved_at' => $approvedAt
                 ];
             }
             sendResponse('success', $result, 'Recent report status retrieved successfully');

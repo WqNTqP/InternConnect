@@ -347,6 +347,51 @@ function generateStudentFilterOptions($coordinatorId) {
                                 </button>
                             </div>
                         </div>
+                        <!-- Loading State -->
+                        <div id="reportsLoadingState" class="mt-6">
+                            <div class="flex flex-col items-center justify-center py-16 text-center">
+                                <div class="relative mb-4">
+                                    <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <i class="fas fa-file-alt text-blue-500 text-lg"></i>
+                                    </div>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Loading Reports</h3>
+                                <p class="text-gray-500 text-sm">Please wait while we fetch the latest weekly reports...</p>
+                            </div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="reportsEmptyState" class="mt-6 hidden">
+                            <div class="flex flex-col items-center justify-center py-16 text-center">
+                                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                    <i class="fas fa-file-alt text-gray-400 text-3xl"></i>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">No Reports Found</h3>
+                                <p class="text-gray-500 text-sm mb-4">No approved weekly reports match your current filters.</p>
+                                <div class="text-xs text-gray-400">
+                                    <p>• Try selecting a different date range</p>
+                                    <p>• Check if the student has submitted reports</p>
+                                    <p>• Ensure reports have been approved</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Error State -->
+                        <div id="reportsErrorState" class="mt-6 hidden">
+                            <div class="flex flex-col items-center justify-center py-16 text-center">
+                                <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                                    <i class="fas fa-exclamation-triangle text-red-500 text-3xl"></i>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Error Loading Reports</h3>
+                                <p class="text-gray-500 text-sm mb-4">There was a problem loading the reports. Please try again.</p>
+                                <button id="retryLoadReports" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">
+                                    <i class="fas fa-redo mr-2"></i>Try Again
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Reports List Content -->
                         <div id="approvedReportsList" class="mt-6 hidden"></div>
                     </div>
                 </div>
@@ -435,18 +480,49 @@ function generateStudentFilterOptions($coordinatorId) {
 
         <!-- Pre-Assessment Tab -->
         <div id="rateTabContent" class="hidden">
-            <div class="flex w-full">
-                <!-- Left column will be rendered by JavaScript -->
-                <div class="right-col w-4/5 pl-4">
-                    <div class="flex flex-col items-center justify-center h-full">
-                        <div class="bg-blue-50 rounded-full p-6 mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-400" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
+            <!-- Pre-Assessment Loading State -->
+            <div id="preAssessmentLoadingState" class="hidden">
+                <div class="flex flex-col items-center justify-center py-16 text-center">
+                    <div class="relative mb-4">
+                        <div class="animate-spin rounded-full h-16 w-16 border-4 border-green-500 border-t-transparent"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <i class="fas fa-clipboard-list text-green-500 text-lg"></i>
                         </div>
-                        <!-- This will be replaced by JavaScript rendering -->
+                    </div>
+                    <h4 class="text-lg font-semibold text-gray-700 mb-2">Loading Pre-Assessment</h4>
+                    <p class="text-gray-500 text-sm">Please wait while we fetch student pre-assessment data...</p>
+                </div>
+            </div>
+
+            <!-- Pre-Assessment Error State -->
+            <div id="preAssessmentErrorState" class="hidden">
+                <div class="flex flex-col items-center justify-center py-16 text-center">
+                    <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-3xl"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold text-gray-700 mb-2">Error Loading Pre-Assessment</h4>
+                    <p class="text-gray-500 text-sm mb-4">There was a problem loading the pre-assessment data. Please try again.</p>
+                    <button id="retryLoadPreAssessment" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">
+                        <i class="fas fa-redo mr-2"></i>Try Again
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pre-Assessment Content -->
+            <div id="preAssessmentContent">
+                <div class="flex w-full">
+                    <!-- Left column will be rendered by JavaScript -->
+                    <div class="right-col w-4/5 pl-4">
+                        <div class="flex flex-col items-center justify-center h-full">
+                            <div class="bg-blue-50 rounded-full p-6 mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-400" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <!-- This will be replaced by JavaScript rendering -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -454,7 +530,38 @@ function generateStudentFilterOptions($coordinatorId) {
 
         <!-- Post-Assessment Tab -->
         <div id="postAssessmentTabContent" class="hidden">
-            <!-- Content will be rendered dynamically by JavaScript -->
+            <!-- Post-Assessment Loading State -->
+            <div id="postAssessmentLoadingState" class="hidden">
+                <div class="flex flex-col items-center justify-center py-16 text-center">
+                    <div class="relative mb-4">
+                        <div class="animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <i class="fas fa-chart-bar text-purple-500 text-lg"></i>
+                        </div>
+                    </div>
+                    <h4 class="text-lg font-semibold text-gray-700 mb-2">Loading Post-Assessment</h4>
+                    <p class="text-gray-500 text-sm">Please wait while we fetch student post-assessment data...</p>
+                </div>
+            </div>
+
+            <!-- Post-Assessment Error State -->
+            <div id="postAssessmentErrorState" class="hidden">
+                <div class="flex flex-col items-center justify-center py-16 text-center">
+                    <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-3xl"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold text-gray-700 mb-2">Error Loading Post-Assessment</h4>
+                    <p class="text-gray-500 text-sm mb-4">There was a problem loading the post-assessment data. Please try again.</p>
+                    <button id="retryLoadPostAssessment" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">
+                        <i class="fas fa-redo mr-2"></i>Try Again
+                    </button>
+                </div>
+            </div>
+
+            <!-- Post-Assessment Content -->
+            <div id="postAssessmentContentArea">
+                <!-- Content will be rendered dynamically by JavaScript -->
+            </div>
         </div>
 
         <!-- Review Tab -->
@@ -1001,7 +1108,7 @@ function generateStudentFilterOptions($coordinatorId) {
                                         </div>
                                     </div>
                                     <div class="flex justify-end gap-4 mt-4">
-                                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-md shadow transition duration-150 ease-in-out flex items-center gap-2">
+                                        <button type="button" id="deleteSelectedStudentsBtn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-md shadow transition duration-150 ease-in-out flex items-center gap-2">
                                             <i class="fas fa-user-minus"></i> Delete Selected
                                         </button>
                                         <button type="button" id="closeDeleteStudentForm" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-6 rounded-md shadow transition duration-150 ease-in-out">Cancel</button>
@@ -1039,8 +1146,39 @@ function generateStudentFilterOptions($coordinatorId) {
                             <!-- View All Students Container -->
                             <div id="allStudentsContainer" class="form-container p-6 bg-white rounded-lg shadow-md">
                                 <h3 class="text-2xl font-bold text-gray-800 mb-4">All Students Under Coordinator</h3>
-                                <div class="overflow-x-auto">
-                                    <table id="allStudentsTable" class="min-w-full divide-y divide-gray-200">
+                                
+                                <!-- Students Loading State -->
+                                <div id="studentsLoadingState" class="hidden">
+                                    <div class="flex flex-col items-center justify-center py-16 text-center">
+                                        <div class="relative mb-4">
+                                            <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <i class="fas fa-users text-blue-500 text-lg"></i>
+                                            </div>
+                                        </div>
+                                        <h4 class="text-lg font-semibold text-gray-700 mb-2">Loading Students</h4>
+                                        <p class="text-gray-500 text-sm">Please wait while we fetch all students under your coordination...</p>
+                                    </div>
+                                </div>
+
+                                <!-- Students Error State -->
+                                <div id="studentsErrorState" class="hidden">
+                                    <div class="flex flex-col items-center justify-center py-16 text-center">
+                                        <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                                            <i class="fas fa-exclamation-triangle text-red-500 text-3xl"></i>
+                                        </div>
+                                        <h4 class="text-lg font-semibold text-gray-700 mb-2">Error Loading Students</h4>
+                                        <p class="text-gray-500 text-sm mb-4">There was a problem loading the student data. Please try again.</p>
+                                        <button id="retryLoadStudents" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">
+                                            <i class="fas fa-redo mr-2"></i>Try Again
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Students Content -->
+                                <div id="studentsContent">
+                                    <div class="overflow-x-auto">
+                                        <table id="allStudentsTable" class="min-w-full divide-y divide-gray-200">
                                         <thead class="bg-gray-50">
                                             <tr>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student ID</th>
@@ -1057,10 +1195,11 @@ function generateStudentFilterOptions($coordinatorId) {
                                         <tbody id="allStudentsTableBody" class="bg-white divide-y divide-gray-200">
                                             <!-- Student rows will be dynamically inserted here -->
                                         </tbody>
-                                    </table>
-                                </div>
-                                <div class="flex justify-end mt-4">
-                                    <button id="closeAllStudents" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">Close</button>
+                                        </table>
+                                    </div>
+                                    <div class="flex justify-end mt-4">
+                                        <button id="closeAllStudents" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">Close</button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1068,8 +1207,39 @@ function generateStudentFilterOptions($coordinatorId) {
 
                             <div id="allCompaniesContainer" class="form-container p-6 bg-white rounded-lg shadow-md" style="display:none;">
                                 <h3 class="text-2xl font-bold text-gray-800 mb-4">My Assigned Companies (HTEs)</h3>
-                                <div class="overflow-x-auto">
-                                    <table id="allCompaniesTable" class="min-w-full divide-y divide-gray-200">
+                                
+                                <!-- Companies Loading State -->
+                                <div id="companiesLoadingState" class="hidden">
+                                    <div class="flex flex-col items-center justify-center py-16 text-center">
+                                        <div class="relative mb-4">
+                                            <div class="animate-spin rounded-full h-16 w-16 border-4 border-indigo-500 border-t-transparent"></div>
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <i class="fas fa-building text-indigo-500 text-lg"></i>
+                                            </div>
+                                        </div>
+                                        <h4 class="text-lg font-semibold text-gray-700 mb-2">Loading Companies</h4>
+                                        <p class="text-gray-500 text-sm">Please wait while we fetch your assigned companies and HTEs...</p>
+                                    </div>
+                                </div>
+
+                                <!-- Companies Error State -->
+                                <div id="companiesErrorState" class="hidden">
+                                    <div class="flex flex-col items-center justify-center py-16 text-center">
+                                        <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                                            <i class="fas fa-exclamation-triangle text-red-500 text-3xl"></i>
+                                        </div>
+                                        <h4 class="text-lg font-semibold text-gray-700 mb-2">Error Loading Companies</h4>
+                                        <p class="text-gray-500 text-sm mb-4">There was a problem loading the company data. Please try again.</p>
+                                        <button id="retryLoadCompanies" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">
+                                            <i class="fas fa-redo mr-2"></i>Try Again
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Companies Content -->
+                                <div id="companiesContent">
+                                    <div class="overflow-x-auto">
+                                        <table id="allCompaniesTable" class="min-w-full divide-y divide-gray-200">
                                         <thead class="bg-gray-50">
                                             <tr>
                                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Company Name</th>
@@ -1088,6 +1258,7 @@ function generateStudentFilterOptions($coordinatorId) {
                                 </div>
                                 <div class="flex justify-end mt-4">
                                     <button id="closeAllCompanies" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out">Close</button>
+                                </div>
                                 </div>
                             </div>
                                 <!-- Update Company Logo Modal -->
@@ -1592,26 +1763,33 @@ function generateStudentFilterOptions($coordinatorId) {
                             html += `<span class="report-period">Period: ${report.week_start} to ${report.week_end}</span>`;
                             html += `<span class="approval-status approved">Approved</span>`;
                             html += '</div></div>';
-                            html += '<div class="report-grid">';
+                            html += '<div class="report-grid-compact">';
                             ["monday","tuesday","wednesday","thursday","friday"].forEach(function(day) {
-                                html += `<div class='day-section ${day}'>`;
+                                html += `<div class='day-section-compact ${day}'>`;
                                 html += `<h4>${day.charAt(0).toUpperCase() + day.slice(1)}</h4>`;
-                                html += `<div class='day-content'>`;
-                                html += `<div class='day-images'>`;
-                                if (report.imagesPerDay && report.imagesPerDay[day]) {
-                                    report.imagesPerDay[day].forEach(function(img) {
-                                        html += `<img src='${img.url}' alt='${day} activity' class='activity-image'>`;
-                                    });
+                                html += `<div class='day-content-compact'>`;
+                                html += `<div class='day-image-preview'>`;
+                                if (report.imagesPerDay && report.imagesPerDay[day] && report.imagesPerDay[day].length > 0) {
+                                    html += `<img src='${report.imagesPerDay[day][0].url}' alt='${day} activity' class='preview-image'>`;
+                                } else {
+                                    html += `<div class='no-image-placeholder'>No image</div>`;
                                 }
                                 html += '</div>';
-                                // Show description for each day (prefer dayDescription if available)
+                                
+                                // Show truncated description
                                 let desc = "";
                                 if (report[day + 'Description']) {
                                     desc = report[day + 'Description'];
                                 } else if (report.contentPerDay && report.contentPerDay[day]) {
                                     desc = report.contentPerDay[day];
                                 }
-                                html += `<div class='day-description'><p>${desc}</p></div>`;
+                                let shortDesc = desc.length > 50 ? desc.substring(0, 50) + '...' : desc || 'No description';
+                                html += `<div class='day-description-preview'><p>${shortDesc}</p></div>`;
+                                
+                                // Add View button
+                                html += `<button class='btn-view-day' data-report-id='${report.report_id}' data-day='${day}' data-student='${report.student_name}' onclick='viewDayReport(${report.report_id}, "${day}", "${report.student_name}")'>
+                                    <i class='fas fa-eye'></i> View
+                                </button>`;
                                 html += '</div>';
                                 html += '</div>';
                             });
@@ -1629,6 +1807,82 @@ function generateStudentFilterOptions($coordinatorId) {
                     $('#approvedReportsList').html('<p>Error loading reports. Please try again.</p>');
                 }
             });
+        }
+
+        // Function to view individual day report
+        function viewDayReport(reportId, day, studentName) {
+            // Create modal HTML
+            const modalHtml = `
+                <div id="dayReportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+                        <div class="mt-3">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-medium text-gray-900">${studentName} - ${day.charAt(0).toUpperCase() + day.slice(1)} Report</h3>
+                                <button onclick="closeDayModal()" class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                            <div id="dayReportContent" class="p-4">
+                                <div class="text-center py-4">
+                                    <i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i>
+                                    <p class="mt-2 text-gray-600">Loading report details...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            $('#dayReportModal').remove();
+            
+            // Add modal to body
+            $('body').append(modalHtml);
+            
+            // Load report details via AJAX
+            $.ajax({
+                url: 'ajaxhandler/coordinatorWeeklyReportAjax.php',
+                type: 'POST',
+                dataType: 'json',
+                data: { 
+                    action: 'getDayReport',
+                    reportId: reportId,
+                    day: day
+                },
+                success: function(response) {
+                    if (response.status === 'success' && response.dayData) {
+                        const dayData = response.dayData;
+                        let content = '<div class="day-detail">';
+                        
+                        // Images section
+                        if (dayData.images && dayData.images.length > 0) {
+                            content += '<div class="mb-4"><h4 class="font-medium text-gray-900 mb-2">Images</h4>';
+                            content += '<div class="grid grid-cols-2 md:grid-cols-3 gap-2">';
+                            dayData.images.forEach(img => {
+                                content += `<img src="${img.url}" alt="${day} activity" class="w-full h-32 object-cover rounded border">`;
+                            });
+                            content += '</div></div>';
+                        }
+                        
+                        // Description section
+                        content += '<div class="mb-4"><h4 class="font-medium text-gray-900 mb-2">Description</h4>';
+                        content += `<div class="bg-gray-50 p-3 rounded border"><p class="text-gray-700">${dayData.description || 'No description provided for this day.'}</p></div>`;
+                        content += '</div></div>';
+                        
+                        $('#dayReportContent').html(content);
+                    } else {
+                        $('#dayReportContent').html('<p class="text-red-600">Error loading report details.</p>');
+                    }
+                },
+                error: function() {
+                    $('#dayReportContent').html('<p class="text-red-600">Error loading report details.</p>');
+                }
+            });
+        }
+
+        // Function to close day modal
+        function closeDayModal() {
+            $('#dayReportModal').remove();
         }
 
         // Hook into tab switching to load reports when Report tab is activated
@@ -1757,6 +2011,84 @@ function generateStudentFilterOptions($coordinatorId) {
 
             $('#closeDeleteHTEForm').click(function() {
                 $('#deleteHTEFormContainer').slideUp();
+            });
+
+            // Coordinator Change Password functionality
+            $(document).on('click', '#coordinatorChangePassword', function() {
+                $('#coordinatorChangePasswordModal').removeClass('hidden');
+            });
+
+            // Close Change Password Modal
+            $(document).on('click', '#closeCoordinatorChangePassword', function() {
+                $('#coordinatorChangePasswordModal').addClass('hidden');
+                $('#coordinatorChangePasswordForm')[0].reset();
+                $('#changePasswordError').hide();
+            });
+
+            // Change Password Form Submission
+            $(document).on('click', '#coordinatorSubmitPassword', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const currentPassword = $('#coordinatorCurrentPassword').val();
+                const newPassword = $('#coordinatorNewPassword').val();
+                const confirmPassword = $('#coordinatorConfirmPassword').val();
+                
+                // Clear previous errors
+                $('#changePasswordError').hide();
+                
+                // Basic validation
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                    $('#changePasswordError').text('All fields are required.').show();
+                    return false;
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    $('#changePasswordError').text('New passwords do not match.').show();
+                    return false;
+                }
+                
+                if (newPassword.length < 6) {
+                    $('#changePasswordError').text('Password must be at least 6 characters long.').show();
+                    return false;
+                }
+                
+                // Disable submit button to prevent double submission
+                const submitBtn = $(this);
+                const originalText = submitBtn.text();
+                submitBtn.prop('disabled', true).text('Changing...');
+                
+                // AJAX request to change password
+                $.ajax({
+                    url: 'ajaxhandler/change_password.php',
+                    type: 'POST',
+                    data: {
+                        current_password: currentPassword,
+                        new_password: newPassword,
+                        user_type: 'coordinator'
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Password changed successfully!');
+                            $('#coordinatorChangePasswordModal').addClass('hidden');
+                            $('#coordinatorChangePasswordForm')[0].reset();
+                            $('#changePasswordError').hide();
+                        } else {
+                            $('#changePasswordError').text(response.message || 'Failed to change password.').show();
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Change password error:', error);
+                        $('#changePasswordError').text('An error occurred. Please try again.').show();
+                    },
+                    complete: function() {
+                        // Re-enable submit button
+                        submitBtn.prop('disabled', false).text(originalText);
+                    }
+                });
+                
+                return false;
             });
 
             // Enhanced Add Student Form Submission with CSV support
@@ -2147,6 +2479,14 @@ function generateStudentFilterOptions($coordinatorId) {
                 $('#deleteStudentList').empty();
             });
 
+            // Prevent form submission on delete student form
+            $('#deleteStudentForm').on('submit', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Form submission prevented - use Delete Selected button instead');
+                return false;
+            });
+
             // Load sessions for Delete Student form
             function loadSessionOptionsForDeleteStudent() {
                 $.ajax({
@@ -2286,39 +2626,65 @@ function generateStudentFilterOptions($coordinatorId) {
             });
 
             // Handle Delete Student form submission
-            $('#deleteStudentForm').submit(function(e) {
+            // Handle delete selected students button click
+            $(document).on('click', '#deleteSelectedStudentsBtn', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
+                
                 let selectedStudents = [];
                 $('.deleteStudentCheckbox:checked').each(function() {
                     selectedStudents.push($(this).val());
                 });
+                
                 if (selectedStudents.length === 0) {
                     alert("Please select at least one student to delete.");
-                    return;
+                    return false;
                 }
-                if (!confirm("Are you sure you want to delete the selected student(s)?")) {
-                    return;
+                
+                if (!confirm("Are you sure you want to delete the selected student(s)? This action cannot be undone.")) {
+                    return false;
                 }
+                
+                // Disable button during processing
+                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Deleting...');
+                
                 $.ajax({
                     url: "ajaxhandler/attendanceAJAX.php",
                     type: "POST",
                     dataType: "json",
                     data: {studentIds: selectedStudents, action: "deleteStudents"},
                     success: function(response) {
+                        console.log('Delete response:', response);
                         if (response.success) {
                             alert("Selected student(s) deleted successfully!");
                             $('#deleteStudentFormContainer').slideUp();
                             $('#deleteStudentForm')[0].reset();
                             $('#deleteStudentList').empty();
+                            
+                            // Refresh the student list if visible
+                            if ($('#allStudentsContainer').is(':visible')) {
+                                loadAllStudents();
+                            }
                         } else {
-                            alert("Error deleting students: " + response.message);
+                            alert("Error deleting students: " + (response.message || 'Unknown error'));
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.error("Error deleting students:", error);
-                        alert("Error deleting students. Please try again.");
+                        console.error("AJAX Error deleting students:", {
+                            xhr: xhr,
+                            status: status,
+                            error: error,
+                            responseText: xhr.responseText
+                        });
+                        alert("Error deleting students. Please check the console for details.");
+                    },
+                    complete: function() {
+                        // Re-enable button
+                        $('#deleteSelectedStudentsBtn').prop('disabled', false).html('<i class="fas fa-user-minus"></i> Delete Selected');
                     }
                 });
+                
+                return false;
             });
 
             // Close Delete Session Form
@@ -2578,11 +2944,56 @@ function generateStudentFilterOptions($coordinatorId) {
 
                 <!-- Action Buttons -->
                 <div class="flex justify-end space-x-3 mt-8">
+                    <button id="coordinatorChangePassword" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Change Password
+                    </button>
                     <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors" onclick="$('#closeCoordinatorProfile').click()">
                         Close
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Coordinator Change Password Modal -->
+    <div id="coordinatorChangePasswordModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/3 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Change Password</h3>
+                <button id="closeCoordinatorChangePassword" class="text-gray-400 hover:text-gray-500">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="coordinatorChangePasswordForm" class="mt-6" onsubmit="return false;">
+                <div class="mb-4">
+                    <label for="coordinatorCurrentPassword" class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                    <input type="password" id="coordinatorCurrentPassword" name="currentPassword" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="coordinatorNewPassword" class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                    <input type="password" id="coordinatorNewPassword" name="newPassword" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required minlength="6">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="coordinatorConfirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                    <input type="password" id="coordinatorConfirmPassword" name="confirmPassword" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required minlength="6">
+                </div>
+
+                <div id="changePasswordError" class="mb-4 text-red-600 text-sm hidden"></div>
+
+                <div class="flex justify-end space-x-3">
+                    <button type="button" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors" onclick="$('#closeCoordinatorChangePassword').click()">
+                        Cancel
+                    </button>
+                    <button type="button" id="coordinatorSubmitPassword" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Change Password
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -3344,6 +3755,116 @@ function generateStudentFilterOptions($coordinatorId) {
     
     .text-3xl {
         font-size: 1.5rem !important;
+    }
+}
+
+/* Compact Report Card Styles */
+.report-grid-compact {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.day-section-compact {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 0.75rem;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.day-section-compact:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.day-section-compact h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.day-content-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.day-image-preview {
+    width: 100%;
+    height: 60px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #dee2e6;
+}
+
+.preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.no-image-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 0.75rem;
+    color: #6c757d;
+    background: #f8f9fa;
+}
+
+.day-description-preview {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+}
+
+.day-description-preview p {
+    font-size: 0.75rem;
+    color: #6c757d;
+    line-height: 1.3;
+    margin: 0;
+}
+
+.btn-view-day {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 0.375rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.btn-view-day:hover {
+    background: #0056b3;
+}
+
+.btn-view-day i {
+    font-size: 0.75rem;
+}
+
+/* Responsive adjustments for compact cards */
+@media (max-width: 768px) {
+    .report-grid-compact {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .report-grid-compact {
+        grid-template-columns: 1fr;
     }
 }
 </style>

@@ -69,46 +69,73 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
     <input type="hidden" id="hiddenStudentId" value="<?php echo htmlspecialchars($student_id); ?>">
     <!-- Top Header with Hamburger Menu -->
     <div class="top-header">
-        <button id="sidebarToggle" class="hamburger-menu">
-            <i class="fas fa-bars"></i>
-        </button>
-        <div class="sidebar-logo">
-            <div class="logo" onclick="window.location.href='student_dashboard.php'">
-                <span>InternConnect</span>
+        <div class="header-left">
+            <button id="sidebarToggle" class="hamburger-menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="sidebar-logo">
+                <div class="logo" onclick="window.location.href='student_dashboard.php'">
+                    <span>InternConnect</span>
+                </div>
             </div>
         </div>
-        <div class="user-profile">
-            <div class="notification-icon" id="notificationIcon">
-                <i class="fas fa-bell"></i>
-                <span class="notification-badge">0</span>
-                <div class="notification-dropdown" id="notificationDropdown">
-                    <!-- Notifications will be dynamically added here -->
-                </div>
-            </div>
-            <div class="user-avatar-circle" id="userAvatarCircle">
-                <i class="fas fa-user"></i>
-            </div>
-            <span id="userName" class="user-name-text"><?php echo htmlspecialchars($studentName); ?></span>
-            <span id="draftUserName" style="display:none;"></span>
-            <div class="user-dropdown" id="userDropdown">
-                <div class="user-dropdown-header">
-                    <div class="user-dropdown-avatar">
-                        <i class="fas fa-user"></i>
+        <div class="user-profile" id="userProfile">
+            <div class="relative">
+                <button id="userDropdownToggle" class="modern-user-dropdown">
+                    <div class="user-avatar">
+                        <?php 
+                            $nameParts = explode(' ', $studentName);
+                            $initials = (isset($nameParts[0]) ? substr($nameParts[0], 0, 1) : 'S') . (isset($nameParts[1]) ? substr($nameParts[1], 0, 1) : '');
+                        ?>
+                        <?php if (!empty($studentDetails['profile_picture']) && $studentDetails['profile_picture'] !== null): ?>
+                            <img src="<?php echo htmlspecialchars($studentDetails['profile_picture']); ?>" alt="Profile" class="avatar-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <span class="avatar-initials" style="display: none;"><?php echo $initials; ?></span>
+                        <?php else: ?>
+                            <span class="avatar-initials"><?php echo $initials; ?></span>
+                        <?php endif; ?>
                     </div>
-                    <div class="user-dropdown-name" id="userDropdownName"><?php echo htmlspecialchars($studentName); ?></div>
+                    <span id="userName" class="user-name" style="display: none;"><?php echo htmlspecialchars($studentName); ?></span>
+                    <div class="dropdown-arrow">
+                        <i class="fas fa-chevron-down" id="dropdownArrow"></i>
+                    </div>
+                </button>
+                <div id="userDropdown" class="modern-dropdown-menu">
+                    <div class="dropdown-header">
+                        <div class="header-avatar">
+                            <?php if (!empty($studentDetails['profile_picture']) && $studentDetails['profile_picture'] !== null): ?>
+                                <img src="<?php echo htmlspecialchars($studentDetails['profile_picture']); ?>" alt="Profile" class="header-avatar-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <span class="header-initials" style="display: none;"><?php echo $initials; ?></span>
+                            <?php else: ?>
+                                <span class="header-initials"><?php echo $initials; ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="header-info">
+                            <div class="header-name"><?php echo htmlspecialchars($studentName); ?></div>
+                            <div class="header-email">Student</div>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-section">
+                        <button onclick="loadProfileDetails()" class="dropdown-item">
+                            <div class="item-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="item-content">
+                                <span class="item-title">Profile</span>
+                                <span class="item-subtitle">View and edit profile</span>
+                            </div>
+                        </button>
+                        <button onclick="window.location.href='ajaxhandler/studentLogout.php'" class="dropdown-item logout-item">
+                            <div class="item-icon">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </div>
+                            <div class="item-content">
+                                <span class="item-title">Sign Out</span>
+                                <span class="item-subtitle">Logout from account</span>
+                            </div>
+                        </button>
+                    </div>
                 </div>
-                <button onclick="window.location.href='student_dashboard.php'">
-                    <i class="fas fa-tachometer-alt"></i>
-                    Dashboard
-                </button>
-                <button onclick="loadProfileDetails()">
-                    <i class="fas fa-user"></i>
-                    Profile
-                </button>
-                <button onclick="window.location.href='ajaxhandler/studentLogout.php'">
-                    <i class="fas fa-sign-out-alt"></i>
-                    Logout
-                </button>
             </div>
         </div>
     </div>
@@ -159,8 +186,8 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
     </aside>
 
     <!-- Main Content Area -->
-    <div class="content-area">
-        <main class="main-content">
+    <div class="transition-all duration-300 p-3 md:p-6 bg-gray-100 min-h-screen pt-20 md:pt-24 ml-0" id="mainContent">
+        <main class="main-content bg-white rounded-lg shadow-md p-3 md:p-6 mb-6">
             <!-- Header -->
             <header class="main-header">
                 <div class="header-left">
@@ -1146,6 +1173,100 @@ $('.sidebar-item').click(function() {
             // Placeholder for print functionality
             alert('Print functionality will be implemented soon');
         }
+
+        // Modern user dropdown functionality and sidebar collapse
+        $(document).ready(function() {
+            let sidebarOpen = false;
+            let sidebarCollapsed = false;
+
+            // Toggle sidebar visibility
+            $('#sidebarToggle').click(function() {
+                const sidebar = $('.sidebar');
+                const contentArea = $('.content-area');
+                
+                if ($(window).width() >= 769) {
+                    // Desktop behavior - toggle collapse/expand
+                    if (!sidebarOpen) {
+                        // Open sidebar
+                        sidebarOpen = true;
+                        sidebar.addClass('sidebar-open');
+                        contentArea.addClass('sidebar-open');
+                        if (sidebarCollapsed) {
+                            contentArea.addClass('sidebar-collapsed');
+                        }
+                    } else {
+                        // Toggle between expanded and collapsed
+                        sidebarCollapsed = !sidebarCollapsed;
+                        if (sidebarCollapsed) {
+                            sidebar.addClass('collapsed');
+                            contentArea.addClass('sidebar-collapsed');
+                        } else {
+                            sidebar.removeClass('collapsed');
+                            contentArea.removeClass('sidebar-collapsed');
+                        }
+                    }
+                } else {
+                    // Mobile behavior - toggle show/hide
+                    sidebarOpen = !sidebarOpen;
+                    if (sidebarOpen) {
+                        sidebar.addClass('sidebar-open');
+                        $('#sidebarOverlay').addClass('active');
+                    } else {
+                        sidebar.removeClass('sidebar-open');
+                        $('#sidebarOverlay').removeClass('active');
+                    }
+                }
+            });
+
+            // Close sidebar when clicking overlay (mobile)
+            $('#sidebarOverlay').click(function() {
+                const sidebar = $('.sidebar');
+                sidebarOpen = false;
+                sidebar.removeClass('sidebar-open');
+                $(this).removeClass('active');
+            });
+
+            // Handle window resize
+            $(window).resize(function() {
+                if ($(window).width() >= 769) {
+                    $('#sidebarOverlay').removeClass('active');
+                }
+            });
+
+            // Modern user dropdown functionality
+            $('#userDropdownToggle').off('click').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const dropdown = $('#userDropdown');
+                const arrow = $('#dropdownArrow');
+                
+                if (dropdown.hasClass('show')) {
+                    dropdown.removeClass('show').css('display', 'none');
+                    arrow.css('transform', 'rotate(0deg)');
+                } else {
+                    dropdown.addClass('show').css('display', 'flex');
+                    arrow.css('transform', 'rotate(180deg)');
+                }
+            });
+
+            // Close dropdown when clicking outside
+            $(document).on('click', function(event) {
+                const userProfile = $('#userProfile');
+                const dropdown = $('#userDropdown');
+                const arrow = $('#dropdownArrow');
+                
+                if (!userProfile.is(event.target) && userProfile.has(event.target).length === 0) {
+                    dropdown.removeClass('show').css('display', 'none');
+                    arrow.css('transform', 'rotate(0deg)');
+                }
+            });
+            
+            // Prevent dropdown from closing when clicking inside
+            $('#userDropdown').on('click', function(e) {
+                e.stopPropagation();
+            });
+        });
     </script>
 </body>
 </html>
