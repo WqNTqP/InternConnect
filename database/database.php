@@ -18,7 +18,7 @@ public function __construct() {
     $isProduction = isset($_SERVER['RENDER']) || !file_exists(__DIR__ . '/../.env');
     
     if ($isProduction) {
-        // Production: Use Render environment variables or hardcoded InfinityFree
+        // Production: Use Railway database with proper SSL configuration
         $this->servername = getenv('DB_HOST') ?: 'mainline.proxy.rlwy.net:31782';
         $this->username = getenv('DB_USERNAME') ?: 'root';
         $this->password = getenv('DB_PASSWORD') ?: 'LYeUTqrnaDxpSAdWiirrGhFAcVVyNMGJ';
@@ -31,7 +31,7 @@ public function __construct() {
         $this->dbname = $_ENV['DB_NAME'] ?? 'attendancetrackernp';
     }
     
-    // Store fallback credentials for local development
+    // Store fallback credentials for Railway database (local development)
     $this->fallbackConfig = [
         'servername' => 'mainline.proxy.rlwy.net:31782',
         'username' => 'root',
@@ -47,16 +47,37 @@ public function __construct() {
         $hostname = $hostParts[0];
         $port = isset($hostParts[1]) ? $hostParts[1] : 3306;
         
-        // Add connection timeout and additional options for remote connections
+        // Add connection timeout and SSL options for Railway external connections
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_TIMEOUT => 30,
-            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8",
-            PDO::ATTR_PERSISTENT => false
+            PDO::ATTR_TIMEOUT => 60, // Increased timeout for Railway connection
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4",
+            PDO::ATTR_PERSISTENT => false,
+            PDO::ATTR_EMULATE_PREPARES => false
         ];
         
-        $dsn = "mysql:host=$hostname;port=$port;dbname=$this->dbname;charset=utf8";
-        $this->conn = new PDO($dsn, $this->username, $this->password, $options);
+        // Add SSL configuration for Railway external connections (production only)
+        if ($isProduction && strpos($this->servername, 'railway') !== false) {
+            $options[PDO::MYSQL_ATTR_SSL_CA] = '/etc/ssl/certs/ca-certificates.crt';
+            $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+        }
+        
+        $dsn = "mysql:host=$hostname;port=$port;dbname=$this->dbname;charset=utf8mb4";
+        
+        // For Railway connections, try SSL first, fallback to non-SSL
+        if ($isProduction && strpos($this->servername, 'railway') !== false) {
+            try {
+                $this->conn = new PDO($dsn, $this->username, $this->password, $options);
+            } catch (PDOException $sslError) {
+                // If SSL connection fails, try without SSL
+                error_log("Railway SSL connection failed, trying without SSL: " . $sslError->getMessage());
+                unset($options[PDO::MYSQL_ATTR_SSL_CA]);
+                unset($options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT]);
+                $this->conn = new PDO($dsn, $this->username, $this->password, $options);
+            }
+        } else {
+            $this->conn = new PDO($dsn, $this->username, $this->password, $options);
+        }
         
         //echo "connected successfully";
       } catch(PDOException $e) {
