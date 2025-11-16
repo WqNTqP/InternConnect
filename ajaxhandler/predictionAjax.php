@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             pa.prediction_reasoning as reasoning,
                             pa.prediction_probabilities as probabilities,
                             CASE 
-                                WHEN pa.soft_skill IS NOT NULL AND pa.communication_skill IS NOT NULL THEN 'Rated'
+                                WHEN pa.soft_skill IS NOT NULL AND pa.communication_skill IS NOT NULL AND pa.technical_skill IS NOT NULL THEN 'Rated'
                                 ELSE 'Not Rated'
                             END as status
                         FROM internship_needs ineed
@@ -236,7 +236,7 @@ try {
         $required = [
             'CC 102','CC 103','PF 101','CC 104','IPT 101','IPT 102','CC 106','CC 105',
             'IM 101','IM 102','HCI 101','HCI 102','WS 101','NET 101','NET 102',
-            'IAS 101','IAS 102','CAP 101','CAP 102','SP 101','soft_skill','communication_skill'
+            'IAS 101','IAS 102','CAP 101','CAP 102','SP 101','soft_skill','communication_skill','technical_skill'
         ];
         $missing = [];
         $valid = true;
@@ -252,7 +252,7 @@ try {
             $missing = $required;
         }
         // Status
-        $status = ($pre && $pre['soft_skill'] !== null && $pre['communication_skill'] !== null) ? "Rated" : "Not Rated";
+        $status = ($pre && $pre['soft_skill'] !== null && $pre['communication_skill'] !== null && $pre['technical_skill'] !== null) ? "Rated" : "Not Rated";
         // Prepare student data
         $student_data = [
             "INTERNS_ID" => $student['INTERNS_ID'],
