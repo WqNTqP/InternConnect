@@ -1733,13 +1733,24 @@ function loadPostAssessmentEvaluation(studentId) {
                             ? '<span class="font-semibold text-green-600">Rated</span>'
                             : '<span class="font-semibold text-red-600" title="Missing: ' + student.missing.join(', ') + '">Not Rated</span>';
                         let hasPrediction = student.pre_assessment && student.pre_assessment.ojt_placement;
-                        let placementText = hasPrediction
-                            ? `<span class="inline-block bg-green-100 text-green-700 font-bold px-2 md:px-3 py-1 rounded-full text-xs">
+                        let placementText;
+                        
+                        if (hasPrediction) {
+                            // Student has completed prediction
+                            placementText = `<span class="inline-block bg-green-100 text-green-700 font-bold px-2 md:px-3 py-1 rounded-full text-xs">
                                 ${student.pre_assessment.ojt_placement}
-                            </span>`
-                            : `<span class="inline-block bg-gray-100 text-gray-500 font-bold px-2 md:px-3 py-1 rounded-full text-xs">
+                            </span>`;
+                        } else if (student.valid) {
+                            // Student has complete data but no prediction yet
+                            placementText = `<span class="inline-block bg-blue-100 text-blue-700 font-bold px-2 md:px-3 py-1 rounded-full text-xs">
+                                Ready for Prediction
+                            </span>`;
+                        } else {
+                            // Student has incomplete data
+                            placementText = `<span class="inline-block bg-gray-100 text-gray-500 font-bold px-2 md:px-3 py-1 rounded-full text-xs">
                                 Incomplete Data
                             </span>`;
+                        }
                         let analysisData = {};
                         if (hasPrediction) {
                             analysisData = {
@@ -1747,6 +1758,13 @@ function loadPostAssessmentEvaluation(studentId) {
                                 reasoning: student.pre_assessment.prediction_reasoning || "",
                                 probabilities: student.pre_assessment.prediction_probabilities ? JSON.parse(student.pre_assessment.prediction_probabilities) : {},
                                 confidence: student.pre_assessment.prediction_confidence
+                            };
+                        } else if (student.valid) {
+                            // Student ready for prediction
+                            analysisData = {
+                                ready: true,
+                                message: "This student has complete data and is ready for ML prediction. Click 'Run ML Prediction' to generate placement recommendation.",
+                                studentData: student
                             };
                         } else {
                             // For incomplete data, provide proper error message for analysis modal
@@ -1823,8 +1841,22 @@ function loadPostAssessmentEvaluation(studentId) {
             // Only run predictions for students who are valid AND don't already have predictions
             let hasPrediction = student.pre_assessment && student.pre_assessment.ojt_placement;
             if (student.valid && !hasPrediction) {
-                // Get grades and skills from pre_assessment
-                const grades = student.pre_assessment;
+                // Get grades and skills from pre_assessment - filter to only expected features
+                const allData = student.pre_assessment;
+                const expectedFeatures = [
+                    'CC 102', 'CC 103', 'PF 101', 'CC 104', 'IPT 101', 'IPT 102', 'CC 106', 'CC 105',
+                    'IM 101', 'IM 102', 'HCI 101', 'HCI 102', 'WS 101', 'NET 101', 'NET 102',
+                    'IAS 101', 'IAS 102', 'CAP 101', 'CAP 102', 'SP 101', 'soft_skill', 'communication_skill', 'technical_skill'
+                ];
+                
+                // Filter to only include expected features
+                const grades = {};
+                expectedFeatures.forEach(feature => {
+                    grades[feature] = allData[feature] || 0;
+                });
+                
+                console.log('Sending to Flask:', grades);
+                console.log('Feature count:', Object.keys(grades).length);
                 
                 // Use PHP proxy for Flask API (works in both local and production)
                 const apiUrl = window.location.hostname === 'localhost' 

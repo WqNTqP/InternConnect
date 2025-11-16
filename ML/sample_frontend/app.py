@@ -132,6 +132,21 @@ except Exception as e:
     print(traceback.format_exc())
     print("⚠️ Flask API will start but with limited functionality")
     database_connected = False
+    
+    # Initialize fallback values for both exception paths
+    feature_cols = [
+        'CC 102', 'CC 103', 'PF 101', 'CC 104', 'IPT 101', 'IPT 102', 'CC 106', 'CC 105', 
+        'WS 101', 'CAP 101', 'CAP 102', 'IM 101', 'IM 102', 'HCI 101', 'HCI 102', 'SP 101', 
+        'NET 101', 'NET 102', 'IAS 101', 'IAS 102', 'soft_skill', 'communication_skill', 'technical_skill'
+    ]
+    
+    # Create fallback label encoder with expected classes
+    le = LabelEncoder()
+    le.classes_ = np.array(['Business Operations', 'Research', 'Systems Development', 'Technical Support'])
+    
+    print(f"⚠️ Using fallback feature columns: {len(feature_cols)} features")
+    print("⚠️ Using fallback label encoder with hardcoded classes")
+
 except Exception as e:
     print(f"❌ Database connection failed: {str(e)}")
     print("⚠️ Flask API will start but with limited functionality")
