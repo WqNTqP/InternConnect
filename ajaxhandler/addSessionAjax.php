@@ -4,7 +4,7 @@ session_start();
 $path = $_SERVER['DOCUMENT_ROOT'];
 $basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
 require_once $basePath . "/database/database.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/database/sessionDetails.php";
+require_once $basePath . "/database/sessionDetails.php";
 
 header('Content-Type: application/json');
 

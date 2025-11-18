@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
     <title>InternConnect - Supervisor Login</title>
     <style>
@@ -69,11 +70,7 @@
                     <span class="text-3xl font-bold text-blue-600">Intern</span><span class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400">Connect</span>
                 </span>
             </div>
-            <div class="flex items-center space-x-4">
-                <a href="student_login.php" class="text-gray-600 hover:text-blue-600">Student</a>
-                <span class="text-gray-300">|</span>
-                <a href="index.php" class="text-gray-600 hover:text-blue-600">Coordinator</a>
-            </div>
+
         </div>
     </nav>
     </div>
@@ -157,8 +154,25 @@
                             <circle cx="150" cy="50" r="4" fill="rgba(255,255,255,0.2)"/>
                         </svg>
                     </div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Admin Portal</h2>
-                    <p class="text-gray-600 mb-6">HTE Supervision Access</p>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Supervisor Portal</h2>
+                    <p class="text-gray-600">HTE Supervision Access</p>
+                </div>
+
+                <!-- Login Type Navigation -->
+                <div class="mb-6">
+                    <p class="text-sm text-gray-500 text-center mb-3">Choose your login type:</p>
+                    <div class="flex space-x-2">
+                        <a href="index.php" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
+                            <i class="fas fa-user-tie mr-1"></i> Coordinator
+                        </a>
+                        <button class="flex-1 bg-blue-100 text-blue-600 px-3 py-2 rounded-lg text-sm font-medium border border-blue-200" disabled>
+                            <i class="fas fa-user-shield mr-1"></i> Supervisor
+                        </button>
+                        <a href="student_login.php" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
+                            <i class="fas fa-user-graduate mr-1"></i> Student
+                        </a>
+                    </div>
+                </div>
 
                     <!-- Login Form -->
                     <form id="adminLoginForm" class="space-y-6">
@@ -202,12 +216,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-6 text-center text-sm">
-                        <span class="text-gray-600">Login as:</span>
-                        <a href="student_login.php" class="text-blue-600 hover:text-blue-700 font-medium ml-1">Student</a>
-                        <span class="text-gray-400 mx-1">|</span>
-                        <a href="index.php" class="text-blue-600 hover:text-blue-700 font-medium">Coordinator</a>
-                    </div>
+
                 </div>
             </div>
         </div>

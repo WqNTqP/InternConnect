@@ -56,12 +56,303 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
     <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
     <title>Student Dashboard - Attendance Tracker</title>
         <style>
-            /* Make radio buttons larger in post-assessment tables */
+            /* Enhanced Post-Assessment Styles */
             .eval-table input[type="radio"] {
                 width: 28px;
                 height: 28px;
                 accent-color: #007bff;
                 margin: 0 6px;
+            }
+
+            /* Post-Assessment Navigation */
+            .post-assessment-nav {
+                background: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 8px;
+                padding: 2rem;
+                margin-bottom: 2rem;
+                text-align: center;
+            }
+
+            .nav-header h3 {
+                color: #2c3e50;
+                margin-bottom: 0.5rem;
+                font-size: 1.75rem;
+                font-weight: 600;
+            }
+
+            .nav-header p {
+                color: #6c757d;
+                margin-bottom: 1.5rem;
+            }
+
+            .category-selector {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .selector-label {
+                font-weight: 600;
+                color: #495057;
+                white-space: nowrap;
+                font-size: 1.1rem;
+            }
+
+            .modern-select {
+                padding: 0.75rem 1.25rem;
+                border: 2px solid #dee2e6;
+                border-radius: 6px;
+                background: white;
+                color: #495057;
+                font-size: 1rem;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                min-width: 280px;
+            }
+
+            .modern-select:focus {
+                outline: none;
+                border-color: #007bff;
+                box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+            }
+
+            .modern-select option {
+                background: white;
+                color: #495057;
+                padding: 0.5rem;
+            }
+
+            /* Modern Category Card */
+            .modern-category-card {
+                border: none;
+                border-radius: 12px;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+                overflow: hidden;
+                transition: all 0.3s ease;
+            }
+
+            .modern-category-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+            }
+
+            .category-header {
+                background: #f8f9fa;
+                padding: 1.5rem;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                border-bottom: 2px solid #e9ecef;
+            }
+
+            .header-icon {
+                font-size: 2rem;
+                color: #007bff;
+            }
+
+            .category-title {
+                color: #2c3e50;
+                margin: 0 0 0.5rem 0;
+                font-size: 1.75rem;
+                font-weight: 700;
+            }
+
+            .category-description {
+                color: #6c757d;
+                margin: 0;
+                font-size: 1.1rem;
+                line-height: 1.4;
+            }
+
+            /* Enhanced Table Styles */
+            .modern-eval-table {
+                margin: 0;
+                border-collapse: separate;
+                border-spacing: 0;
+            }
+
+            .modern-eval-table th {
+                background: #f8f9fa;
+                color: #495057;
+                font-weight: 600;
+                padding: 1rem;
+                text-align: center;
+                border-bottom: 2px solid #dee2e6;
+            }
+
+            .modern-eval-table th.question-col {
+                text-align: left;
+                width: 40%;
+                background: #007bff;
+                color: white;
+            }
+
+            .rating-headers th {
+                font-size: 0.875rem;
+                padding: 0.75rem 0.5rem;
+                background: #e9ecef;
+                color: #495057;
+            }
+
+            .modern-eval-table td {
+                padding: 1.25rem;
+                border-bottom: 1px solid #e9ecef;
+                vertical-align: middle;
+            }
+
+            .modern-eval-table tbody tr:hover {
+                background-color: #f8f9fa;
+            }
+
+            /* Skills Progress */
+            .skills-container {
+                padding: 2rem;
+            }
+
+            .skills-progress {
+                margin-top: 1.5rem;
+                padding: 1rem;
+                background: #f8f9fa;
+                border-radius: 8px;
+                text-align: center;
+            }
+
+            .progress-info {
+                color: #495057;
+                font-weight: 500;
+            }
+
+            /* Enhanced Form Actions */
+            .form-actions-wrapper {
+                background: #f8f9fa;
+                padding: 2rem;
+                border-top: 3px solid #007bff;
+                margin-top: 2rem;
+            }
+
+            .action-buttons-container {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            .btn {
+                padding: 0.75rem 2rem;
+                border-radius: 8px;
+                font-weight: 600;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                border: 2px solid transparent;
+                font-size: 1rem;
+            }
+
+            .btn-outline-primary {
+                background: white;
+                color: #007bff;
+                border-color: #007bff;
+            }
+
+            .btn-outline-primary:hover {
+                background: #007bff;
+                color: white;
+                box-shadow: 0 2px 4px rgba(0,123,255,0.2);
+            }
+
+            .btn-primary {
+                background: #007bff;
+                color: white;
+                border-color: #007bff;
+            }
+
+            .btn-primary:hover {
+                background: #0056b3;
+                border-color: #0056b3;
+                box-shadow: 0 2px 4px rgba(0,123,255,0.2);
+            }
+
+            .submission-info {
+                text-align: center;
+                opacity: 0.8;
+            }
+
+            /* Enhanced Messages */
+            .assessment-messages {
+                margin: 1.5rem 0;
+            }
+
+            .assessment-messages .message {
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                margin-bottom: 1rem;
+                border-left: 4px solid;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                font-weight: 500;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+
+            .assessment-messages .message.success {
+                background: #d4edda;
+                color: #155724;
+                border-left-color: #28a745;
+            }
+
+            .assessment-messages .message.error {
+                background: #f8d7da;
+                color: #721c24;
+                border-left-color: #dc3545;
+            }
+
+            .assessment-messages .message.info {
+                background: #d1ecf1;
+                color: #0c5460;
+                border-left-color: #17a2b8;
+            }
+
+            /* Responsive Design */
+            @media (max-width: 768px) {
+                .category-header {
+                    flex-direction: column;
+                    text-align: center;
+                    padding: 1.5rem;
+                }
+
+                .header-icon {
+                    font-size: 2.5rem;
+                }
+
+                .category-selector {
+                    flex-direction: column;
+                    gap: 0.75rem;
+                }
+
+                .modern-select {
+                    width: 100%;
+                    min-width: unset;
+                }
+
+                .action-buttons-container {
+                    justify-content: center;
+                }
+
+                .skills-container {
+                    padding: 1rem;
+                }
+
+                .form-actions-wrapper {
+                    padding: 1.5rem;
+                }
             }
         </style>
 </head>
@@ -381,16 +672,20 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
         <!-- Post-Assessment Form -->
         <div class="assessment-tab" id="postAssessmentTab" style="display:none;">
             <form id="postAssessmentForm">
-                <!-- Category dropdown header above the table, centered (moved outside student-eval-unique-container) -->
-                <div class="category-toggle" style="width: 100%; display: flex; justify-content: center; align-items: center; margin-bottom: 24px;">
-                    <div style="display: flex; align-items: center; gap: 16px; width: 100%; max-width: 400px;">
-                        <label for="categoryDropdown" style="font-weight: 600; font-size: 1rem; color: #495057; white-space: nowrap;">Category:</label>
-                        <select id="categoryDropdown" name="categoryDropdown" class="category-dropdown-select">
-                            <option value="0">Competency on System Development</option>
-                            <option value="1">Competency on Research</option>
-                            <option value="2">Competency on Technical Support</option>
-                            <option value="3">Competency on Business Operation</option>
-                            <option value="4" selected>Personal and Interpersonal Skills</option>
+                <!-- Improved Category Navigation -->
+                <div class="post-assessment-nav">
+                    <div class="nav-header">
+                        <h3><i class="fas fa-clipboard-check"></i> Post-Assessment Evaluation</h3>
+                        <p>Select a category to evaluate your skills and create questions</p>
+                    </div>
+                    <div class="category-selector">
+                        <label for="categoryDropdown" class="selector-label">Select Category:</label>
+                        <select id="categoryDropdown" name="categoryDropdown" class="modern-select">
+                            <option value="0">🔧 System Development</option>
+                            <option value="1">📊 Research Competency</option>
+                            <option value="2">🛠️ Technical Support</option>
+                            <option value="3">💼 Business Operations</option>
+                            <option value="4" selected>👥 Personal & Interpersonal Skills</option>
                         </select>
                     </div>
                 </div>
@@ -450,11 +745,7 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                                     </tr>
                                 </tbody>
                             </table>
-                            <!-- Save Questions Button -->
-                            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
-                                <div id="postAssessmentFormMessage" style="margin-top: 24px; color: blue;"></div>
-                                <button type="button" id="saveQuestionsBtn" class="btn btn-warning">Save Questions</button>
-                            </div>
+
                         </div>
                         <div class="eval-card post-category" id="researchCategory" style="display:none;">
                             <h2 class="student-eval-unique-title">COMPETENCY ON RESEARCH</h2>
@@ -615,202 +906,68 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                                 </tbody>
                             </table>
                         </div>
-    <div class="eval-card post-category" id="personalSkillsCategory" style="display: none;">
-        <h2 class="student-eval-unique-title">B. PERSONAL AND INTERPERSONAL SKILLS</h2>
-        <table class="eval-table" id="personalSkillsTable">
-            <thead>
-                <tr>
-                    <th>Question</th>
-                    <th colspan="5">Rating (Likert Scale)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- JS will populate questions and rating inputs here -->
-            </tbody>
-        </table>
-    </div>
+                        <div class="eval-card post-category modern-category-card" id="personalSkillsCategory" style="display: none;">
+                            <div class="category-header">
+                                <div class="header-icon">👥</div>
+                                <div class="header-content">
+                                    <h2 class="category-title">Personal and Interpersonal Skills</h2>
+                                    <p class="category-description">Rate your communication, teamwork, and personal development abilities</p>
+                                </div>
+                            </div>
+                            <div class="skills-container">
+                                <div class="table-wrapper">
+                                    <table class="eval-table modern-eval-table" id="personalSkillsTable">
+                                        <thead>
+                                            <tr>
+                                                <th class="question-col">Skill Area</th>
+                                                <th colspan="5" class="rating-col">Self-Rating (1-5 Scale)</th>
+                                            </tr>
+                                            <tr class="rating-headers">
+                                                <th></th>
+                                                <th>Excellent<br><small>(5)</small></th>
+                                                <th>Good<br><small>(4)</small></th>
+                                                <th>Average<br><small>(3)</small></th>
+                                                <th>Fair<br><small>(2)</small></th>
+                                                <th>Poor<br><small>(1)</small></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="personalSkillsTableBody">
+                                            <!-- Skills will be populated here by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="skills-progress">
+                                    <div class="progress-info">
+                                        <span id="skillsProgress">0 of 0 skills rated</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div style="display: flex; justify-content: flex-end; margin-top: 32px;">
-                    <button type="submit" class="btn student-eval-unique-submit" id="submitPostAssessmentBtn">Submit Post-Assessment</button>
+                <div class="form-actions-wrapper">
+                    <div class="action-buttons-container">
+                        <button type="button" class="btn btn-outline-primary" id="saveProgressBtn">
+                            <i class="fas fa-save"></i> Save Questions
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="submitPostAssessmentBtn">
+                            <i class="fas fa-paper-plane"></i> Submit Assessment
+                        </button>
+                    </div>
+                    <div class="submission-info">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            Your progress is automatically saved. You can submit when all categories are complete.
+                        </small>
+                    </div>
                 </div>
-                <div id="postAssessmentFormMessage" style="margin-top: 24px;"></div>
+                <div id="postAssessmentFormMessage" class="assessment-messages"></div>
             </form>
         </div>
     </div>
     </div>
 
-    <!-- Post-Assessment Form (only visible in evaluation tab) -->
-    <div class="tab-content assessment-tab" id="postAssessmentTab" style="display:none;">
-        <form id="postAssessmentForm">
-            <div class="student-eval-unique-container">
-                <!-- System Development Table -->
-                <div class="eval-card">
-                    <h2 class="student-eval-unique-title">System Development</h2>
-                    <table class="eval-table">
-                        <thead>
-                            <tr>
-                                <th>Question</th>
-                                <th>Rating (Likert Scale)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><input type="text" name="sysdev_q1" class="form-control" placeholder="Write your question here" required></td>
-                                <td>
-                                    <select name="sysdev_r1" class="form-control" required>
-                                        <option value="">Select</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                    </select>
-                                </td>
-                                <td><input type="radio" name="techsup_r1" value="5"> 5</td>
-                                <td><input type="radio" name="techsup_r1" value="4"> 4</td>
-                                <td><input type="radio" name="techsup_r1" value="3"> 3</td>
-                                <td><input type="radio" name="techsup_r1" value="2"> 2</td>
-                                <td><input type="radio" name="techsup_r1" value="1"> 1</td>
-                                        <option value="">Select</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                    </select>
-                                </td>
-                                <td><input type="radio" name="techsup_r2" value="5"> 5</td>
-                                <td><input type="radio" name="techsup_r2" value="4"> 4</td>
-                                <td><input type="radio" name="techsup_r2" value="3"> 3</td>
-                                <td><input type="radio" name="techsup_r2" value="2"> 2</td>
-                                <td><input type="radio" name="techsup_r2" value="1"> 1</td>
-                <div class="eval-card">
-                    <h2 class="student-eval-unique-title">Research</h2>
-                    <table class="eval-table">
-                        <thead>
-                            <tr>
-                                <th>Question</th>
-                                <th>Rating (Likert Scale)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><input type="text" name="research_q1" class="form-control" placeholder="Write your question here" required></td>
-                                <td>
-                                    <select name="research_r1" class="form-control" required>
-                                        <option value="">Select</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><input type="text" name="research_q2" class="form-control" placeholder="Write your question here"></td>
-                                <td>
-                                    <select name="research_r2" class="form-control">
-                                        <option value="">Select</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                    </select>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <!-- Technical Support Table -->
-                <div class="eval-card">
-                    <h2 class="student-eval-unique-title">Technical Support</h2>
-                    <table class="eval-table">
-                        <thead>
-                            <tr>
-                                <th>Question</th>
-                                <th>Rating (Likert Scale)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><input type="text" name="techsup_q1" class="form-control" placeholder="Write your question here" required></td>
-                                <td>
-                                    <select name="techsup_r1" class="form-control" required>
-                                        <option value="">Select</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><input type="text" name="techsup_q2" class="form-control" placeholder="Write your question here"></td>
-                                <td>
-                                    <select name="techsup_r2" class="form-control">
-                                        <option value="">Select</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                    </select>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <!-- Business Operation Table -->
-                <div class="eval-card">
-                    <h2 class="student-eval-unique-title">Business Operation</h2>
-                    <table class="eval-table">
-                        <thead>
-                            <tr>
-                                <th>Question</th>
-                                <th>Rating (Likert Scale)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><input type="text" name="bizop_q1" class="form-control" placeholder="Write your question here" required></td>
-                                <td>
-                                    <select name="bizop_r1" class="form-control" required>
-                                        <option value="">Select</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><input type="text" name="bizop_q2" class="form-control" placeholder="Write your question here"></td>
-                                <td>
-                                    <select name="bizop_r2" class="form-control">
-                                        <option value="">Select</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                    </select>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div style="display: flex; justify-content: flex-end; margin-top: 32px;">
-                <button type="submit" class="btn student-eval-unique-submit" id="submitPostAssessmentBtn">Submit Post-Assessment</button>
-            </div>
-            <div id="postAssessmentFormMessage" style="margin-top: 24px;"></div>
-        </form>
-    </div>
+
 
 
 

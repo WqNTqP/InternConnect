@@ -586,3 +586,4 @@
 [2025-09-24 20:35] ERROR: Error retrieving student profile: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'attendancetrackernp.building_registration_details' doesn't exist
 [2025-09-24 20:35] ERROR: Error retrieving student profile: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'attendancetrackernp.building_registration_details' doesn't exist
 [2025-09-24 20:35] ERROR: Error retrieving student profile: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'attendancetrackernp.building_registration_details' doesn't exist
+[2025-11-18 16:33] ERROR: Database connection failed: Database connection failed: SQLSTATE[HY000] [2006] MySQL server has gone away

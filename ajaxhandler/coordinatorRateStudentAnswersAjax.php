@@ -1,5 +1,8 @@
 <?php
-require_once '../database/database.php';
+// Handle different include paths for web requests vs direct testing
+$basePath = dirname(__DIR__);
+require_once $basePath . '/database/database.php';
+require_once $basePath . '/includes/AutomatedRatingSystem.php';
 header('Content-Type: application/json');
 
 $db = new Database();
@@ -77,6 +80,188 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([':student_id' => $studentId]);
         $evaluations = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'evaluations' => $evaluations]);
+        exit;
+    }
+
+    // --- NEW: Automated rating action ---
+    if (isset($data['action']) && $data['action'] === 'autoRateStudent' && isset($data['studentId']) && isset($data['coordinatorId'])) {
+        $studentId = $data['studentId'];
+        $coordinatorId = $data['coordinatorId'];
+        
+        try {
+            // Get student's academic grades from past_data table
+            $gradesSql = "SELECT * FROM past_data WHERE id_number = ?";
+            $gradesStmt = $db->conn->prepare($gradesSql);
+            $gradesStmt->execute([$studentId]);
+            $studentData = $gradesStmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Create default grades array (will be populated from past_data if found)
+            $grades = [
+                'CC 102' => 75,  // Default grades if not found
+                'CC 103' => 75,
+                'PF 101' => 75,
+                'CC 104' => 75,
+                'IPT 101' => 75,
+                'IPT 102' => 75,
+                'CC 106' => 75,
+                'CC 105' => 75,
+                'IM 101' => 75,
+                'IM 102' => 75,
+                'HCI 101' => 75,
+                'HCI 102' => 75,
+                'WS 101' => 75,
+                'NET 101' => 75,
+                'NET 102' => 75,
+                'IAS 101' => 75,
+                'IAS 102' => 75,
+                'CAP 101' => 75,
+                'CAP 102' => 75,
+                'SP 101' => 75
+            ];
+            
+            // If student grades found, update the array
+            if ($studentData) {
+                $grades = [
+                    'CC 102' => $studentData['CC 102'] ?? 75,
+                    'CC 103' => $studentData['CC 103'] ?? 75,
+                    'PF 101' => $studentData['PF 101'] ?? 75,
+                    'CC 104' => $studentData['CC 104'] ?? 75,
+                    'IPT 101' => $studentData['IPT 101'] ?? 75,
+                    'IPT 102' => $studentData['IPT 102'] ?? 75,
+                    'CC 106' => $studentData['CC 106'] ?? 75,
+                    'CC 105' => $studentData['CC 105'] ?? 75,
+                    'IM 101' => $studentData['IM 101'] ?? 75,
+                    'IM 102' => $studentData['IM 102'] ?? 75,
+                    'HCI 101' => $studentData['HCI 101'] ?? 75,
+                    'HCI 102' => $studentData['HCI 102'] ?? 75,
+                    'WS 101' => $studentData['WS 101'] ?? 75,
+                    'NET 101' => $studentData['NET 101'] ?? 75,
+                    'NET 102' => $studentData['NET 102'] ?? 75,
+                    'IAS 101' => $studentData['IAS 101'] ?? 75,
+                    'IAS 102' => $studentData['IAS 102'] ?? 75,
+                    'CAP 101' => $studentData['CAP 101'] ?? 75,
+                    'CAP 102' => $studentData['CAP 102'] ?? 75,
+                    'SP 101' => $studentData['SP 101'] ?? 75
+                ];
+            }
+            
+            // Get student's evaluation responses (pre-assessment only)
+            $responsesSql = "SELECT se.id, se.question_id, se.answer, eq.category 
+                           FROM student_evaluation se
+                           JOIN evaluation_questions eq ON se.question_id = eq.question_id
+                           WHERE se.STUDENT_ID = ? 
+                           AND (eq.question_id BETWEEN 1 AND 20 OR eq.question_id BETWEEN 28 AND 37)
+                           ORDER BY eq.question_id";
+            $responsesStmt = $db->conn->prepare($responsesSql);
+            $responsesStmt->execute([$studentId]);
+            $responses = $responsesStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (empty($responses)) {
+                echo json_encode(['success' => false, 'message' => 'No evaluation responses found for this student']);
+                exit;
+            }
+            
+            $autoRatings = [];
+            $analysisReports = [];
+            
+            // Generate automated rating suggestions for each response (no database saving)
+            foreach ($responses as $response) {
+                $autoRating = AutomatedRatingSystem::autoRateResponseWithAntiCheating(
+                    $response['question_id'],
+                    $response['answer'],
+                    $response['category'],
+                    $grades
+                );
+                
+                // Generate detailed analysis for debugging
+                $analysisReport = AutomatedRatingSystem::generateAnalysisReport(
+                    $response['question_id'],
+                    $response['answer'],
+                    $response['category'],
+                    $grades
+                );
+                
+                $autoRatings[] = [
+                    'student_evaluation_id' => $response['id'],
+                    'question_id' => $response['question_id'],
+                    'category' => $response['category'],
+                    'answer' => $response['answer'],
+                    'suggested_rating' => $autoRating,
+                    'analysis' => $analysisReport
+                ];
+                
+                // DO NOT save to database - return suggestions only
+            }
+            
+            // Calculate suggested averages for preview (not saved to database)
+            $softSkillRatings = [];
+            $commSkillRatings = [];
+            $techSkillRatings = [];
+            
+            foreach ($autoRatings as $rating) {
+                $cat = strtolower(trim($rating['category']));
+                if (strpos($cat, 'soft') !== false) {
+                    $softSkillRatings[] = $rating['suggested_rating'];
+                } elseif (strpos($cat, 'communication') !== false || strpos($cat, 'comm') !== false) {
+                    $commSkillRatings[] = $rating['suggested_rating'];
+                } elseif (strpos($cat, 'technical') !== false) {
+                    $techSkillRatings[] = $rating['suggested_rating'];
+                }
+            }
+            
+            // Calculate suggested averages for preview
+            $suggestedSoftAvg = count($softSkillRatings) ? array_sum($softSkillRatings) / count($softSkillRatings) : null;
+            $suggestedCommAvg = count($commSkillRatings) ? array_sum($commSkillRatings) / count($commSkillRatings) : null;
+            $suggestedTechAvg = count($techSkillRatings) ? array_sum($techSkillRatings) / count($techSkillRatings) : null;
+            
+            // Format analysis report for frontend display
+            $analysisReportText = "🤖 AI RATING SUGGESTIONS GENERATED\n";
+            $analysisReportText .= "Student ID: $studentId\n";
+            $analysisReportText .= "Total Questions Analyzed: " . count($autoRatings) . "\n\n";
+            
+            $analysisReportText .= "📈 SUGGESTED SKILL AVERAGES:\n";
+            $analysisReportText .= "• Soft Skills: " . ($suggestedSoftAvg ? round($suggestedSoftAvg, 2) . "/5" : "Not calculated") . "\n";
+            $analysisReportText .= "• Communication: " . ($suggestedCommAvg ? round($suggestedCommAvg, 2) . "/5" : "Not calculated") . "\n";
+            $analysisReportText .= "• Technical: " . ($suggestedTechAvg ? round($suggestedTechAvg, 2) . "/5" : "Not calculated") . "\n\n";
+            
+            $analysisReportText .= "✏️ Review and edit the suggestions below, then save.\n\n";
+            
+            // Add sample rating details
+            $analysisReportText .= "🔍 SAMPLE AI SUGGESTIONS:\n";
+            foreach (array_slice($autoRatings, 0, 3) as $i => $rating) {
+                $analysisReportText .= "Q" . ($i + 1) . " (" . $rating['category'] . "): " . $rating['suggested_rating'] . "/5\n";
+                if (isset($rating['analysis']) && !empty($rating['analysis'])) {
+                    // Handle analysis array properly
+                    if (is_array($rating['analysis'])) {
+                        $analysisReportText .= "   AI Score: " . round($rating['analysis']['ai_detection']['suspicion_score'], 2) . "/2, ";
+                        $analysisReportText .= "Quality: " . round($rating['analysis']['content_quality']['quality_score'], 2) . "/5\n";
+                    } else {
+                        $analysisReportText .= "   Analysis: " . substr($rating['analysis'], 0, 80) . "...\n";
+                    }
+                }
+            }
+            
+            if (count($autoRatings) > 3) {
+                $analysisReportText .= "... and " . (count($autoRatings) - 3) . " more questions rated\n";
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'AI rating suggestions generated - please review and save',
+                'ratingsCount' => count($autoRatings),
+                'suggestions' => $autoRatings,
+                'suggestedAverages' => [
+                    'soft_skill' => $suggestedSoftAvg,
+                    'communication_skill' => $suggestedCommAvg,
+                    'technical_skill' => $suggestedTechAvg
+                ],
+                'analysisReport' => $analysisReportText
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("[AUTO_RATING ERROR] " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Error during automated rating: ' . $e->getMessage()]);
+        }
         exit;
     }
     // Save coordinator ratings for multiple student answers

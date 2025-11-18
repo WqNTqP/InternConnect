@@ -3,7 +3,10 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json');
 
-require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php";
+// Check if we're in a subdirectory (local development) or root (production)
+$path = $_SERVER['DOCUMENT_ROOT'];
+$basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+require_once $basePath . "/database/database.php";
 
 $response = [];  // Initialize response array
 

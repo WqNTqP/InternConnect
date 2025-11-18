@@ -1690,6 +1690,69 @@ body {
 .report-filters .btnReport:hover {
     background: #174a8c;
 }
+
+/* Report Search Input Styles */
+.report-search-input {
+    flex: 1 1 300px;
+    min-width: 250px;
+    max-width: 400px;
+    padding: 0.5em 2.5em 0.5em 1em;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 3px solid #4a5568 !important;
+    background: #ffffff !important;
+    color: #1e293b;
+    transition: all 0.2s ease;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15) !important;
+    position: relative;
+}
+
+.report-search-input:focus {
+    border-color: #2d6cdf !important;
+    box-shadow: 0 0 0 4px rgba(45, 108, 223, 0.2) !important;
+    outline: none;
+    background: #ffffff !important;
+}
+
+.report-search-input::placeholder {
+    color: #64748b;
+    font-style: italic;
+}
+
+/* Autocomplete dropdown styling */
+.report-search-datalist {
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+/* Search icon styling for input */
+.report-search-container {
+    position: relative;
+    flex: 1 1 300px;
+    min-width: 250px;
+    max-width: 400px;
+}
+
+.report-search-container::after {
+    content: '🔍';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    pointer-events: none;
+    font-size: 1rem;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
 #approvedReportsList {
     margin-top: 0 !important;
 }
@@ -4358,4 +4421,60 @@ grid-template-columns: 1fr 3fr 0.6fr 0.8fr 0.8fr; /* Increased width for rollno-
     .prediction-modal-content {
         padding: 24px 8px;
     }
+}
+
+/* AI Rating Suggestions Styles */
+.eval-rating-cell.ai-suggested {
+    background-color: #dbeafe !important;
+    border: 2px solid #3b82f6;
+    border-radius: 4px;
+    position: relative;
+    animation: ai-suggestion-pulse 2s ease-in-out;
+}
+
+.eval-rating-cell.ai-suggested::after {
+    content: "🤖";
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #3b82f6;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    z-index: 10;
+}
+
+@keyframes ai-suggestion-pulse {
+    0% { 
+        background-color: #dbeafe;
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    50% {
+        background-color: #bfdbfe;
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+    100% { 
+        background-color: #dbeafe;
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+}
+
+/* Remove AI suggestion styling when manually changed */
+.eval-rating-cell.ai-suggested input:checked {
+    background-color: #10b981;
+}
+
+.eval-rating-cell.ai-suggested.manually-changed {
+    background-color: #f0fdf4 !important;
+    border-color: #22c55e !important;
+}
+
+.eval-rating-cell.ai-suggested.manually-changed::after {
+    content: "✏️";
+    background: #22c55e;
 }

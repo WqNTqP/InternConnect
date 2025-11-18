@@ -14,7 +14,10 @@ if(isset($_SESSION["admin_user"])) {
     $cdrid = $_SESSION["admin_user"];
     
     // Assuming you have a Database class to handle connections
-    require_once $_SERVER['DOCUMENT_ROOT'] . "/database/database.php"; // Adjust the path as necessary
+    // Check if we're in a subdirectory (local development) or root (production)
+    $path = $_SERVER['DOCUMENT_ROOT'];
+    $basePath = file_exists($path."/database/database.php") ? $path : $path."/InternConnect";
+    require_once $basePath . "/database/database.php";
 
     $dbo = new Database();
     

@@ -89,32 +89,48 @@ function loadAllCompaniesData() {
     $('#companiesContent').addClass('hidden');
     $('#companiesErrorState').addClass('hidden');
 
+    // Track start time for minimum loading duration
+    const loadStartTime = Date.now();
+    const minLoadingDuration = 800; // Minimum 800ms to show spinner
+
     $.ajax({
         url: 'ajaxhandler/attendanceAJAX.php',
         type: 'POST',
         dataType: 'json',
         data: { action: 'getHTEList', cdrid: cdrid },
         success: function(response) {
-            // Hide loading state, show content
-            $('#companiesLoadingState').addClass('hidden');
-            $('#companiesErrorState').addClass('hidden');
-            $('#companiesContent').removeClass('hidden');
+            // Calculate remaining time to show spinner
+            const elapsedTime = Date.now() - loadStartTime;
+            const remainingTime = Math.max(0, minLoadingDuration - elapsedTime);
             
-            if (response.success && response.htes && Array.isArray(response.htes)) {
-                if (response.htes.length > 0) {
-                    renderCompaniesList(response.htes);
+            setTimeout(function() {
+                // Hide loading state, show content
+                $('#companiesLoadingState').addClass('hidden');
+                $('#companiesErrorState').addClass('hidden');
+                $('#companiesContent').removeClass('hidden');
+                
+                if (response.success && response.htes && Array.isArray(response.htes)) {
+                    if (response.htes.length > 0) {
+                        renderCompaniesList(response.htes);
+                    } else {
+                        $('#allCompaniesTableBody').html('<tr><td colspan="7" class="text-center text-gray-500 py-6">No companies assigned to you.</td></tr>');
+                    }
                 } else {
-                    $('#allCompaniesTableBody').html('<tr><td colspan="7" class="text-center text-gray-500 py-6">No companies assigned to you.</td></tr>');
+                    $('#allCompaniesTableBody').html('<tr><td colspan="7" class="text-center text-gray-500 py-6">No companies found.</td></tr>');
                 }
-            } else {
-                $('#allCompaniesTableBody').html('<tr><td colspan="7" class="text-center text-gray-500 py-6">No companies found.</td></tr>');
-            }
+            }, remainingTime);
         },
         error: function() {
-            // Show error state
-            $('#companiesLoadingState').addClass('hidden');
-            $('#companiesContent').addClass('hidden');
-            $('#companiesErrorState').removeClass('hidden');
+            // Calculate remaining time to show spinner for error case too
+            const elapsedTime = Date.now() - loadStartTime;
+            const remainingTime = Math.max(0, minLoadingDuration - elapsedTime);
+            
+            setTimeout(function() {
+                // Show error state
+                $('#companiesLoadingState').addClass('hidden');
+                $('#companiesContent').addClass('hidden');
+                $('#companiesErrorState').removeClass('hidden');
+            }, remainingTime);
         }
     });
 }
@@ -180,6 +196,12 @@ $(document).on('click', '#btnViewAllCompanies', function(e) {
         loadAllCompaniesData();
     }
 });
+// Retry loading companies on error
+$(document).on('click', '#retryLoadCompanies', function(e) {
+    e.preventDefault();
+    loadAllCompaniesData();
+});
+
 // Show Add Session form and hide other forms
 $(document).on('click', '#btnAddSession', function(e) {
     e.preventDefault();
@@ -678,9 +700,10 @@ function renderEmptyPostAnalysisState(message) {
 }
 
 function renderPostAnalysisStudentList(students) {
+    let sorted = students.slice().sort((a, b) => (a.SURNAME + ', ' + a.NAME).localeCompare(b.SURNAME + ', ' + b.NAME));
     let html = '';
-    students.forEach(function(student) {
-        const displayName = student.NAME + ' ' + student.SURNAME;
+    sorted.forEach(function(student) {
+        const displayName = student.SURNAME + ', ' + student.NAME;
         html += `<div class="postanalysis-student-item" data-studentid="${student.INTERNS_ID}">${displayName}</div>`;
     });
     $('#postAnalysisStudentListPanel').html(html);
@@ -704,7 +727,7 @@ function renderEmptyPreAssessmentState(message) {
     let html = `<div class='flex w-full'>`;
     html += `<div class='left-col w-1/3 pr-4'>`;
     html += `<div class='mb-4'><input type='text' id='rateStudentSearch' placeholder='Search student' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200' disabled></div>`;
-    html += `<div id='studentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'></div>`;
+    html += `<div id='studentListPanel' class='overflow-y-auto min-h-[500px] max-h-[700px] flex flex-col gap-1'></div>`;
     html += `</div>`;
     html += `<div class='right-col w-2/3 pl-4'>`;
     html += `
@@ -1066,10 +1089,23 @@ function getSessionHTML(rv) {
     // Dashboard button click handler (use getDashboardStats)
     $(document).on("click", ".btnDashboardStudent", function() {
         let studentId = $(this).data('studentid');
+        let $button = $(this);
+        
         if (!studentId) {
             alert("Student ID not found.");
             return;
         }
+        
+        // Show loading spinner
+        const originalText = $button.html();
+        $button.prop('disabled', true).html(`
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-indigo-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Loading...
+        `);
+        
         $.ajax({
             url: "ajaxhandler/studentDashboardAjax.php",
             type: "POST",
@@ -1086,16 +1122,14 @@ function getSessionHTML(rv) {
                     showStudentDashboardModal({ presentDays, totalHours, attendanceRate }, studentId);
                 } else {
                     alert("Could not fetch student dashboard info.");
-        // Show/hide no match message
-        if (!foundMatch && query.length > 0) {
-            $('#rateEvalList .no-match-message').show();
-        } else {
-            $('#rateEvalList .no-match-message').hide();
-        }
                 }
             },
             error: function(xhr, status, error) {
                 alert("Error fetching student dashboard info: " + error);
+            },
+            complete: function() {
+                // Restore button state
+                $button.prop('disabled', false).html(originalText);
             }
         });
     });
@@ -1245,10 +1279,10 @@ $(function() {
     let selectedPostStudentId = null;
 
     function renderPostStudentList(students) {
-        let sorted = students.slice().sort((a, b) => (a.NAME + ' ' + a.SURNAME).localeCompare(b.NAME + ' ' + b.SURNAME));
+        let sorted = students.slice().sort((a, b) => (a.SURNAME + ', ' + a.NAME).localeCompare(b.SURNAME + ', ' + b.NAME));
         let studentListHtml = '';
         sorted.forEach(function(student) {
-            const displayName = student.NAME + ' ' + student.SURNAME;
+            const displayName = student.SURNAME + ', ' + student.NAME;
             studentListHtml += `
                 <div class="postassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${student.INTERNS_ID === selectedPostStudentId ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.INTERNS_ID}">
                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
@@ -1264,7 +1298,7 @@ $(function() {
     html += `<div class='postassessment-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
     const searchValue = window.postStudentSearchValue || '';
     html += `<div class='mb-4'><input type='text' id='postStudentSearch' value='${searchValue.replace(/'/g, "&#39;").replace(/"/g, '&quot;')}' placeholder='Search student name' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
-    html += `<div id='postStudentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'>${studentListHtml}</div>`;
+    html += `<div id='postStudentListPanel' class='overflow-y-auto min-h-[500px] max-h-[700px] flex flex-col gap-1'>${studentListHtml}</div>`;
         html += `</div>`;
         html += `<div class='postassessment-evaluation-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
         if (!selectedPostStudentId) {
@@ -1294,6 +1328,9 @@ $(function() {
             window.shouldRefocusPostSearch = false;
         }
     }
+
+    // Flag to track if post-assessment data has been loaded
+    let postAssessmentDataLoaded = false;
 
     // Populate post-assessment student list when tab is activated
     // Load post-assessment students for coordinator
@@ -1327,10 +1364,14 @@ $(function() {
                     allPostStudents = [];
                     renderEmptyPostAssessmentState('No students found for post-assessment.');
                 }
+                // Mark data as loaded after successful response (regardless of whether students were found)
+                postAssessmentDataLoaded = true;
             },
             error: function(xhr, status, error) {
                 showPostAssessmentError();
                 allPostStudents = [];
+                // Don't mark as loaded if there was an error, allow retry
+                postAssessmentDataLoaded = false;
             }
         });
     }
@@ -1342,7 +1383,7 @@ $(function() {
         let html = `<div class='postassessment-main-wrapper flex flex-col md:flex-row w-full'>`;
         html += `<div class='postassessment-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
         html += `<div class='mb-4'><input type='text' id='postStudentSearch' placeholder='Search student name' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200' disabled></div>`;
-        html += `<div id='postStudentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'></div>`;
+        html += `<div id='postStudentListPanel' class='overflow-y-auto min-h-[500px] max-h-[700px] flex flex-col gap-1'></div>`;
         html += `</div>`;
         html += `<div class='postassessment-evaluation-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
         html += `
@@ -1364,6 +1405,13 @@ $(function() {
         // Loading state will be shown by the tab handler
     });
 
+    // Function to manually refresh post-assessment data
+    window.refreshPostAssessmentData = function() {
+        postAssessmentDataLoaded = false;
+        selectedPostStudentId = null;
+        loadPostAssessmentStudents();
+    };
+
     // Also populate on page load if tab is visible
     $(document).ready(function() {
         if ($('#postAssessmentTabContent').is(':visible')) {
@@ -1377,7 +1425,7 @@ $(function() {
         window.postStudentSearchValue = query;
         window.shouldRefocusPostSearch = true;
         let filtered = allPostStudents.filter(s => {
-            const displayName = (s.NAME + ' ' + s.SURNAME).toLowerCase();
+            const displayName = (s.SURNAME + ', ' + s.NAME).toLowerCase();
             return displayName.includes(query.trim().toLowerCase());
         });
         renderPostStudentList(filtered);
@@ -1491,9 +1539,15 @@ function loadPostAssessmentEvaluation(studentId) {
             setTimeout(loadPreAssessmentData, 300);
         } else if (this.id === 'postAssessmentTabBtn') {
             $('#postAssessmentTabContent').show();
-            // Show loading state and load post-assessment data
-            showPostAssessmentLoading();
-            setTimeout(loadPostAssessmentData, 300);
+            // Only load data if it hasn't been loaded before
+            if (!postAssessmentDataLoaded) {
+                // Show loading state and load post-assessment data
+                showPostAssessmentLoading();
+                setTimeout(loadPostAssessmentData, 300);
+            } else {
+                // Data already loaded, just show the content
+                showPostAssessmentContent();
+            }
         } else if (this.id === 'reviewTabBtn') {
             $('#reviewTabContent').show();
             // Show loading state and load review data
@@ -2087,20 +2141,47 @@ $(document).on('click', '#analysisModal', function(e) {
             dataType: "json",
             data: { action: "getAllStudents", coordinatorId: coordinatorId },
             success: function(rv) {
-                let options = `<option value=\"all\">All Students</option>`;
+                let options = ``;
+                const uniqueStudents = new Set();
                 if (rv && rv.data && Array.isArray(rv.data)) {
                     rv.data.forEach(function(stu) {
-                        // Use INTERNS_ID for filtering
-                        options += `<option value=\"${stu.INTERNS_ID}\">${stu.SURNAME}, ${stu.NAME}</option>`;
+                        // Use format: "Surname, Name" with INTERNS_ID as unique identifier
+                        const displayName = `${stu.SURNAME}, ${stu.NAME}`;
+                        const uniqueKey = `${stu.INTERNS_ID}_${displayName}`;
+                        
+                        // Only add if not already added (prevent duplicates)
+                        if (!uniqueStudents.has(uniqueKey)) {
+                            uniqueStudents.add(uniqueKey);
+                            options += `<option value="${displayName}">${displayName}</option>`;
+                        }
                     });
                 }
-                $("#filterStudent").html(options);
+                $("#studentFilterList").html(options);
             },
             error: function() {
-                $("#filterStudent").html('<option value=\"all\">All Students</option>');
+                $("#studentFilterList").html('');
             }
         });
     }
+
+    // Enhanced datalist functionality for student filter (similar to admin dashboard)
+    $(document).on('focus click', '#filterStudent', function() {
+        const input = this;
+        if (input.list && input.list.options.length > 0) {
+            // Show all options when input is focused or clicked
+            setTimeout(() => {
+                if (input.value === '') {
+                    // Show all options when empty
+                    input.value = ' ';
+                    input.value = '';
+                }
+                // Try to show the picker if available
+                if (input.showPicker) {
+                    input.showPicker();
+                }
+            }, 10);
+        }
+    });
 
     // Close coordinator profile modal
 $(document).on('click', '#closeCoordinatorProfile', function(e) {
@@ -2200,7 +2281,20 @@ $(document).on('click', '#saveProfilePicture', function() {
 });
 
 function loadApprovedReportsWithFilters() {
-        let studentId = $("#filterStudent").val() || "all";
+        let inputValue = $("#filterStudent").val() || "";
+        let studentId = "all";
+        
+        // If a student is selected, find the corresponding INTERNS_ID
+        if (inputValue && inputValue !== "" && inputValue !== "All Students") {
+            const option = $("#studentFilterList option").filter(function() {
+                return $(this).val() === inputValue;
+            }).first();
+            
+            if (option.length > 0) {
+                studentId = option.attr('data-id') || "all";
+            }
+        }
+        
         let date = $("#filterDate").val();
         let weekStart = date || null;
         let weekEnd = date || null;
@@ -3306,36 +3400,101 @@ function getHTEHTML(classlist)
     }
     
     x += `</select></div>`;
+    
+    // Also update student list area to show proper message
+    setTimeout(function() {
+        $("#studentlistarea").html(`
+            <div class="bg-gray-50 rounded-lg shadow-sm p-8">
+                <div class="text-center text-gray-500">
+                    <i class="fas fa-users text-4xl mb-4 text-gray-400"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">No Company Selected</h3>
+                    <p class="text-sm">Please select a company from the dropdown above to view students.</p>
+                </div>
+            </div>
+        `);
+    }, 50);
+    
     return x;
 }
 
 function fetchTHE(cdrid,sessionid)
 {   console.log("Fetching THE for session:", sessionid);
+    
+    // Track start time for minimum loading duration
+    const loadStartTime = Date.now();
+    const minLoadingDuration = 600; // Minimum 600ms to show spinner
+    
+    // Show loading state
+    $("#classlistarea").html(`
+        <div class="flex flex-col">
+            <label class="text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
+            <div class="flex items-center justify-center py-8">
+                <div class="flex items-center space-x-3">
+                    <div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent"></div>
+                    <span class="text-gray-600">Loading companies...</span>
+                </div>
+            </div>
+        </div>
+    `);
+    
     //kuhaon tanan mga H.T.E nga gi handle sa current login coordinator
     //didto sa database gamit ang ajax call
     $.ajax({
-        
         url: "ajaxhandler/attendanceAJAX.php",
         type: "POST",
         dataType: "json",
         data: {cdrid:cdrid,sessionid:sessionid,action:"getHTE"},
-        beforeSend: function(e) {
-            // para mo show ni siya loading
-
-        },
         success: function(rv) {
-            {
-                // console.log(rv);
-                // alert(JSON.stringify(rv));
-                let  x=getHTEHTML(rv);
-                $("#classlistarea").html(x);
-            }
+            // Calculate remaining time to show spinner
+            const elapsedTime = Date.now() - loadStartTime;
+            const remainingTime = Math.max(0, minLoadingDuration - elapsedTime);
+            
+            setTimeout(function() {
+                if (rv && Array.isArray(rv) && rv.length > 0) {
+                    let x = getHTEHTML(rv);
+                    $("#classlistarea").html(x);
+                } else {
+                    // Show no companies found state
+                    $("#classlistarea").html(`
+                        <div class="flex flex-col">
+                            <label class="text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
+                            <div class="flex items-center justify-center py-8 text-gray-500">
+                                <div class="text-center">
+                                    <i class="fas fa-building text-3xl mb-2 text-gray-400"></i>
+                                    <p>No companies assigned for this session</p>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+            }, remainingTime);
         },
         error: function(e) {
             console.error("Error fetching THE:", e);
+            
+            // Calculate remaining time to show spinner for error case too
+            const elapsedTime = Date.now() - loadStartTime;
+            const remainingTime = Math.max(0, minLoadingDuration - elapsedTime);
+            
+            setTimeout(function() {
+                // Show error state
+                $("#classlistarea").html(`
+                    <div class="flex flex-col">
+                        <label class="text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
+                        <div class="flex items-center justify-center py-8">
+                            <div class="text-center text-red-500">
+                                <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
+                                <p>Error loading companies</p>
+                                <button onclick="fetchTHE('${cdrid}', '${sessionid}')" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">
+                                    <i class="fas fa-redo mr-1"></i>Try Again
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }, remainingTime);
         }
     });
-
 }
 
  function getClassdetailsAreaHTML(building)
@@ -3405,7 +3564,15 @@ function convertTo12Hour(time24) {
 function getStudentListHTML(studentList) {
     // Handle empty student list
     if (!studentList || studentList.length === 0) {
-        return `<div class="text-gray-500 text-center py-8">No students found.</div>`;
+        return `
+            <div class="bg-gray-50 rounded-lg shadow-sm p-8">
+                <div class="text-center text-gray-500">
+                    <i class="fas fa-user-slash text-4xl mb-4 text-gray-400"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">No Students Found</h3>
+                    <p class="text-sm">There are no students assigned to this company for the selected date.</p>
+                </div>
+            </div>
+        `;
     }
 
     // Start table layout
@@ -3599,18 +3766,78 @@ $(function(e)
 
     loadSeassions();
 
+    // Initialize proper UI states after page load
+    setTimeout(function() {
+        // Ensure companies dropdown shows correct initial state
+        if ($("#company-select").length === 0 || $("#company-select").find("option").first().text().includes("Loading")) {
+            $("#classlistarea").html(`
+                <div class="flex flex-col">
+                    <label class="text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
+                    <select id="company-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" disabled>
+                        <option value="">Select a session first</option>
+                    </select>
+                </div>
+            `);
+        }
+        
+        // Ensure student list shows correct initial message
+        if ($("#studentlistarea").text().includes("No students found.")) {
+            $("#studentlistarea").html(`
+                <div class="bg-gray-50 rounded-lg shadow-sm p-8">
+                    <div class="text-center text-gray-500">
+                        <i class="fas fa-calendar-alt text-4xl mb-4 text-gray-400"></i>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">No Session Selected</h3>
+                        <p class="text-sm">Please select a session first to view companies and students.</p>
+                    </div>
+                </div>
+            `);
+        }
+    }, 500);
+
     $(document).on("change", "#ddlclass", function(e) {
         currentSessionId = $(this).val();
         $("#hiddenSelectedSessionId").val(currentSessionId);
-        $("#classlistarea").html(``);
+        
+        // Clear previous data immediately
         $("#classdetailsarea").html(``);
+        
         if (currentSessionId != -1) {
             let cdrid = $("#hiddencdrid").val();
+            
+            // Show loading message for student list
+            $("#studentlistarea").html(`
+                <div class="bg-gray-50 rounded-lg shadow-sm p-8">
+                    <div class="text-center text-gray-500">
+                        <div class="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Loading Companies</h3>
+                        <p class="text-sm">Please wait while we load available companies...</p>
+                    </div>
+                </div>
+            `);
+            
+            // Show loading state immediately before fetching
             fetchTHE(cdrid, currentSessionId); // Fetch HTEs for the selected session
-            // Display student list area with only Add HTE button enabled
-            $("#studentlistarea").html(getStudentListHTML([]));
         } else {
-            $("#studentlistarea").html(``);
+            // Show empty state for companies when no session selected
+            $("#classlistarea").html(`
+                <div class="flex flex-col">
+                    <label class="text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
+                    <select id="company-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" disabled>
+                        <option value="">Select a session first</option>
+                    </select>
+                </div>
+            `);
+            
+            // Show message for student list when no session selected
+            $("#studentlistarea").html(`
+                <div class="bg-gray-50 rounded-lg shadow-sm p-8">
+                    <div class="text-center text-gray-500">
+                        <i class="fas fa-calendar-alt text-4xl mb-4 text-gray-400"></i>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">No Session Selected</h3>
+                        <p class="text-sm">Please select a session first to view companies and students.</p>
+                    </div>
+                </div>
+            `);
         }
     });
 
@@ -3620,7 +3847,21 @@ $(function(e)
         
         let selectedOption = $(this).find("option:selected");
         let building = selectedOption.data("building");
-        if (!building) return;
+        
+        if (!building || $(this).val() === "") {
+            // No company selected - show message
+            $("#classdetailsarea").html(``);
+            $("#studentlistarea").html(`
+                <div class="bg-gray-50 rounded-lg shadow-sm p-8">
+                    <div class="text-center text-gray-500">
+                        <i class="fas fa-users text-4xl mb-4 text-gray-400"></i>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">No Company Selected</h3>
+                        <p class="text-sm">Please select a company from the dropdown above to view students.</p>
+                    </div>
+                </div>
+            `);
+            return;
+        }
 
         currentHteId = building.HTE_ID;
         $("#hiddenSelectedHteID").val(currentHteId);
@@ -3628,7 +3869,18 @@ $(function(e)
         $("#classdetailsarea").html(x);
         let cdrid = $("#hiddencdrid").val();
         let ondate = $("#dtpondate").val();
+        
         if (currentSessionId != -1) {
+            // Show loading state while fetching students
+            $("#studentlistarea").html(`
+                <div class="bg-gray-50 rounded-lg shadow-sm p-8">
+                    <div class="text-center text-gray-500">
+                        <div class="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Loading Students</h3>
+                        <p class="text-sm">Fetching student list for ${building.NAME}...</p>
+                    </div>
+                </div>
+            `);
             fetchStudentList(currentSessionId, currentHteId, cdrid, ondate);
         }
     });
@@ -4099,52 +4351,7 @@ $(function(e)
         });
     
 
-        $(document).on("submit", "#hteForm", function(e) {
-            e.preventDefault();
-            var form = this;
-            var formData = new FormData(form);
-            formData.append('action', 'addHTE');
-            formData.append('sessionId', currentSessionId);
 
-            // Debug: log FormData contents
-            if (formData.has('LOGO')) {
-                var file = formData.get('LOGO');
-                if (file && file.name) {
-                    console.log('LOGO file selected:', file.name, 'size:', file.size);
-                } else {
-                    console.warn('LOGO file not selected or empty');
-                }
-            } else {
-                console.warn('LOGO field not found in FormData');
-            }
-            // Log all FormData key/value pairs
-            for (var pair of formData.entries()) {
-                console.log(pair[0]+ ':', pair[1]);
-            }
-
-            $.ajax({
-                url: "ajaxhandler/attendanceAJAX.php",
-                type: "POST",
-                data: formData,
-                processData: false,
-                contentType: false,
-                dataType: "json",
-                success: function(response) {
-                    console.log("Server Response:", response); // Log the raw response
-                    if (response.success) {
-                        alert("HTE added successfully! ");
-                        $("#addHTEForm").hide();
-                    } else {
-                        alert("Error adding HTE: " + response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error("AJAX error:", status, error);
-                    console.log("Response text:", xhr.responseText); // Log the response text for debugging
-                    alert("Error adding HTE: " + error + "\nCheck console for more details.");
-                }
-            });
-        });
     
     
         $(document).on("click", "#closeHTEForm", function(e) {
@@ -5006,7 +5213,7 @@ $(document).ready(function() {
         let html = `<div class='preassessment-main-wrapper flex flex-col md:flex-row w-full'>`;
         html += `<div class='preassessment-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
     html += `<div class='mb-4'><input type='text' id='rateStudentSearch' placeholder='Search student' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
-    html += `<div id='studentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'>${studentListHtml}</div>`;
+    html += `<div id='studentListPanel' class='overflow-y-auto min-h-[500px] max-h-[700px] flex flex-col gap-1'>${studentListHtml}</div>`;
         html += `</div>`;
         html += `<div class='preassessment-content-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
         if (!selectedStudentId) {
@@ -5324,8 +5531,14 @@ $(document).ready(function() {
                     });
                     
                     html += `</div>
-                        <!-- Universal Save Button -->
-                        <div class="mt-6 flex justify-end">
+                        <!-- Action Buttons -->
+                        <div class="mt-6 flex justify-between items-center">
+                            <button id="autoRateBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded text-sm font-medium flex items-center gap-2" data-student-id="${studentDbId}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                                Auto-Rate (AI + Grades)
+                            </button>
                             <button id="saveAllRatingsBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded text-sm font-medium" data-student-id="${studentDbId}">
                                 Save All Ratings
                             </button>
@@ -5383,6 +5596,139 @@ $(document).ready(function() {
             }
         });
     }
+
+    // Auto-Rate button handler
+    $(document).on('click', '#autoRateBtn', function() {
+        const studentId = $(this).data('student-id');
+        const $button = $(this);
+        
+        // Confirm with user
+        if (!confirm('This will automatically rate all questions for this student based on their academic grades and AI analysis. This action cannot be undone. Continue?')) {
+            return;
+        }
+        
+        $button.prop('disabled', true).html('<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>AI Processing...');
+        
+        // Call the automated rating endpoint
+        $.ajax({
+            url: 'ajaxhandler/coordinatorRateStudentAnswersAjax.php',
+            type: 'POST',
+            dataType: 'json',
+            data: { 
+                action: 'autoRateStudent',
+                studentId: studentId,
+                coordinatorId: COORDINATOR_ID
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Apply AI suggestions to the rating inputs
+                    if (response.suggestions && response.suggestions.length > 0) {
+                        console.log(`Applying ${response.suggestions.length} AI suggestions...`);
+                        
+                        // Apply suggestions immediately
+                        response.suggestions.forEach(function(suggestion) {
+                            const studentEvalId = suggestion.student_evaluation_id;
+                            const suggestedRating = Math.round(suggestion.suggested_rating); // Round to nearest integer
+                            
+                            // Try multiple radio button selector patterns
+                            let $radioButton = $();
+                            
+                            // Pattern 1: newer format with just evaluation ID
+                            let radioSelector1 = `input[name='likert_${studentEvalId}'][value='${suggestedRating}']`;
+                            $radioButton = $(radioSelector1);
+                            
+                            // Pattern 2: older format with student ID
+                            if ($radioButton.length === 0) {
+                                let radioSelector2 = `input[name='likert_${studentId}_${studentEvalId}'][value='${suggestedRating}']`;
+                                $radioButton = $(radioSelector2);
+                            }
+                            
+                            // Pattern 3: try with data attribute
+                            if ($radioButton.length === 0) {
+                                let radioSelector3 = `input[data-eval-id='${studentEvalId}'][value='${suggestedRating}']`;
+                                $radioButton = $(radioSelector3);
+                            }
+                            
+                            if ($radioButton.length > 0) {
+                                $radioButton.prop('checked', true);
+                                
+                                // Add visual indicator that this is an AI suggestion
+                                const $parentCell = $radioButton.closest('.eval-rating-cell');
+                                $parentCell.addClass('ai-suggested').attr('title', 'AI Suggested Rating');
+                                
+                                console.log(`Applied AI suggestion: Question ${studentEvalId} = ${suggestedRating}/5 (original: ${suggestion.suggested_rating})`);
+                            } else {
+                                console.warn(`Could not find radio button for evaluation ID ${studentEvalId}, tried selectors:`, {
+                                    pattern1: radioSelector1,
+                                    pattern2: `input[name='likert_${studentId}_${studentEvalId}'][value='${suggestedRating}']`,
+                                    pattern3: `input[data-eval-id='${studentEvalId}'][value='${suggestedRating}']`
+                                });
+                            }
+                        });
+                        
+                        // Update button to show suggestions are loaded
+                        $button.removeClass('bg-blue-600 hover:bg-blue-700')
+                               .addClass('bg-green-600 hover:bg-green-700')
+                               .html(`
+                                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                   </svg>
+                                   AI Suggestions Applied
+                               `)
+                               .prop('disabled', false);
+                        
+                        // Show analysis report
+                        alert('🤖 AI Rating Suggestions Applied!\n\n' + response.analysisReport + '\n\n✏️ You can now edit any ratings and click "Save All Ratings" when ready.');
+                        
+                        // Enable and highlight the save button
+                        const $saveButton = $('#saveAllRatingsBtn');
+                        if ($saveButton.length > 0) {
+                            $saveButton.removeClass('bg-gray-400')
+                                      .addClass('bg-green-600 hover:bg-green-700')
+                                      .prop('disabled', false)
+                                      .html('💾 Save AI Suggestions');
+                        }
+                    }
+                    
+                } else {
+                    alert('Error during AI rating: ' + (response.message || 'Unknown error occurred'));
+                    $button.prop('disabled', false).html(`
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        Auto-Rate (AI + Grades)
+                    `);
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('Network error during automated rating: ' + error);
+                $button.prop('disabled', false).html(`
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    Auto-Rate (AI + Grades)
+                `);
+            }
+        });
+    });
+
+    // Detect manual changes to AI suggestions
+    $(document).on('change', '.eval-rating-cell.ai-suggested input[type="radio"]', function() {
+        const $cell = $(this).closest('.eval-rating-cell');
+        $cell.addClass('manually-changed').attr('title', 'AI Suggestion Modified');
+        console.log('AI suggestion manually modified');
+    });
+
+    // Debug helper function - can be called from console
+    window.debugRadioButtons = function(studentId, evalId) {
+        console.log('Available radio buttons for evaluation ID:', evalId);
+        $(`input[name*="${evalId}"]`).each(function() {
+            console.log('Found radio:', $(this).attr('name'), 'value:', $(this).val());
+        });
+        $(`input[data-eval-id="${evalId}"]`).each(function() {
+            console.log('Found radio by data-attr:', $(this).attr('name'), 'value:', $(this).val());
+        });
+    };
 
     // Universal Save All Ratings button handler
     $(document).on('click', '#saveAllRatingsBtn', function() {
@@ -5461,6 +5807,20 @@ $(document).ready(function() {
                     
                     // Disable all radio buttons in ALL categories (not just visible one)
                     $('.category-eval-container').find('.likert-radio').prop('disabled', true);
+                    
+                    // Reset the AI suggestions button for potential future use
+                    const $aiButton = $(`button[onclick*="autoRateStudent('${studentId}')"]`);
+                    if ($aiButton.length > 0) {
+                        $aiButton.removeClass('bg-green-600 hover:bg-green-700')
+                               .addClass('bg-gray-400')
+                               .html(`
+                                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                   </svg>
+                                   Ratings Saved
+                               `)
+                               .prop('disabled', true);
+                    }
                     
                     // Refresh the reviewed students list and evaluation data so future selections show the correct message
                     $.ajax({
@@ -5631,7 +5991,7 @@ $(document).ready(function() {
         });
         let studentListHtml = '';
         sorted.forEach(function(student) {
-            let displayName = student.name || student.NAME || student.full_name || 'Unknown Name';
+            let displayName = student.id || 'Unknown ID'; // Show STUDENT_ID instead of name
             let isSelected = student.id === selectedReviewStudentId;
             console.log('[DEBUG] Rendering student:', { 
                 id: student.id, 
@@ -5653,7 +6013,7 @@ $(document).ready(function() {
         let html = `<div class='review-main-wrapper flex flex-col md:flex-row w-full'>`;
         html += `<div class='review-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
         html += `<div class='mb-4'><input type='text' id='reviewStudentSearch' placeholder='Search student' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
-        html += `<div id='reviewStudentListPanel' class='overflow-y-auto max-h-[420px] flex flex-col gap-1'>${studentListHtml}</div>`;
+        html += `<div id='reviewStudentListPanel' class='overflow-y-auto min-h-[500px] max-h-[700px] flex flex-col gap-1'>${studentListHtml}</div>`;
         html += `</div>`;
         html += `<div class='review-content-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
         if (!selectedReviewStudentId) {

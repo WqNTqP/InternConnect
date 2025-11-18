@@ -118,6 +118,129 @@ $totalStudents = count($allStudents);
     <link rel="stylesheet" href="css/admindashboard.css">
     <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
     <title>Admin Dashboard - Attendance Tracker</title>
+    
+    <style>
+        /* Fix sidebar issues */
+        body.sidebar-open {
+            overflow-x: hidden;
+        }
+        
+        .sidebar {
+            transition: width 0.3s ease-in-out !important;
+        }
+        
+        .sidebar.sidebar-open {
+            transform: translateX(0) !important;
+        }
+        
+        .content-area {
+            transition: margin-left 0.3s ease-in-out, width 0.3s ease-in-out !important;
+        }
+        
+        @media (min-width: 769px) {
+            .sidebar {
+                position: fixed;
+                left: 0 !important;
+                transform: translateX(0) !important;
+                width: 260px;
+            }
+            
+            .sidebar.sidebar-open {
+                transform: translateX(0) !important;
+            }
+            
+            .sidebar.sidebar-open.collapsed {
+                width: 64px !important;
+                background-color: #374151 !important;
+                overflow: visible !important;
+            }
+            
+            .sidebar.sidebar-open.collapsed .sidebar-logo span {
+                display: none;
+            }
+            
+            /* Ensure icons are visible and properly styled in collapsed mode */
+            .sidebar.collapsed .sidebar-item {
+                padding: 0.75rem !important;
+                justify-content: center !important;
+                display: flex !important;
+                align-items: center !important;
+                transition: all 0.3s ease-in-out !important;
+            }
+            
+            .sidebar.collapsed .sidebar-item i {
+                display: block !important;
+                font-size: 1.2rem !important;
+                color: #ffffff !important;
+                width: 20px !important;
+                margin: 0 !important;
+                text-align: center !important;
+                transition: none !important;
+                transform: translateX(0) !important;
+            }
+            
+            .sidebar.collapsed .sidebar-item span {
+                display: none !important;
+            }
+            
+            /* Smooth transition for non-collapsed state */
+            .sidebar:not(.collapsed) .sidebar-item i {
+                transition: all 0.3s ease-in-out !important;
+                transform: translateX(0) !important;
+            }
+            
+            .sidebar:not(.collapsed) .sidebar-item span {
+                transition: opacity 0.3s ease-in-out !important;
+                opacity: 1 !important;
+            }
+            
+            .content-area {
+                margin-left: 260px !important;
+                width: calc(100% - 260px) !important;
+                transition: margin-left 0.3s ease-in-out, width 0.3s ease-in-out !important;
+            }
+            
+            .content-area.sidebar-collapsed {
+                margin-left: 64px !important;
+                width: calc(100% - 64px) !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0 !important;
+                transform: translateX(-100%);
+                z-index: 1100;
+            }
+            
+            .sidebar.sidebar-open {
+                transform: translateX(0) !important;
+            }
+            
+            .content-area {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+            
+            .sidebar-overlay.active {
+                display: block !important;
+                opacity: 1 !important;
+            }
+        }
+        
+        /* Ensure sidebar toggle button is always visible */
+        .sidebar-toggle {
+            z-index: 1200 !important;
+            position: relative !important;
+        }
+
+        /* Loading spinner animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
     <div class="page">
@@ -193,6 +316,7 @@ $totalStudents = count($allStudents);
                 <li class="sidebar-item" id="historyTab"><i class="fas fa-history"></i> <span>History</span></li>
                 <li class="sidebar-item" id="reportsTab"><i class="fas fa-file-alt"></i> <span>Reports</span></li>
                 <li class="sidebar-item" id="evaluationTab"><i class="fas fa-star"></i> <span>Evaluation</span></li>
+                <li class="sidebar-item" id="questionApprovalsTab"><i class="fas fa-clipboard-check"></i> <span>Question Approvals</span></li>
                 <li class="sidebar-item" id="contralTab"><i class="fas fa-cogs"></i> <span>Control</span></li>
             </ul>
         </div>
@@ -912,6 +1036,72 @@ $totalStudents = count($allStudents);
                     </div>
                 </div>
             </div>
+    
+
+        <!-- Question Approvals Tab Content -->
+        <div id="questionApprovalsTabContent" class="tab-content" style="display: none;">
+            <div class="question-approvals-container">
+                <!-- Header -->
+                <div style="background: white; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h2 style="margin: 0 0 0.5rem 0; color: #374151; font-size: 1.5rem;"><i class="fas fa-clipboard-check" style="margin-right: 0.5rem; color: #6b7280;"></i> Question Approvals</h2>
+                            <p style="margin: 0; color: #6b7280; font-size: 0.875rem;">Review and manage student-submitted questions for post-assessments</p>
+                        </div>
+                        <div>
+                            <button id="refresh-questions" style="background: #f3f4f6; color: #374151; padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; transition: background-color 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Refresh</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Selection -->
+                <div style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1.5rem; padding: 1.5rem;">
+                    <h3 style="margin: 0 0 1rem 0; color: #374151; font-size: 1rem; font-weight: 500;"><i class="fas fa-user-graduate" style="margin-right: 0.5rem; color: #6b7280;"></i> Select Student to Review</h3>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; color: #6b7280; font-size: 0.875rem;">Choose Student:</label>
+                        <select id="student-selector" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; background: white; font-size: 0.875rem; color: #374151;">
+                            <option value="">Select a student to review their questions...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Bulk Actions (shown when student is selected) -->
+                <div id="bulk-actions" style="margin-bottom: 1.5rem; display: none;">
+                    <div style="background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <h4 style="margin: 0 0 1rem 0; color: #374151; font-size: 0.875rem; font-weight: 500;"><i class="fas fa-tasks" style="margin-right: 0.5rem; color: #6b7280;"></i> Bulk Actions</h4>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button id="bulk-approve-btn" style="background: #059669; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-check-double"></i>
+                                <span>Approve Selected</span>
+                            </button>
+                            <button id="bulk-redo-btn" style="background: #f59e0b; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-redo"></i>
+                                <span>Request Redo</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Questions List -->
+                <div id="questions-list-container" class="questions-list-container" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; display: none;">
+                    <div style="padding: 1rem 1.5rem; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+                        <h3 style="margin: 0; color: #374151; font-size: 1rem; font-weight: 500;" id="questionsListTitle">Student Questions</h3>
+                    </div>
+                    <div id="questions-list" style="min-height: 400px;">
+                        <!-- Questions will be loaded here -->
+                        <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #6b7280;">
+                            <div style="text-align: center;">
+                                <i class="fas fa-user-graduate" style="font-size: 3rem; margin-bottom: 1rem; color: #d1d5db;"></i>
+                                <h4 style="margin: 0 0 0.5rem 0; color: #374151;">Choose a Student Above</h4>
+                                <p style="margin: 0;">Select a student from the dropdown to review their submitted questions</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
 
@@ -996,76 +1186,114 @@ $totalStudents = count($allStudents);
         function initializeSidebar() {
             const sidebar = document.querySelector('.sidebar');
             const overlay = document.getElementById('sidebarOverlay');
+            const contentArea = document.querySelector('.content-area');
+            
+            if (!sidebar || !contentArea) {
+                console.error('Sidebar or content area not found');
+                return;
+            }
             
             // On desktop, sidebar should be open by default
             if (window.innerWidth > 768) {
                 sidebar.classList.add('sidebar-open');
-                document.querySelector('.content-area').classList.add('sidebar-open');
+                contentArea.classList.add('sidebar-open');
+                document.body.classList.add('sidebar-open');
             } else {
                 sidebar.classList.remove('sidebar-open');
-                document.querySelector('.content-area').classList.remove('sidebar-open');
+                contentArea.classList.remove('sidebar-open');
+                document.body.classList.remove('sidebar-open');
                 if (overlay) overlay.classList.remove('active');
             }
         }
         
         // Initialize on page load
-        initializeSidebar();
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSidebar();
+        });
         
         // Add sidebar toggle functionality
-        document.getElementById('sidebarToggle').addEventListener('click', function(e) {
-            e.stopPropagation();
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            const contentArea = document.querySelector('.content-area');
-            const isMobile = window.innerWidth <= 768;
-            
-            sidebar.classList.toggle('sidebar-open');
-            contentArea.classList.toggle('sidebar-open');
-            
-            // Toggle overlay on mobile only
-            if (isMobile && overlay) {
-                overlay.classList.toggle('active');
-                // Prevent body scroll when sidebar is open on mobile
-                if (sidebar.classList.contains('sidebar-open')) {
-                    document.body.style.overflow = 'hidden';
-                } else {
-                    document.body.style.overflow = '';
-                }
-            } else {
-                if (overlay) overlay.classList.remove('active');
-                document.body.style.overflow = '';
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('sidebarToggle');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const sidebar = document.querySelector('.sidebar');
+                    const overlay = document.getElementById('sidebarOverlay');
+                    const contentArea = document.querySelector('.content-area');
+                    const isMobile = window.innerWidth <= 768;
+                    
+                    if (!sidebar || !contentArea) {
+                        console.error('Sidebar elements not found');
+                        return;
+                    }
+                    
+                    const isOpen = sidebar.classList.contains('sidebar-open');
+                    
+                    if (isOpen) {
+                        sidebar.classList.remove('sidebar-open');
+                        contentArea.classList.remove('sidebar-open');
+                        document.body.classList.remove('sidebar-open');
+                        if (overlay) overlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                    } else {
+                        sidebar.classList.add('sidebar-open');
+                        contentArea.classList.add('sidebar-open');
+                        document.body.classList.add('sidebar-open');
+                        if (isMobile && overlay) {
+                            overlay.classList.add('active');
+                            document.body.style.overflow = 'hidden';
+                        }
+                    }
+                });
             }
         });
         
-        // Close sidebar when clicking overlay
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-        if (sidebarOverlay) {
-            sidebarOverlay.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const sidebar = document.querySelector('.sidebar');
-                const contentArea = document.querySelector('.content-area');
-                sidebar.classList.remove('sidebar-open');
-                contentArea.classList.remove('sidebar-open');
-                this.classList.remove('active');
-                document.body.style.overflow = '';
-            });
-        }
+        // Add overlay click handler and window resize handler
+        document.addEventListener('DOMContentLoaded', function() {
+            // Close sidebar when clicking overlay
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const sidebar = document.querySelector('.sidebar');
+                    const contentArea = document.querySelector('.content-area');
+                    
+                    if (sidebar && contentArea) {
+                        sidebar.classList.remove('sidebar-open');
+                        contentArea.classList.remove('sidebar-open');
+                        document.body.classList.remove('sidebar-open');
+                        this.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                });
+            }
+        });
         
-        // Handle window resize
+        // Handle window resize to maintain proper sidebar state
         window.addEventListener('resize', function() {
             const sidebar = document.querySelector('.sidebar');
             const overlay = document.getElementById('sidebarOverlay');
             const contentArea = document.querySelector('.content-area');
             
+            if (!sidebar || !contentArea) return;
+            
             if (window.innerWidth > 768) {
-                // On desktop, keep current sidebar state
+                // Desktop: Ensure sidebar is open and overlay is hidden
+                if (!sidebar.classList.contains('sidebar-open')) {
+                    sidebar.classList.add('sidebar-open');
+                    contentArea.classList.add('sidebar-open');
+                    document.body.classList.add('sidebar-open');
+                }
                 if (overlay) overlay.classList.remove('active');
                 document.body.style.overflow = '';
             } else {
-                // On mobile, close sidebar if it was open
+                // Mobile: Close sidebar if open and remove overlay
                 if (sidebar.classList.contains('sidebar-open')) {
                     sidebar.classList.remove('sidebar-open');
                     contentArea.classList.remove('sidebar-open');
+                    document.body.classList.remove('sidebar-open');
                 }
                 if (overlay) overlay.classList.remove('active');
                 document.body.style.overflow = '';
@@ -1159,34 +1387,75 @@ $totalStudents = count($allStudents);
             });
 
             // Sidebar collapse functionality and user dropdown
-            let sidebarOpen = false;
+            let sidebarOpen = $(window).width() >= 769; // Desktop starts open, mobile starts closed
             let sidebarCollapsed = false;
+            
+            // Initialize sidebar state on page load
+            function initializeSidebar() {
+                const sidebar = $('.sidebar');
+                const contentArea = $('.content-area');
+                
+                if ($(window).width() >= 769) {
+                    // Desktop - sidebar always visible, content always offset
+                    sidebarOpen = true;
+                    sidebarCollapsed = false;
+                    sidebar.addClass('sidebar-open');
+                    sidebar.removeClass('collapsed');
+                    // Content area is always offset on desktop, just remove collapsed class
+                    contentArea.removeClass('sidebar-collapsed');
+                } else {
+                    // Mobile - sidebar hidden, content full width
+                    sidebarOpen = false;
+                    sidebarCollapsed = false;
+                    sidebar.removeClass('sidebar-open collapsed');
+                    contentArea.removeClass('sidebar-collapsed');
+                    // On mobile, content should be full width
+                    contentArea.css({
+                        'margin-left': '0',
+                        'width': '100%'
+                    });
+                }
+            }
+            
+            // Initialize on page load
+            $(document).ready(function() {
+                initializeSidebar();
+                
+                // Debug: Log initial state
+                console.log('Initial sidebar state:', {
+                    sidebarOpen: sidebarOpen,
+                    sidebarCollapsed: sidebarCollapsed,
+                    sidebarClasses: $('.sidebar').attr('class'),
+                    contentClasses: $('.content-area').attr('class')
+                });
+            });
 
             // Toggle sidebar visibility
             $('#sidebarToggle').click(function() {
                 const sidebar = $('.sidebar');
                 const contentArea = $('.content-area');
                 
+                console.log('Toggle clicked. Current state:', {
+                    sidebarCollapsed: sidebarCollapsed,
+                    windowWidth: $(window).width()
+                });
+                
                 if ($(window).width() >= 769) {
-                    // Desktop behavior - toggle collapse/expand
-                    if (!sidebarOpen) {
-                        // Open sidebar
-                        sidebarOpen = true;
-                        sidebar.addClass('sidebar-open');
-                        contentArea.addClass('sidebar-open');
-                        if (sidebarCollapsed) {
-                            contentArea.addClass('sidebar-collapsed');
-                        }
+                    // Desktop behavior - toggle between expanded (full) and collapsed (icon-only)
+                    sidebarCollapsed = !sidebarCollapsed;
+                    
+                    console.log('New collapsed state:', sidebarCollapsed);
+                    
+                    if (sidebarCollapsed) {
+                        // Show icon-only version
+                        sidebar.addClass('collapsed');
+                        contentArea.addClass('sidebar-collapsed');
+                        console.log('Applied collapsed classes');
                     } else {
-                        // Toggle between expanded and collapsed
-                        sidebarCollapsed = !sidebarCollapsed;
-                        if (sidebarCollapsed) {
-                            sidebar.addClass('collapsed');
-                            contentArea.addClass('sidebar-collapsed');
-                        } else {
-                            sidebar.removeClass('collapsed');
-                            contentArea.removeClass('sidebar-collapsed');
-                        }
+                        // Show full expanded version
+                        sidebar.removeClass('collapsed');
+                        contentArea.removeClass('sidebar-collapsed');
+                        console.log('Removed collapsed classes');
                     }
                 } else {
                     // Mobile behavior - toggle show/hide
@@ -1212,7 +1481,12 @@ $totalStudents = count($allStudents);
             // Handle window resize
             $(window).resize(function() {
                 if ($(window).width() >= 769) {
+                    // Desktop mode
                     $('#sidebarOverlay').removeClass('active');
+                    initializeSidebar();
+                } else {
+                    // Mobile mode
+                    initializeSidebar();
                 }
             });
 
@@ -1276,6 +1550,281 @@ $totalStudents = count($allStudents);
             </div>
         </div>
     </div>
+
+    <!-- Final sidebar initialization script -->
+    <script>
+        // Ensure sidebar is initialized when page loads completely
+        window.addEventListener('load', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const contentArea = document.querySelector('.content-area');
+            
+            if (sidebar && contentArea) {
+                // Force initial state based on screen size
+                if (window.innerWidth > 768) {
+                    sidebar.classList.add('sidebar-open');
+                    contentArea.classList.add('sidebar-open');
+                    document.body.classList.add('sidebar-open');
+                } else {
+                    sidebar.classList.remove('sidebar-open');
+                    contentArea.classList.remove('sidebar-open');
+                    document.body.classList.remove('sidebar-open');
+                }
+            }
+        });
+
+        // Question Approvals Tab Functionality
+        $(document).ready(function() {
+            // Use a MutationObserver to detect when the tab content becomes visible
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        const target = mutation.target;
+                        if (target.id === 'questionApprovalsTabContent' && target.style.display !== 'none') {
+                            // Tab is now visible, load students
+                            loadStudentsWithQuestions();
+                        }
+                    }
+                });
+            });
+            
+            // Start observing the tab content
+            const tabContent = document.getElementById('questionApprovalsTabContent');
+            if (tabContent) {
+                observer.observe(tabContent, { attributes: true, attributeFilter: ['style'] });
+            }
+
+            // Handle student selection
+            $(document).on('change', '#student-selector', function() {
+                const studentId = $(this).val();
+                if (studentId) {
+                    loadStudentQuestions(studentId);
+                } else {
+                    hideQuestionsSection();
+                }
+            });
+
+            // Handle bulk approve
+            $(document).on('click', '#bulk-approve-btn', function() {
+                const selectedQuestions = getSelectedQuestionIds();
+                if (selectedQuestions.length === 0) {
+                    alert('Please select at least one question to approve.');
+                    return;
+                }
+                
+                if (confirm(`Are you sure you want to approve ${selectedQuestions.length} selected question(s)?`)) {
+                    bulkApproveQuestions(selectedQuestions);
+                }
+            });
+
+            // Handle bulk redo request
+            $(document).on('click', '#bulk-redo-btn', function() {
+                const selectedQuestions = getSelectedQuestionIds();
+                if (selectedQuestions.length === 0) {
+                    alert('Please select at least one question to request redo.');
+                    return;
+                }
+                
+                const reason = prompt('Please provide feedback for why these questions need to be redone:');
+                if (reason && reason.trim()) {
+                    bulkRedoQuestions(selectedQuestions, reason.trim());
+                } else if (reason !== null) {
+                    alert('Please provide valid feedback for the redo request.');
+                }
+            });
+
+            function loadStudentsWithQuestions() {
+                $.post('ajaxhandler/manageQuestionApprovalsAjax.php', {
+                    action: 'getStudentsWithQuestions'
+                }, function(data) {
+                    if (data.success) {
+                        const selector = $('#student-selector');
+                        selector.empty();
+                        selector.append('<option value="">Select a student to review their questions...</option>');
+                        
+                        data.students.forEach(student => {
+                            const stats = `${student.total_questions} questions (${student.pending_count} pending, ${student.approved_count} approved, ${student.rejected_count} rejected)`;
+                            selector.append(`<option value="${student.student_id}">${student.student_name} - ${stats}</option>`);
+                        });
+                    } else {
+                        console.error('Error loading students:', data.error);
+                    }
+                }, 'json').fail(function(xhr, status, error) {
+                    console.error('AJAX request failed:', status, error);
+                });
+            }
+
+            function loadStudentQuestions(studentId) {
+                // Show loading spinner
+                $('#questions-list-container').show();
+                $('#questions-list').html(`
+                    <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #6b7280;">
+                        <div style="text-align: center;">
+                            <div style="width: 50px; height: 50px; border: 4px solid #e5e7eb; border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem auto;"></div>
+                            <h4 style="margin: 0 0 0.5rem 0; color: #374151;">Loading Questions...</h4>
+                            <p style="margin: 0; font-size: 0.875rem;">Please wait while we fetch the student's questions</p>
+                        </div>
+                    </div>
+                `);
+                $('#bulk-actions').hide();
+
+                $.post('ajaxhandler/manageQuestionApprovalsAjax.php', {
+                    action: 'getStudentQuestions',
+                    student_id: studentId
+                }, function(data) {
+                    if (data.success) {
+                        displayQuestions(data.questions);
+                        $('#bulk-actions').show();
+                    } else {
+                        $('#questions-list').html(`
+                            <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #dc2626;">
+                                <div style="text-align: center;">
+                                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                                    <h4 style="margin: 0 0 0.5rem 0;">Error loading questions</h4>
+                                    <p style="margin: 0;">${data.error}</p>
+                                </div>
+                            </div>
+                        `);
+                    }
+                }, 'json').fail(function() {
+                    $('#questions-list').html(`
+                        <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #dc2626;">
+                            <div style="text-align: center;">
+                                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                                <h4 style="margin: 0 0 0.5rem 0;">Connection Error</h4>
+                                <p style="margin: 0;">Failed to load questions. Please try again.</p>
+                            </div>
+                        </div>
+                    `);
+                });
+            }
+
+            function displayQuestions(questions) {
+                if (questions.length === 0) {
+                    $('#questions-list').html(`
+                        <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #6b7280;">
+                            <div style="text-align: center;">
+                                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; color: #d1d5db;"></i>
+                                <h4 style="margin: 0 0 0.5rem 0; color: #374151;">No Questions Found</h4>
+                                <p style="margin: 0;">This student hasn't submitted any questions yet</p>
+                            </div>
+                        </div>
+                    `);
+                    return;
+                }
+
+                let html = '<div style="padding: 1rem;">';
+                questions.forEach(question => {
+                const statusColor = question.approval_status === 'approved' ? '#059669' : 
+                                  question.approval_status === 'rejected' ? '#f59e0b' : '#6b7280';
+                const statusIcon = question.approval_status === 'approved' ? 'fa-check-circle' : 
+                                 question.approval_status === 'rejected' ? 'fa-redo' : 'fa-clock';
+                const statusText = question.approval_status === 'rejected' ? 'needs redo' : (question.approval_status || 'pending');                    html += `
+                        <div class="question-item" style="border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 1rem; padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                <div style="flex: 1;">
+                                    <h5 style="margin: 0 0 0.25rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;">
+                                        ${question.category} - Question ${question.question_number}
+                                    </h5>
+                                    <p style="margin: 0; color: #6b7280; font-size: 0.75rem;">
+                                        <i class="fas fa-calendar" style="margin-right: 0.25rem;"></i>
+                                        Submitted: ${new Date(question.created_at).toLocaleDateString()}
+                                    </p>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="background: ${statusColor}; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+                                        <i class="fas ${statusIcon}"></i>
+                                        ${statusText}
+                                    </span>
+                                    ${question.approval_status === 'pending' ? `<input type="checkbox" class="question-checkbox" data-question-id="${question.id}" style="margin-left: 0.5rem;">` : ''}
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <p style="margin: 0; color: #374151; font-size: 0.875rem; line-height: 1.4;">${question.question_text}</p>
+                            </div>
+                            ${question.approval_status === 'rejected' && question.rejection_reason ? `
+                                <div style="background: #fee2e2; padding: 0.5rem; border-radius: 0.25rem; margin-top: 0.5rem;">
+                                    <p style="margin: 0; color: #991b1b; font-size: 0.75rem;">
+                                        <i class="fas fa-exclamation-circle" style="margin-right: 0.25rem;"></i>
+                                        Admin feedback: ${question.rejection_reason}
+                                    </p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                $('#questions-list').html(html);
+            }
+
+            function hideQuestionsSection() {
+                $('#questions-list-container').hide();
+                $('#bulk-actions').hide();
+            }
+
+            function getSelectedQuestionIds() {
+                const selected = [];
+                $('#questions-list .question-checkbox:checked').each(function() {
+                    const questionId = $(this).data('question-id');
+                    selected.push(questionId);
+                });
+                return selected;
+            }
+
+            function bulkApproveQuestions(questionIds) {
+                // Show loading state
+                $('#bulk-approve-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Approving...');
+                
+                $.post('ajaxhandler/manageQuestionApprovalsAjax.php', {
+                    action: 'bulkApproveQuestions',
+                    question_ids: questionIds
+                }, function(data) {
+                    if (data.success) {
+                        alert(`Successfully approved ${questionIds.length} question(s).`);
+                        // Reload the current student's questions
+                        const currentStudentId = $('#student-selector').val();
+                        if (currentStudentId) {
+                            loadStudentQuestions(currentStudentId);
+                        }
+                    } else {
+                        alert('Error approving questions: ' + data.error);
+                    }
+                }, 'json').fail(function() {
+                    alert('Failed to approve questions. Please try again.');
+                }).always(function() {
+                    $('#bulk-approve-btn').prop('disabled', false).html('<i class="fas fa-check-double"></i> <span>Approve Selected</span>');
+                });
+            }
+
+            function bulkRedoQuestions(questionIds, reason) {
+                // Show loading state
+                $('#bulk-redo-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Requesting Redo...');
+                
+                $.post('ajaxhandler/manageQuestionApprovalsAjax.php', {
+                    action: 'bulkRejectQuestions',
+                    question_ids: questionIds,
+                    rejection_reason: reason
+                }, function(data) {
+                    if (data.success) {
+                        alert(`Successfully requested redo for ${questionIds.length} question(s). Students will be notified.`);
+                        // Reload the current student's questions
+                        const currentStudentId = $('#student-selector').val();
+                        if (currentStudentId) {
+                            loadStudentQuestions(currentStudentId);
+                        }
+                    } else {
+                        alert('Error requesting redo: ' + data.error);
+                    }
+                }, 'json').fail(function() {
+                    alert('Failed to request redo. Please try again.');
+                }).always(function() {
+                    $('#bulk-redo-btn').prop('disabled', false).html('<i class="fas fa-redo"></i> <span>Request Redo</span>');
+                });
+            }
+
+        });
+
+
+    </script>
 </body>
 </html>
 

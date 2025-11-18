@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
     <title>InternConnect - Student Login</title>
     <style>
@@ -158,7 +159,23 @@
                 </svg>
                 </div>
                 <h2 class="text-2xl font-bold text-gray-800 mb-2">Student Portal</h2>
-                <p class="text-gray-600">Access your account</p>
+                <p class="text-gray-600">Access Your Internship</p>
+            </div>
+
+            <!-- Login Type Navigation -->
+            <div class="mb-6">
+                <p class="text-sm text-gray-500 text-center mb-3">Choose your login type:</p>
+                <div class="flex space-x-2">
+                    <a href="index.php" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
+                        <i class="fas fa-user-tie mr-1"></i> Coordinator
+                    </a>
+                    <a href="admin.php" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
+                        <i class="fas fa-user-shield mr-1"></i> Supervisor
+                    </a>
+                    <button class="flex-1 bg-blue-100 text-blue-600 px-3 py-2 rounded-lg text-sm font-medium border border-blue-200" disabled>
+                        <i class="fas fa-user-graduate mr-1"></i> Student
+                    </button>
+                </div>
             </div>
 
         <!-- Form -->
@@ -207,14 +224,7 @@
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="mt-8 pt-6 border-t border-gray-200">
-            <div class="flex items-center justify-center space-x-6">
-                <span class="text-gray-600 text-sm">Login as:</span>
-                <a href="admin.php" class="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline transition duration-150">Supervisor</a>
-                <a href="index.php" class="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline transition duration-150">Coordinator</a>
-            </div>
-        </div>
+
     </div>
     </div>
 

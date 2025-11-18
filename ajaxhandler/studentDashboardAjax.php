@@ -162,7 +162,7 @@ switch ($action) {
             sendResponse('error', null, 'Student ID is required');
         }
         try {
-            $stmt = $dbo->conn->prepare("SELECT id AS question_id, category, question_text, question_number FROM student_questions WHERE student_id = ? ORDER BY category, question_number");
+            $stmt = $dbo->conn->prepare("SELECT id AS question_id, category, question_text, question_number, approval_status, approved_by, approval_date, rejection_reason FROM student_questions WHERE student_id = ? ORDER BY category, question_number");
             $stmt->execute([$studentId]);
             $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             sendResponse('success', $questions, 'Questions loaded');

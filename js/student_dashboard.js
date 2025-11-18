@@ -36,6 +36,62 @@ function getImageUrl(filename) {
     return getBaseUrl() + 'uploads/reports/' + f;
 }
 
+// Function to add approval status indicator next to question input
+function addApprovalStatusIndicator(questionInput, questionData) {
+    // Remove existing indicators first
+    questionInput.closest('td').find('.approval-status-indicator').remove();
+    
+    const status = questionData.approval_status || 'pending';
+    const feedback = questionData.rejection_reason;
+    
+    let statusHtml = '';
+    let statusClass = '';
+    let statusIcon = '';
+    let statusText = '';
+    
+    switch(status) {
+        case 'approved':
+            statusClass = 'approved';
+            statusIcon = 'fa-check-circle';
+            statusText = 'Approved';
+            break;
+        case 'rejected':
+            statusClass = 'rejected';
+            statusIcon = 'fa-redo';
+            statusText = 'Needs Redo';
+            break;
+        default:
+            statusClass = 'pending';
+            statusIcon = 'fa-clock';
+            statusText = 'Pending';
+    }
+    
+    statusHtml = `
+        <div class="approval-status-indicator ${statusClass}" style="margin-top: 0.5rem;">
+            <div class="status-badge" style="display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 500;">
+                <i class="fas ${statusIcon}"></i>
+                <span>${statusText}</span>
+            </div>
+            ${feedback ? `
+                <div class="admin-feedback" style="margin-top: 0.5rem; padding: 0.5rem; border-radius: 0.25rem; font-size: 0.875rem;">
+                    <strong><i class="fas fa-comment"></i> Admin Feedback:</strong>
+                    <p style="margin: 0.25rem 0 0 0; font-style: italic;">${feedback}</p>
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    // Insert after the question input
+    questionInput.after(statusHtml);
+    
+    // Disable input if question is approved (can't edit approved questions)
+    if (status === 'approved') {
+        questionInput.prop('readonly', true).css('background-color', '#f9f9f9');
+    } else {
+        questionInput.prop('readonly', false).css('background-color', '');
+    }
+}
+
 // Function to manage shown notifications using sessionStorage
 // Day navigation logic for report editor
 $(document).ready(function() {
@@ -192,88 +248,7 @@ $(document).ready(function() {
             }
         }
     });
-    // Save Questions button logic for post-assessment
-    $('#saveQuestionsBtn').on('click', function() {
-        // Show loading indicator and disable button immediately
-        const $saveBtn = $(this);
-        const originalText = $saveBtn.text();
-        $saveBtn.prop('disabled', true).html('<span class="spinner">⏳</span> Saving...');
-        
-        const categories = [
-            { id: 'sysdevCategory', prefix: 'sysdev', label: 'System Development' },
-            { id: 'researchCategory', prefix: 'research', label: 'Research' },
-            { id: 'techsupCategory', prefix: 'techsup', label: 'Technical Support' },
-            { id: 'bizopCategory', prefix: 'bizop', label: 'Business Operation' },
-            { id: 'personalSkillsCategory', prefix: 'personal', label: 'Personal and Interpersonal Skills' }
-        ];
-    // Add navigation button for Personal and Interpersonal Skills
-    $('#postAssessmentCategoryNav').append('<button type="button" class="category-nav-btn" id="personalSkillsCategoryBtn">Personal and Interpersonal Skills</button>');
-
-    // Add panel container for Personal and Interpersonal Skills
-    $('#postAssessmentTabContent').append('<div id="personalSkillsTablePanel" class="post-assessment-category-panel" style="display:none"></div>');
-
-        let questions = [];
-        let missing = [];
-        let perCategoryCount = {};
-        categories.forEach(cat => {
-            if (cat.prefix === 'personal') return; // Skip personal/interpersonal for validation
-            perCategoryCount[cat.label] = 0;
-            for (let i = 1; i <= 5; i++) {
-                const qText = $(`input[name='${cat.prefix}_q${i}']`).val();
-                if (!qText) {
-                    missing.push(`${cat.label} Question ${i}`);
-                } else {
-                    questions.push({
-                        category: cat.label,
-                        question_text: qText,
-                        question_number: i
-                    });
-                    perCategoryCount[cat.label]++;
-                }
-            }
-        });
-        let notEnough = Object.keys(perCategoryCount).filter(cat => perCategoryCount[cat] < 5);
-        if (missing.length > 0 || notEnough.length > 0) {
-            let msg = '';
-            if (notEnough.length > 0) {
-                msg += 'You must fill out 5 questions for each category:<br>' + notEnough.join(', ') + '<br>';
-            }
-            if (missing.length > 0) {
-                msg += 'Missing:<br>' + missing.join('<br>');
-            }
-            $('#postAssessmentFormMessage').html(msg).css('color', 'orange');
-            // Restore button state on validation error
-            $saveBtn.prop('disabled', false).text(originalText);
-            return;
-        }
-        // Get student_id from the hidden field
-        const student_id = $('#hiddenStudentId').val();
-        $.ajax({
-            url: 'ajaxhandler/saveStudentQuestionsAjax.php',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ student_id, questions }),
-            success: function(response) {
-                if (response.success) {
-                    $('#postAssessmentFormMessage').text('Questions saved! You can edit them before submitting ratings.').css('color', 'green');
-                    $saveBtn.prop('disabled', false).text('✅ Saved');
-                    // Reset button text after 2 seconds
-                    setTimeout(() => {
-                        $saveBtn.text(originalText);
-                    }, 2000);
-                } else {
-                    $('#postAssessmentFormMessage').text('Error: ' + (response.error || 'Unknown error')).css('color', 'red');
-                    $saveBtn.prop('disabled', false).text(originalText);
-                }
-            },
-            error: function(xhr) {
-                let msg = 'Error saving questions.';
-                if (xhr.responseJSON && xhr.responseJSON.error) msg += ' ' + xhr.responseJSON.error;
-                $('#postAssessmentFormMessage').text(msg).css('color', 'red');
-                $saveBtn.prop('disabled', false).text(originalText);
-            }
-        });
-    });
+    // Old save questions button code removed - now using enhanced Save Progress functionality
     // Strict validation and AJAX for post-assessment form
     $(document).off('submit', '#postAssessmentForm');
     $(document).on('submit', '#postAssessmentForm', function(e) {
@@ -282,8 +257,40 @@ $(document).ready(function() {
         // Show loading indicator and disable submit button immediately
         const $submitBtn = $('#submitPostAssessmentBtn, button[type="submit"]', this);
         const originalText = $submitBtn.first().text();
-        $submitBtn.prop('disabled', true).html('<span class="spinner">⏳</span> Submitting...');
-        $('#postAssessmentFormMessage').html('<span style="color:blue;font-weight:bold;">⏳ Submitting post-assessment, please wait...</span>');
+        $submitBtn.prop('disabled', true).html('<span class="spinner">⏳</span> Checking approval...');
+        $('#postAssessmentFormMessage').html('<span style="color:blue;font-weight:bold;">⏳ Checking question approval status...</span>');
+        
+        // First check if questions are approved before allowing submission
+        $.ajax({
+            url: 'ajaxhandler/checkQuestionApprovalStatusAjax.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function(approvalResponse) {
+                if (!approvalResponse.success) {
+                    $('#postAssessmentFormMessage').html('<span style="color:red;font-weight:bold;">❌ Error checking approval status. Please try again.</span>');
+                    $submitBtn.prop('disabled', false).text(originalText);
+                    return;
+                }
+                
+                if (!approvalResponse.can_submit_assessment) {
+                    $('#postAssessmentFormMessage').html(`<span style="color:orange;font-weight:bold;">⚠️ ${approvalResponse.message}</span>`);
+                    $submitBtn.prop('disabled', false).text(originalText);
+                    return;
+                }
+                
+                // Approval check passed, proceed with assessment submission
+                $submitBtn.html('<span class="spinner">⏳</span> Submitting...');
+                $('#postAssessmentFormMessage').html('<span style="color:blue;font-weight:bold;">⏳ Submitting post-assessment, please wait...</span>');
+                submitAssessment($submitBtn, originalText);
+            },
+            error: function() {
+                $('#postAssessmentFormMessage').html('<span style="color:red;font-weight:bold;">❌ Error checking approval status. Please try again.</span>');
+                $submitBtn.prop('disabled', false).text(originalText);
+            }
+        });
+    });
+    
+    function submitAssessment($submitBtn, originalText) {
         
         const categories = [
             { id: 'sysdevCategory', prefix: 'sysdev', label: 'System Development' },
@@ -377,7 +384,7 @@ $(document).ready(function() {
                 $submitBtn.prop('disabled', false).text(originalText);
             }
         });
-    });
+    }
     // Post-Assessment Category Toggle Logic
     const postCategories = [
         {
@@ -465,7 +472,12 @@ $(document).ready(function() {
                         else if (q.category === 'Business Operation') prefix = 'bizop';
                         else if (q.category === 'Personal and Interpesona Skill') prefix = 'personal';
                         if (prefix) {
-                            $(`input[name='${prefix}_q${q.question_number}']`).val(q.question_text);
+                            const questionInput = $(`input[name='${prefix}_q${q.question_number}']`);
+                            questionInput.val(q.question_text);
+                            
+                            // Add approval status indicator
+                            addApprovalStatusIndicator(questionInput, q);
+                            
                             // Build map: question_id -> question_number
                             questionIdMap[prefix][q.question_id] = q.question_number;
                         }
@@ -3327,6 +3339,467 @@ function loadStudentEvaluationAnswersAndRatings() {
 
     // Initial load for student evaluation tab
     loadStudentEvaluationQuestions();
+
+    // Enhanced Post-Assessment Management
+    function enhancePostAssessment() {
+        // Update personal skills progress tracking
+        function updateSkillsProgress() {
+            const totalSkills = $('#personalSkillsTableBody tr').length;
+            const ratedSkills = $('#personalSkillsTableBody input[type="radio"]:checked').length;
+            $('#skillsProgress').text(`${ratedSkills} of ${totalSkills} skills rated`);
+            
+            // Update progress percentage
+            if (totalSkills > 0) {
+                const percentage = (ratedSkills / totalSkills) * 100;
+                const progressColor = percentage === 100 ? '#28a745' : percentage > 50 ? '#ffc107' : '#6c757d';
+                $('#skillsProgress').css('color', progressColor);
+                
+                if (percentage === 100) {
+                    showAssessmentMessage('All skills have been rated! You can now submit your assessment.', 'success');
+                }
+            }
+        }
+
+        // Enhanced message display
+        function showAssessmentMessage(text, type = 'info') {
+            const icons = {
+                'success': 'fa-check-circle',
+                'error': 'fa-exclamation-circle',
+                'info': 'fa-info-circle',
+                'warning': 'fa-exclamation-triangle'
+            };
+            
+            const messageHtml = `
+                <div class="message ${type}">
+                    <i class="fas ${icons[type]}"></i>
+                    <span>${text}</span>
+                </div>
+            `;
+            
+            $('#postAssessmentFormMessage').html(messageHtml);
+            
+            // Auto-hide success/info messages after 5 seconds
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    $('#postAssessmentFormMessage').fadeOut(500);
+                }, 5000);
+            }
+        }
+
+        // Enhanced save progress functionality - saves ALL categories
+        $('#saveProgressBtn').off('click').on('click', function() {
+            const $btn = $(this);
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+            
+            // Save all categories
+            saveAllCategories($btn);
+        });
+
+        function saveAllCategories($btn) {
+            let completedSaves = 0;
+            let totalSaves = 0;
+            let errors = [];
+            let successes = [];
+
+            // First save personal skills ratings if any are selected
+            const personalRatingsCount = $('#personalSkillsTableBody input[type="radio"]:checked').length;
+            if (personalRatingsCount > 0) {
+                totalSaves++;
+                savePersonalSkillsProgressSilent()
+                    .then(() => {
+                        successes.push('Personal Skills');
+                        completedSaves++;
+                        checkAllSavesComplete();
+                    })
+                    .catch((error) => {
+                        errors.push('Personal Skills: ' + error);
+                        completedSaves++;
+                        checkAllSavesComplete();
+                    });
+            }
+
+            // Save questions for all other categories
+            const categories = ['0', '1', '2', '3']; // sysdev, research, techsup, bizop
+            categories.forEach(categoryIndex => {
+                const category = ['sysdev', 'research', 'techsup', 'bizop'][categoryIndex];
+                const questionsCount = $(`input[name^="${category}_q"]`).filter(function() {
+                    return $(this).val().trim() !== '';
+                }).length;
+
+                if (questionsCount > 0) {
+                    totalSaves++;
+                    saveCategoryQuestionsSilent(categoryIndex)
+                        .then(() => {
+                            successes.push(getCategoryName(category));
+                            completedSaves++;
+                            checkAllSavesComplete();
+                        })
+                        .catch((error) => {
+                            errors.push(getCategoryName(category) + ': ' + error);
+                            completedSaves++;
+                            checkAllSavesComplete();
+                        });
+                }
+            });
+
+            // If no data to save
+            if (totalSaves === 0) {
+                showAssessmentMessage('No progress to save. Please create questions or rate skills first.', 'warning');
+                resetButton($btn);
+                return;
+            }
+
+            function checkAllSavesComplete() {
+                if (completedSaves === totalSaves) {
+                    if (errors.length === 0) {
+                        showAssessmentMessage(`All progress saved successfully! (${successes.join(', ')})`, 'success');
+                    } else if (successes.length === 0) {
+                        showAssessmentMessage(`Error saving progress: ${errors.join('; ')}`, 'error');
+                    } else {
+                        showAssessmentMessage(`Partially saved. Success: ${successes.join(', ')}. Errors: ${errors.join('; ')}`, 'warning');
+                    }
+                    resetButton($btn);
+                }
+            }
+        }
+
+        function savePersonalSkillsProgress($btn) {
+            const ratings = {};
+            $('#personalSkillsTableBody input[type="radio"]:checked').each(function() {
+                const questionId = $(this).data('question-id');
+                ratings[questionId] = $(this).val();
+            });
+
+            if (Object.keys(ratings).length === 0) {
+                showAssessmentMessage('No ratings to save. Please rate at least one skill.', 'warning');
+                resetButton($btn);
+                return;
+            }
+
+            savePersonalSkillsProgressSilent()
+                .then(() => {
+                    showAssessmentMessage('Personal skills saved successfully!', 'success');
+                    updateSkillsProgress();
+                    resetButton($btn);
+                })
+                .catch((error) => {
+                    showAssessmentMessage('Error saving progress: ' + error, 'error');
+                    resetButton($btn);
+                });
+        }
+
+        function savePersonalSkillsProgressSilent() {
+            return new Promise((resolve, reject) => {
+
+                // Prepare JSON data for personal skills
+                const questions = [];
+                $('#personalSkillsTableBody input[type="radio"]:checked').each(function() {
+                    const $row = $(this).closest('tr');
+                    const questionText = $row.find('td:first').text().trim();
+                    const questionId = $(this).data('question-id');
+                    const rating = parseInt($(this).val());
+                    const questionNumber = $(this).attr('name').match(/\d+/)?.[0] || 1;
+                    
+                    questions.push({
+                        category: 'Personal and Interpersonal Skills',
+                        question_text: questionText,
+                        question_number: parseInt(questionNumber),
+                        self_rating: rating
+                    });
+                });
+
+                const jsonData = {
+                    questions: questions
+                };
+
+                $.ajax({
+                    url: 'ajaxhandler/savePostAssessmentAjax.php',
+                    type: 'POST',
+                    data: JSON.stringify(jsonData),
+                    contentType: 'application/json',
+                    success: function(response) {
+                        try {
+                            const result = typeof response === 'string' ? JSON.parse(response) : response;
+                            if (result.success) {
+                                updateSkillsProgress();
+                                resolve();
+                            } else {
+                                reject(result.message || 'Unknown error');
+                            }
+                        } catch (e) {
+                            resolve();
+                        }
+                    },
+                    error: function() {
+                        reject('Network error');
+                    }
+                });
+            });
+        }
+
+        function saveCategoryQuestions(categoryIndex, $btn) {
+            saveCategoryQuestionsSilent(categoryIndex)
+                .then(() => {
+                    const categoryNames = ['sysdev', 'research', 'techsup', 'bizop'];
+                    const category = categoryNames[categoryIndex];
+                    showAssessmentMessage(`${getCategoryName(category)} questions saved successfully!`, 'success');
+                    resetButton($btn);
+                })
+                .catch((error) => {
+                    showAssessmentMessage('Error saving questions: ' + error, 'error');
+                    resetButton($btn);
+                });
+        }
+
+        function saveCategoryQuestionsSilent(categoryIndex) {
+            return new Promise((resolve, reject) => {
+                const categoryNames = ['sysdev', 'research', 'techsup', 'bizop'];
+                const category = categoryNames[categoryIndex];
+                
+                if (!category) {
+                    reject('Invalid category selected');
+                    return;
+                }
+
+                const questions = {};
+                $(`input[name^="${category}_q"]`).each(function() {
+                    const questionNum = $(this).attr('name').replace(`${category}_q`, '');
+                    const questionText = $(this).val().trim();
+                    if (questionText) {
+                        questions[questionNum] = questionText;
+                    }
+                });
+
+                if (Object.keys(questions).length === 0) {
+                    reject('No questions to save');
+                    return;
+                }
+
+                // Use correct AJAX endpoint for saving questions
+                $.ajax({
+                    url: 'ajaxhandler/saveStudentQuestionsAjax.php',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        student_id: $('#hiddenStudentId').val(),
+                        questions: Object.keys(questions).map(num => ({
+                            category: getCategoryName(category),
+                            question_text: questions[num],
+                            question_number: parseInt(num)
+                        }))
+                    }),
+                    success: function(response) {
+                        try {
+                            const result = typeof response === 'string' ? JSON.parse(response) : response;
+                            if (result.success) {
+                                resolve();
+                            } else {
+                                reject(result.error || 'Unknown error');
+                            }
+                        } catch (e) {
+                            resolve();
+                        }
+                    },
+                    error: function() {
+                        reject('Network error');
+                    }
+                });
+            });
+        }
+
+        function getCategoryName(category) {
+            const names = {
+                'sysdev': 'System Development',
+                'research': 'Research',
+                'techsup': 'Technical Support',
+                'bizop': 'Business Operation'
+            };
+            return names[category] || category;
+        }
+
+        function resetButton($btn) {
+            setTimeout(() => {
+                $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Save Questions');
+            }, 1000);
+        }
+
+        // Enhanced personal skills table rendering
+        function enhancePersonalSkillsTable() {
+            // Add event listeners for progress tracking
+            $(document).on('change', '#personalSkillsTableBody input[type="radio"]', function() {
+                updateSkillsProgress();
+                
+                // Add visual feedback
+                const row = $(this).closest('tr');
+                row.addClass('skill-rated');
+            });
+        }
+
+        // Remove auto-save to prevent conflicts - users will save manually
+
+        // Initialize enhancements
+        enhancePersonalSkillsTable();
+        
+        // Check submission status and question approval on load
+        checkPostAssessmentStatus();
+        checkQuestionApprovalStatus();
+    }
+
+    function checkPostAssessmentStatus() {
+        $.ajax({
+            url: 'ajaxhandler/checkPostAssessmentSubmittedAjax.php',
+            type: 'GET',
+            dataType: 'json',
+            data: { student_id: $('#hiddenStudentId').val() },
+            success: function(response) {
+                if (response.submitted) {
+                    $('#postAssessmentForm input, #postAssessmentForm textarea, #postAssessmentForm button').prop('disabled', true);
+                    $('#postAssessmentFormMessage').html(`
+                        <div class="message info">
+                            <i class="fas fa-info-circle"></i>
+                            <span>You have already submitted your post-assessment. The form is now read-only.</span>
+                        </div>
+                    `);
+                }
+            }
+        });
+    }
+
+    function checkQuestionApprovalStatus() {
+        $.ajax({
+            url: 'ajaxhandler/checkQuestionApprovalStatusAjax.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    displayApprovalStatus(response);
+                    
+                    // Update submit button state based on approval
+                    if (!response.can_submit_assessment) {
+                        $('#submitPostAssessmentBtn').prop('disabled', true)
+                            .removeClass('btn-primary')
+                            .addClass('btn-secondary')
+                            .html('<i class="fas fa-lock"></i> Assessment Locked');
+                    } else {
+                        $('#submitPostAssessmentBtn').prop('disabled', false)
+                            .removeClass('btn-secondary')
+                            .addClass('btn-primary')
+                            .html('<i class="fas fa-paper-plane"></i> Submit Assessment');
+                    }
+                }
+            },
+            error: function() {
+                console.error('Failed to check question approval status');
+            }
+        });
+    }
+
+    function displayApprovalStatus(response) {
+        const { status_counts, message, can_submit_assessment } = response;
+        
+        let statusClass = 'warning';
+        let iconClass = 'fa-exclamation-triangle';
+        
+        if (can_submit_assessment) {
+            statusClass = 'approved';
+            iconClass = 'fa-check-circle';
+        } else if (status_counts.rejected > 0) {
+            statusClass = 'rejected';
+            iconClass = 'fa-times-circle';
+        } else if (status_counts.pending > 0) {
+            statusClass = 'pending';
+            iconClass = 'fa-clock';
+        }
+        
+        const statusHtml = `
+            <div class="approval-status-container">
+                <div class="approval-status ${statusClass}">
+                    <i class="fas ${iconClass}"></i>
+                    <span>${message}</span>
+                </div>
+            </div>
+        `;
+        
+        // Insert status message before the form actions
+        $('.form-actions-wrapper').before(statusHtml);
+    }
+
+    function checkQuestionApprovalStatus() {
+        $.ajax({
+            url: 'ajaxhandler/checkQuestionApprovalStatusAjax.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    displayApprovalStatus(response);
+                }
+            },
+            error: function() {
+                console.log('Error checking question approval status');
+            }
+        });
+    }
+
+    function displayApprovalStatus(approvalData) {
+        let statusHtml = '';
+        const statusCounts = approvalData.status_counts;
+        
+        if (statusCounts.total === 0) {
+            statusHtml = `
+                <div class="approval-status warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Please create and save questions first before submitting your assessment.</span>
+                </div>
+            `;
+            $('#submitPostAssessmentBtn').prop('disabled', true).html('<i class="fas fa-lock"></i> Submit Questions First');
+        } else if (statusCounts.pending > 0) {
+            statusHtml = `
+                <div class="approval-status pending">
+                    <i class="fas fa-clock"></i>
+                    <span>⏳ ${statusCounts.pending} question(s) pending approval. Assessment submission blocked until admin approval.</span>
+                </div>
+            `;
+            $('#submitPostAssessmentBtn').prop('disabled', true).html('<i class="fas fa-lock"></i> Pending Approval');
+        } else if (statusCounts.rejected > 0) {
+            statusHtml = `
+                <div class="approval-status rejected">
+                    <i class="fas fa-times-circle"></i>
+                    <span>❌ ${statusCounts.rejected} question(s) rejected. Please revise and resubmit rejected questions.</span>
+                </div>
+            `;
+            $('#submitPostAssessmentBtn').prop('disabled', true).html('<i class="fas fa-edit"></i> Revise Questions');
+        } else if (statusCounts.approved === statusCounts.total && !approvalData.can_submit_assessment) {
+            statusHtml = `
+                <div class="approval-status warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Please ensure you have submitted enough questions before proceeding.</span>
+                </div>
+            `;
+            $('#submitPostAssessmentBtn').prop('disabled', true).html('<i class="fas fa-lock"></i> Insufficient Questions');
+        } else if (approvalData.can_submit_assessment) {
+            statusHtml = `
+                <div class="approval-status approved">
+                    <i class="fas fa-check-circle"></i>
+                    <span>✅ All questions approved! You can now submit your assessment.</span>
+                </div>
+            `;
+            $('#submitPostAssessmentBtn').prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Submit Assessment');
+        }
+        
+        // Show approval status above the form buttons
+        if ($('#approvalStatusDisplay').length === 0) {
+            $('.form-actions-wrapper').before('<div id="approvalStatusDisplay" class="approval-status-container"></div>');
+        }
+        $('#approvalStatusDisplay').html(statusHtml);
+    }
+
+    // Initialize enhanced post-assessment when tab is clicked
+    $('#postAssessmentTabBtn').off('click.enhanced').on('click.enhanced', function() {
+        setTimeout(() => {
+            enhancePostAssessment();
+        }, 200);
+    });
+
 });
 
 

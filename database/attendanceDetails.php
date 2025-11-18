@@ -109,6 +109,14 @@ class attendanceDetails
             $stmt = $dbo->conn->prepare("DELETE FROM student_questions WHERE student_id = :internId");
             $stmt->execute([":internId" => $internId]);
             
+            // Delete from report_images (weekly report images)
+            $stmt = $dbo->conn->prepare("DELETE FROM report_images WHERE report_id IN (SELECT report_id FROM weekly_reports WHERE interns_id = :internId)");
+            $stmt->execute([":internId" => $internId]);
+            
+            // Delete from weekly_reports (student's weekly reports)
+            $stmt = $dbo->conn->prepare("DELETE FROM weekly_reports WHERE interns_id = :internId");
+            $stmt->execute([":internId" => $internId]);
+            
             // Delete from intern_details
             $stmt = $dbo->conn->prepare("DELETE FROM intern_details WHERE INTERNS_ID = :internId");
             $stmt->execute([":internId" => $internId]);
@@ -962,17 +970,25 @@ class attendanceDetails
 
                     // Delete from all related tables in correct order (child tables first)
                     $deleteTables = [
-                        // Tables using STUDENT_ID
+                        // Tables using STUDENT_ID (uppercase)
                         ['table' => 'coordinator_evaluation', 'column' => 'STUDENT_ID', 'value' => $studentId],
                         ['table' => 'student_evaluation', 'column' => 'STUDENT_ID', 'value' => $studentId],
-                        ['table' => 'post_assessment', 'column' => 'STUDENT_ID', 'value' => $studentId],
                         ['table' => 'pre_assessment', 'column' => 'STUDENT_ID', 'value' => $studentId],
-                        ['table' => 'student_deletion_log', 'column' => 'STUDENT_ID', 'value' => $studentId]
+                        ['table' => 'student_deletion_log', 'column' => 'STUDENT_ID', 'value' => $studentId],
+                        
+                        // Tables using student_id (lowercase)
+                        ['table' => 'post_assessment', 'column' => 'student_id', 'value' => $studentId],
+                        ['table' => 'post_analysis_summary', 'column' => 'student_id', 'value' => $studentId],
+                        ['table' => 'student_questions', 'column' => 'student_id', 'value' => $studentId]
                     ];
 
                     // Add tables using INTERNS_ID if we found it
                     if ($internsId) {
-                        $deleteTables[] = ['table' => 'attendance', 'column' => 'INTERNS_ID', 'value' => $internsId];
+                        // Note: report_images will be cascade deleted when weekly_reports are deleted due to foreign key
+                        $deleteTables[] = ['table' => 'notifications', 'column' => 'receiver_id', 'value' => $internsId];
+                        $deleteTables[] = ['table' => 'weekly_reports', 'column' => 'interns_id', 'value' => $internsId];
+                        $deleteTables[] = ['table' => 'pending_attendance', 'column' => 'INTERNS_ID', 'value' => $internsId];
+                        $deleteTables[] = ['table' => 'interns_attendance', 'column' => 'INTERNS_ID', 'value' => $internsId];
                         $deleteTables[] = ['table' => 'intern_details', 'column' => 'INTERNS_ID', 'value' => $internsId];
                     }
 

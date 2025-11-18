@@ -405,6 +405,9 @@ $(function () {
         } else if (tabId === 'reportsTab') {
             $('#reportsTabContent').show();
             $('#reportsContainer').show();
+        } else if (tabId === 'questionApprovalsTab') {
+            $('#questionApprovalsTabContent').show();
+            // Note: AJAX functionality is now handled by inline JS in admindashboard.php
                // Automatically load the current week's report when Reports tab is opened
                const today = new Date().toISOString().split('T')[0];
                const dateInput = document.getElementById('dateFilter');
@@ -2324,4 +2327,415 @@ function showCompanyDetailsModal(company) {
     
     $('#companyDetailsModalBody').html(modalContent);
     $('#companyDetailsModal').fadeIn();
+}
+
+// Question Approvals Management
+function initQuestionApprovals() {
+    // Load students with questions when initializing
+    loadStudentsWithQuestions();
+    
+    // Refresh button
+    $('#refresh-questions').off('click').on('click', function() {
+        loadStudentsWithQuestions();
+    });
+    
+    // Student selection handler
+    $('#student-selector').off('change').on('change', function() {
+        const selectedStudentId = $(this).val();
+        if (selectedStudentId) {
+            loadStudentQuestions(selectedStudentId);
+        } else {
+            $('#questions-list-container').hide();
+        }
+    });
+    
+    // Bulk action handlers
+    $('#bulk-approve-btn').off('click').on('click', function() {
+        bulkApproveQuestions();
+    });
+    
+    $('#bulk-reject-btn').off('click').on('click', function() {
+        bulkRejectQuestions();
+    });
+}
+
+function loadQuestionApprovalStats() {
+    $.ajax({
+        url: 'ajaxhandler/manageQuestionApprovalsAjax.php?action=getApprovalStats',
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                $('#pendingQuestionsCount').text(response.stats.pending);
+                $('#approvedQuestionsCount').text(response.stats.approved);
+                $('#rejectedQuestionsCount').text(response.stats.rejected);
+            }
+        },
+        error: function() {
+            console.error('Failed to load approval stats');
+        }
+    });
+}
+
+function loadStudentsWithQuestions() {
+    $('#student-selector').html('<option value="">Loading students...</option>');
+    $('#questions-list-container').hide();
+    
+    $.ajax({
+        url: 'ajaxhandler/manageQuestionApprovalsAjax.php',
+        type: 'POST',
+        data: { action: 'getStudentsWithQuestions' },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                populateStudentSelector(response.students);
+            } else {
+                const errorMsg = response.error.includes('HTE') 
+                    ? 'You are not assigned to any HTE. Please contact system administrator.' 
+                    : response.error;
+                $('#student-selector').html(`<option value="">Error: ${errorMsg}</option>`);
+            }
+        },
+        error: function() {
+            $('#student-selector').html('<option value="">Failed to load students</option>');
+        }
+    });
+}
+
+function populateStudentSelector(students) {
+    let html = '<option value="">Select a student to review their questions...</option>';
+    
+    if (students.length === 0) {
+        html += '<option value="">No students with questions found</option>';
+    } else {
+        students.forEach(function(student) {
+            const statusInfo = `(${student.pending_count} pending, ${student.approved_count} approved, ${student.rejected_count} rejected)`;
+            html += `<option value="${student.INTERNS_ID}">${student.student_name} - ${student.question_count} questions ${statusInfo}</option>`;
+        });
+    }
+    
+    $('#student-selector').html(html);
+}
+
+function loadStudentQuestions(studentId) {
+    $('#questions-list-container').show();
+    $('#questions-list').html(`
+        <div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #6b7280;">
+            <div style="text-align: center;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                <p>Loading student questions...</p>
+            </div>
+        </div>
+    `);
+    
+    $.ajax({
+        url: 'ajaxhandler/manageQuestionApprovalsAjax.php',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            action: 'getStudentQuestions',
+            student_id: studentId
+        }),
+        success: function(response) {
+            if (response.success) {
+                displayQuestionsList(response.questions, response.questions[0]?.student_name || 'Unknown Student');
+            } else {
+                $('#questions-list').html(`
+                    <div style="padding: 2rem; text-align: center; color: #ef4444;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>Error loading questions: ${response.error}</p>
+                    </div>
+                `);
+            }
+        },
+        error: function() {
+            $('#questions-list').html(`
+                <div style="padding: 2rem; text-align: center; color: #ef4444;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>Failed to load questions. Please try again.</p>
+                </div>
+            `);
+        }
+    });
+}
+
+function displayQuestionsList(questions, studentName = null) {
+    const container = studentName ? '#questions-list' : '#questionsList';
+    
+    if (questions.length === 0) {
+        const message = studentName 
+            ? `No questions found for ${studentName}.`
+            : 'No questions pending approval at the moment.';
+        
+        $(container).html(`
+            <div style="padding: 3rem; text-align: center; color: #6b7280;">
+                <i class="fas fa-info-circle" style="font-size: 3rem; margin-bottom: 1rem; color: #6b7280;"></i>
+                <h3 style="margin: 0 0 0.5rem 0; color: #374151;">${studentName ? 'No Questions' : 'All Caught Up!'}</h3>
+                <p style="margin: 0;">${message}</p>
+            </div>
+        `);
+        return;
+    }
+    
+    // Show bulk action buttons if there are questions
+    if (studentName) {
+        const hasPendingQuestions = questions.some(q => q.approval_status === 'pending');
+        if (hasPendingQuestions) {
+            $('#bulk-actions').show();
+        } else {
+            $('#bulk-actions').hide();
+        }
+    }
+    
+    let html = '<div style="padding: 0;">';
+    
+    questions.forEach(function(question, index) {
+        let statusBadge = '';
+        switch(question.approval_status) {
+            case 'rejected':
+                statusBadge = '<span style="background: #fef2f2; color: #dc2626; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.75rem;">Rejected</span>';
+                break;
+            case 'approved':
+                statusBadge = '<span style="background: #f0f9ff; color: #0284c7; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.75rem;">Approved</span>';
+                break;
+            default:
+                statusBadge = '<span style="background: #fef3c7; color: #d97706; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.75rem;">Pending</span>';
+        }
+        
+        // Add checkbox for pending questions when in student view
+        const checkboxHtml = (studentName && question.approval_status === 'pending') 
+            ? `<input type="checkbox" class="question-checkbox" data-question-id="${question.id}" style="margin-right: 0.5rem;">`
+            : '';
+            
+        html += `
+            <div style="padding: 1.5rem; border-bottom: 1px solid #e5e7eb; ${index === questions.length - 1 ? 'border-bottom: none;' : ''}">
+                <div style="display: flex; justify-content: between; align-items: flex-start; margin-bottom: 1rem;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                            ${checkboxHtml}
+                            <h4 style="margin: 0; color: #374151; font-size: 1.1rem;">${studentName || question.student_name}</h4>
+                            ${statusBadge}
+                        </div>
+                        <p style="margin: 0; color: #6b7280; font-size: 0.875rem;">
+                            <strong>${question.category}</strong> - Question ${question.question_number} | 
+                            Submitted: ${new Date(question.created_at).toLocaleDateString()}
+                            ${question.approved_by ? ` | Approved by: Admin` : ''}
+                            ${question.approval_date ? ` on ${new Date(question.approval_date).toLocaleDateString()}` : ''}
+                            <br><small><i class="fas fa-info-circle"></i> This is a unique question created by this student for their post-assessment</small>
+                        </p>
+                    </div>
+                </div>
+                
+                <div style="background: #f9fafb; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                    <p style="margin: 0; color: #374151; line-height: 1.5;">${question.question_text}</p>
+                </div>
+                
+                ${question.rejection_reason ? `
+                    <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 1rem; margin-bottom: 1rem;">
+                        <p style="margin: 0; color: #7f1d1d; font-weight: 500;">Rejection Reason:</p>
+                        <p style="margin: 0.25rem 0 0 0; color: #991b1b;">${question.rejection_reason}</p>
+                    </div>
+                ` : ''}
+                
+                ${question.approval_status === 'pending' ? `
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button onclick="approveQuestion(${question.id})" style="background: #22c55e; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button onclick="showRejectModal(${question.id}, '${studentName || question.student_name}', '${question.category}')" style="background: #ef4444; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    $(container).html(html);
+}
+
+function approveQuestion(questionId) {
+    $.ajax({
+        url: 'ajaxhandler/manageQuestionApprovalsAjax.php',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            action: 'approveQuestion',
+            question_id: questionId
+        }),
+        success: function(response) {
+            if (response.success) {
+                // Refresh the data
+                loadStudentsWithQuestions();
+                
+                // Reload current student questions if one is selected
+                const selectedStudentId = $('#student-selector').val();
+                if (selectedStudentId) {
+                    loadStudentQuestions(selectedStudentId);
+                }
+                
+                // Show success message
+                alert('Question approved successfully!');
+            } else {
+                alert('Error approving question: ' + response.error);
+            }
+        },
+        error: function() {
+            alert('Error approving question. Please try again.');
+        }
+    });
+}
+
+function showRejectModal(questionId, studentName, category) {
+    const modalHtml = `
+        <div id="rejectQuestionModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+            <div style="background: white; padding: 2rem; border-radius: 0.5rem; width: 90%; max-width: 500px;">
+                <h3 style="margin: 0 0 1rem 0; color: #374151;">Reject Question</h3>
+                <p style="margin: 0 0 1rem 0; color: #6b7280;">Student: <strong>${studentName}</strong> | Category: <strong>${category}</strong></p>
+                
+                <label style="display: block; margin-bottom: 0.5rem; color: #374151; font-weight: 500;">Rejection Reason:</label>
+                <textarea id="rejectionReason" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; min-height: 100px; resize: vertical;" placeholder="Please provide a clear reason for rejection..."></textarea>
+                
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button onclick="closeRejectModal()" style="background: #6b7280; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer;">Cancel</button>
+                    <button onclick="submitRejection(${questionId})" style="background: #ef4444; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer;">Reject Question</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    $('body').append(modalHtml);
+}
+
+function closeRejectModal() {
+    $('#rejectQuestionModal').remove();
+}
+
+function submitRejection(questionId) {
+    const reason = $('#rejectionReason').val().trim();
+    if (!reason) {
+        alert('Please provide a rejection reason.');
+        return;
+    }
+    
+    $.ajax({
+        url: 'ajaxhandler/manageQuestionApprovalsAjax.php',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            action: 'rejectQuestion',
+            question_id: questionId,
+            rejection_reason: reason
+        }),
+        success: function(response) {
+            if (response.success) {
+                closeRejectModal();
+                loadStudentsWithQuestions();
+                
+                // Reload current student questions if one is selected
+                const selectedStudentId = $('#student-selector').val();
+                if (selectedStudentId) {
+                    loadStudentQuestions(selectedStudentId);
+                }
+                
+                alert('Question rejected successfully!');
+            } else {
+                alert('Error rejecting question: ' + response.error);
+            }
+        },
+        error: function() {
+            alert('Error rejecting question. Please try again.');
+        }
+    });
+}
+
+function bulkApproveQuestions() {
+    const checkedBoxes = $('.question-checkbox:checked');
+    if (checkedBoxes.length === 0) {
+        alert('Please select at least one question to approve.');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to approve ${checkedBoxes.length} selected questions?`)) {
+        return;
+    }
+    
+    const questionIds = [];
+    checkedBoxes.each(function() {
+        questionIds.push($(this).data('question-id'));
+    });
+    
+    $.ajax({
+        url: 'ajaxhandler/manageQuestionApprovalsAjax.php',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            action: 'bulkApproveQuestions',
+            question_ids: questionIds
+        }),
+        success: function(response) {
+            if (response.success) {
+                loadStudentsWithQuestions();
+                
+                const selectedStudentId = $('#student-selector').val();
+                if (selectedStudentId) {
+                    loadStudentQuestions(selectedStudentId);
+                }
+                
+                alert(`${questionIds.length} questions approved successfully!`);
+            } else {
+                alert('Error approving questions: ' + response.error);
+            }
+        },
+        error: function() {
+            alert('Error approving questions. Please try again.');
+        }
+    });
+}
+
+function bulkRejectQuestions() {
+    const checkedBoxes = $('.question-checkbox:checked');
+    if (checkedBoxes.length === 0) {
+        alert('Please select at least one question to reject.');
+        return;
+    }
+    
+    const reason = prompt(`Please provide a rejection reason for ${checkedBoxes.length} selected questions:`);
+    if (!reason || !reason.trim()) {
+        return;
+    }
+    
+    const questionIds = [];
+    checkedBoxes.each(function() {
+        questionIds.push($(this).data('question-id'));
+    });
+    
+    $.ajax({
+        url: 'ajaxhandler/manageQuestionApprovalsAjax.php',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            action: 'bulkRejectQuestions',
+            question_ids: questionIds,
+            rejection_reason: reason.trim()
+        }),
+        success: function(response) {
+            if (response.success) {
+                loadStudentsWithQuestions();
+                
+                const selectedStudentId = $('#student-selector').val();
+                if (selectedStudentId) {
+                    loadStudentQuestions(selectedStudentId);
+                }
+                
+                alert(`${questionIds.length} questions rejected successfully!`);
+            } else {
+                alert('Error rejecting questions: ' + response.error);
+            }
+        },
+        error: function() {
+            alert('Error rejecting questions. Please try again.');
+        }
+    });
 }

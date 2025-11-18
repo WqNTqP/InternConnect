@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
     <title>InternConnect - Coordinator Login</title>
     <style>
@@ -69,11 +70,7 @@
                         <span class="text-3xl font-bold text-blue-600">Intern</span><span class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400">Connect</span>
                     </span>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <a href="admin.php" class="text-gray-600 hover:text-blue-600">Supervisor</a>
-                    <span class="text-gray-300">|</span>
-                    <a href="student_login.php" class="text-gray-600 hover:text-blue-600">Student</a>
-                </div>
+
             </div>
         </nav>
     </div>
@@ -161,6 +158,22 @@
                 <p class="text-gray-600">Sign in as Coordinator</p>
             </div>
 
+            <!-- Login Type Navigation -->
+            <div class="mb-6">
+                <p class="text-sm text-gray-500 text-center mb-3">Choose your login type:</p>
+                <div class="flex space-x-2">
+                    <button class="flex-1 bg-blue-100 text-blue-600 px-3 py-2 rounded-lg text-sm font-medium border border-blue-200" disabled>
+                        <i class="fas fa-user-tie mr-1"></i> Coordinator
+                    </button>
+                    <a href="admin.php" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
+                        <i class="fas fa-user-shield mr-1"></i> Supervisor
+                    </a>
+                    <a href="student_login.php" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
+                        <i class="fas fa-user-graduate mr-1"></i> Student
+                    </a>
+                </div>
+            </div>
+
         <!-- Form -->
         <div class="space-y-6">
             <div class="relative">
@@ -206,14 +219,7 @@
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="mt-8 pt-6 border-t border-gray-200">
-            <div class="flex items-center justify-center space-x-6">
-                <span class="text-gray-600 text-sm">Login as:</span>
-                <a href="admin.php" class="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline transition duration-150">Supervisor</a>
-                <a href="student_login.php" class="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline transition duration-150">Student</a>
-            </div>
-        </div>
+
     </div>
 
     </div>

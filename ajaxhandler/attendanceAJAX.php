@@ -319,64 +319,7 @@ function createPDFReport($list, $filename) {
     if (isset($_POST['action'])) {
         $action = $_POST['action'];
 
-        if ($action == "addHTE") {
-            // Collect all necessary data from POST
-            $name = $_POST['NAME'] ?? null;
-            $industry = $_POST['INDUSTRY'] ?? null;
-            $address = $_POST['ADDRESS'] ?? null;
-            $contact_email = $_POST['CONTACT_EMAIL'] ?? null;
-            $contact_person = $_POST['CONTACT_PERSON'] ?? null;
-            $contact_number = $_POST['CONTACT_NUMBER'] ?? null;
-            $coordinator_id = $_SESSION['current_user'] ?? null;
-            $session_id = $_POST['sessionId'] ?? null;
 
-            // Handle logo upload with safe fallback
-            $logo_filename = null;
-            if (isset($_FILES['LOGO']) && $_FILES['LOGO']['error'] === UPLOAD_ERR_OK) {
-                // Include safe upload configuration
-                require_once $basePath . '/config/safe_upload.php';
-                
-                $uploadResult = safeUploadImage(
-                    $_FILES['LOGO']['tmp_name'],
-                    $_FILES['LOGO']['name'],
-                    'uploads',
-                    'hte_logos',
-                    true // Require Cloudinary - fail if not available to prevent data loss
-                );
-                
-                if ($uploadResult['success']) {
-                    $logo_filename = $uploadResult['url']; // Always use URL since we require Cloudinary
-                    error_log("Logo uploaded to Cloudinary: " . $logo_filename);
-                } else {
-                    error_log("Logo upload failed (Cloudinary required): " . ($uploadResult['error'] ?? 'Unknown error'));
-                    echo json_encode(['success' => false, 'message' => 'Upload failed: ' . ($uploadResult['error'] ?? 'Cloud storage unavailable')]);
-                    return;
-                }
-            }
-
-            // Add these lines for debugging
-            error_log("Received POST data: " . print_r($_POST, true));
-            error_log("Coordinator ID: " . $coordinator_id);
-            error_log("Session ID: " . $session_id);
-            error_log("Logo filename: " . $logo_filename);
-
-            // Check for required fields
-            if (!$name || !$industry || !$address || !$contact_email || !$contact_person || !$contact_number || !$coordinator_id || !$session_id) {
-                echo json_encode(['success' => false, 'message' => 'Error: All fields are required.']);
-                return; // Stop execution if validation fails
-            }
-
-            $dbo = new Database();
-            $hdo = new attendanceDetails();
-
-            try {
-                $new_hte_id = $hdo->addHTE($dbo, $name, $industry, $address, $contact_email, $contact_person, $contact_number, $coordinator_id, $session_id, $logo_filename);
-                echo json_encode(['success' => true, 'message' => 'HTE added successfully', 'new_hte_id' => $new_hte_id]);
-            } catch (Exception $e) {
-                error_log("Exception caught: " . $e->getMessage());
-                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
-            }
-        }
 
         if ($action == "addHTEControl") {
             // Collect all necessary data from POST

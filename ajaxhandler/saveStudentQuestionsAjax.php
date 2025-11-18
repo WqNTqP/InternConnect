@@ -23,18 +23,19 @@ try {
             $checkStmt->execute([$student_id, $q['category'], $q['question_number']]);
             $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
             if ($existing) {
-                // Update existing question
-                $updateStmt = $conn->prepare("UPDATE student_questions SET question_text = ? WHERE id = ?");
+                // Update existing question and reset approval status to pending
+                $updateStmt = $conn->prepare("UPDATE student_questions SET question_text = ?, approval_status = 'pending', approved_by = NULL, approval_date = NULL, rejection_reason = NULL WHERE id = ?");
                 $updateStmt->execute([$q['question_text'], $existing['id']]);
                 $savedQuestions[] = [
                     'id' => $existing['id'],
                     'question_text' => $q['question_text'],
                     'category' => $q['category'],
-                    'question_number' => $q['question_number']
+                    'question_number' => $q['question_number'],
+                    'approval_status' => 'pending'
                 ];
             } else {
-                // Insert new question
-                $stmt = $conn->prepare("INSERT INTO student_questions (student_id, category, question_text, question_number) VALUES (?, ?, ?, ?)");
+                // Insert new question with pending approval status
+                $stmt = $conn->prepare("INSERT INTO student_questions (student_id, category, question_text, question_number, approval_status) VALUES (?, ?, ?, ?, 'pending')");
                 $stmt->execute([
                     $student_id,
                     $q['category'],
@@ -45,7 +46,8 @@ try {
                     'id' => $conn->lastInsertId(),
                     'question_text' => $q['question_text'],
                     'category' => $q['category'],
-                    'question_number' => $q['question_number']
+                    'question_number' => $q['question_number'],
+                    'approval_status' => 'pending'
                 ];
             }
     }

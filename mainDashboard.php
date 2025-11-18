@@ -298,8 +298,8 @@ function generateStudentFilterOptions($coordinatorId) {
                         <div id="classlistarea" class="bg-gray-50 rounded-lg shadow-sm p-3 md:p-4">
                             <div class="flex flex-col">
                                 <label class="text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
-                                <select id="company-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <option value="">Loading companies...</option>
+                                <select id="company-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" disabled>
+                                    <option value="">Select a session first</option>
                                 </select>
                             </div>
                         </div>
@@ -317,7 +317,15 @@ function generateStudentFilterOptions($coordinatorId) {
 
                     <!-- Right Column - Main Content -->
                     <div class="w-full lg:w-3/4 xl:w-4/5">
-                        <div id="studentlistarea" class="bg-white rounded-lg shadow-md p-3 md:p-4"><div class="text-gray-500 text-center py-8">No students found.</div></div>
+                        <div id="studentlistarea" class="bg-white rounded-lg shadow-md p-3 md:p-4">
+                            <div class="bg-gray-50 rounded-lg shadow-sm p-8">
+                                <div class="text-center text-gray-500">
+                                    <i class="fas fa-calendar-alt text-4xl mb-4 text-gray-400"></i>
+                                    <h3 class="text-lg font-medium text-gray-700 mb-2">No Session Selected</h3>
+                                    <p class="text-sm">Please select a session first to view companies and students.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -333,9 +341,14 @@ function generateStudentFilterOptions($coordinatorId) {
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                             <div class="space-y-2">
                                 <label for="filterStudent" class="block text-sm font-medium text-gray-700">Student:</label>
-                                <select id="filterStudent" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <?php echo generateStudentFilterOptions($cdrid); ?>
-                                </select>
+                                <input type="text" id="filterStudent" list="studentFilterList" 
+                                       placeholder="Type student name or select from list" 
+                                       autocomplete="off" 
+                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                       title="Start typing to see available students">
+                                <datalist id="studentFilterList">
+                                    <option value="">All Students</option>
+                                </datalist>
                             </div>
                             <div class="space-y-2">
                                 <label for="filterDate" class="block text-sm font-medium text-gray-700">Date:</label>
