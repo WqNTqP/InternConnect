@@ -41,15 +41,30 @@ class Student {
                         error_log("Comparison: '" . $inputPassword . "' vs '" . $storedStudentId . "'");
                     }
                 } else {
-                    // If password is set, use the actual password
+                    // If password is set, check if it's hashed or plain text
                     error_log("Password set, checking against stored password: '" . $storedPassword . "'");
                     error_log("Input password: '" . $inputPassword . "'");
-                    if ($inputPassword === $storedPassword) {
-                        $isValid = true;
-                        error_log("Password matches stored password");
+                    
+                    // Check if password is hashed (starts with $2y$ for PASSWORD_DEFAULT)
+                    if (strpos($storedPassword, '$2y$') === 0) {
+                        // Password is hashed, use password_verify
+                        $isValid = password_verify($inputPassword, $storedPassword);
+                        error_log("Hashed password verification: " . ($isValid ? 'SUCCESS' : 'FAILED'));
                     } else {
-                        error_log("Password does not match stored password");
-                        error_log("Comparison: '" . $inputPassword . "' vs '" . $storedPassword . "'");
+                        // Password is plain text (legacy), do direct comparison
+                        $isValid = ($inputPassword === $storedPassword);
+                        error_log("Plain text password verification: " . ($isValid ? 'SUCCESS' : 'FAILED'));
+                        
+                        // Optional: Auto-upgrade plain text password to hashed on successful login
+                        if ($isValid) {
+                            $hashedPassword = password_hash($inputPassword, PASSWORD_DEFAULT);
+                            $updateStmt = $dbo->conn->prepare("UPDATE interns_details SET PASSWORD = :hash WHERE INTERNS_ID = :id");
+                            $updateStmt->execute([
+                                ":hash" => $hashedPassword,
+                                ":id" => $result['INTERNS_ID']
+                            ]);
+                            error_log("Auto-upgraded plain text password to hash");
+                        }
                     }
                 }
                 
@@ -73,8 +88,11 @@ class Student {
     
     public function updatePassword($dbo, $studentId, $newPassword) {
         try {
+            // Hash the new password for security
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+            
             $stmt = $dbo->conn->prepare("UPDATE interns_details SET PASSWORD = ? WHERE INTERNS_ID = ?");
-            $stmt->execute([$newPassword, $studentId]);
+            $stmt->execute([$hashedPassword, $studentId]);
             
             if ($stmt->rowCount() > 0) {
                 return ["success" => true, "message" => "Password updated successfully"];
@@ -83,6 +101,39 @@ class Student {
             }
         } catch (PDOException $e) {
             return ["success" => false, "message" => "Database error: " . $e->getMessage()];
+        }
+    }
+    
+    public function verifyCurrentPassword($dbo, $studentId, $currentPassword) {
+        try {
+            $stmt = $dbo->conn->prepare("SELECT STUDENT_ID, PASSWORD FROM interns_details WHERE INTERNS_ID = ?");
+            $stmt->execute([$studentId]);
+            $student = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$student) {
+                return false;
+            }
+            
+            $storedPassword = $student['PASSWORD'];
+            $studentIdPassword = $student['STUDENT_ID'];
+            
+            // If no password is set, check against STUDENT_ID (temporary password)
+            if ($storedPassword === null || $storedPassword === '') {
+                return ($currentPassword === $studentIdPassword);
+            }
+            
+            // If password is set, check if it's hashed or plain text
+            if (strpos($storedPassword, '$2y$') === 0) {
+                // Password is hashed, use password_verify
+                return password_verify($currentPassword, $storedPassword);
+            } else {
+                // Password is plain text (legacy), do direct comparison
+                return ($currentPassword === $storedPassword);
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Error verifying current password: " . $e->getMessage());
+            return false;
         }
     }
 }

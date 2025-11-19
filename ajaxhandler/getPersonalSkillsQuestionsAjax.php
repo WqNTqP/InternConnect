@@ -8,7 +8,7 @@ require_once $basePath . "/database/database.php";
 try {
     $db = new Database();
     $conn = $db->conn;
-    $stmt = $conn->prepare("SELECT question_id, question_text FROM evaluation_questions WHERE category = 'Personal and Interpersonal Skills' AND status = 'active'");
+    $stmt = $conn->prepare("SELECT question_id, question_text FROM evaluation_questions WHERE category = 'Personal and Interpersonal Skills' AND status = 1");
     $stmt->execute();
     $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
     echo json_encode(["success" => true, "questions" => $questions]);

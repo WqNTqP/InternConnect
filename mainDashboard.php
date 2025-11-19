@@ -446,10 +446,7 @@ function generateStudentFilterOptions($coordinatorId) {
                             class="mr-2 text-gray-700 font-medium">Category:</label>
                         <select id="questionCategoryDropdown"
                             class="border border-gray-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
-                            <option value="Soft Skills">Soft Skills</option>
-                            <option value="Communication Skills">Communication Skills</option>
-                            <option value="Technical Skills">Technical Skills</option>
-                            <option value="Personal and Interpersonal Skills">Personal and Interpersonal Skills</option>
+                            <option value="">Loading categories...</option>
                         </select>
                     </div>
                     <div class="flex items-center mb-2">
@@ -1582,7 +1579,9 @@ function generateStudentFilterOptions($coordinatorId) {
                     // Load students for Review tab using old system
                     loadReviewStudents();
                     // Keep loading evaluation questions (for the questions tab)
-                    loadEvaluationQuestions();
+                    // Note: Categories and questions are loaded by loadQuestionCategories()
+                    // Load categories for the dropdown
+                    loadQuestionCategories();
                     dataLoaded.evaluation = true;
                 }
                 
@@ -1700,48 +1699,168 @@ function generateStudentFilterOptions($coordinatorId) {
                 });
             }
             
-            // Function to load evaluation questions dynamically
-            function loadEvaluationQuestions() {
+            // Cache for questions to avoid repeated AJAX calls
+            let cachedQuestions = null;
+            
+            // Function to load categories and questions (only once)
+            function loadQuestionCategories() {
+                console.log("Loading question categories...");
                 $.ajax({
-                    url: "ajaxhandler/attendanceAJAX.php",
-                    type: "POST",
+                    url: "ajaxhandler/coordinatorEvaluationQuestionsAjax.php?action=getCategories",
+                    type: "GET",
                     dataType: "json",
-                    data: {action: "getEvaluationQuestions"},
+                    success: function(response) {
+                        console.log("Categories response:", response);
+                        if (response && response.success && response.categories && response.categories.length > 0) {
+                            let optionsHTML = '<option value="">All Categories</option>';
+                            response.categories.forEach(function(category) {
+                                optionsHTML += `<option value="${category}">${category}</option>`;
+                            });
+                            console.log("Setting dropdown HTML:", optionsHTML);
+                            // Temporarily disable change handler to prevent triggering during setup
+                            $('#questionCategoryDropdown').off('change');
+                            $('#questionCategoryDropdown').html(optionsHTML);
+                            console.log("Dropdown HTML set. Current value:", $('#questionCategoryDropdown').html());
+                            
+                            // Re-enable change handler after a small delay
+                            setTimeout(function() {
+                                $('#questionCategoryDropdown').on('change', function() {
+                                    const selectedCategory = $(this).val();
+                                    console.log('Selected category:', selectedCategory || 'All');
+                                    // Use cached filtering instead of AJAX
+                                    filterAndDisplayQuestions(selectedCategory);
+                                });
+                            }, 100);
+                            
+                            // Load questions for all categories initially (only once)
+                            setTimeout(function() {
+                                loadEvaluationQuestionsByCategory('');
+                            }, 200);
+                        } else {
+                            console.log("No categories found in response");
+                            $('#questionCategoryDropdown').html('<option value="">No categories found</option>');
+                        }
+                    },
+                    error: function(e) {
+                        console.error("Error loading categories:", e);
+                        $('#questionCategoryDropdown').html('<option value="">Error loading categories</option>');
+                    }
+                });
+            }
+            
+            // Function to filter and display cached questions (no AJAX)
+            function filterAndDisplayQuestions(selectedCategory) {
+                if (!cachedQuestions || cachedQuestions.length === 0) {
+                    console.log("No cached questions available, loading from server...");
+                    loadEvaluationQuestionsByCategory(selectedCategory);
+                    return;
+                }
+                
+                console.log('Filtering', cachedQuestions.length, 'cached questions for category:', selectedCategory || 'All');
+                
+                let filteredQuestions = cachedQuestions;
+                
+                // Filter by category if one is selected
+                if (selectedCategory && selectedCategory !== '') {
+                    filteredQuestions = cachedQuestions.filter(function(question) {
+                        return question.category === selectedCategory;
+                    });
+                }
+                
+                displayQuestions(filteredQuestions, selectedCategory);
+            }
+            
+            // Function to display questions in the UI
+            function displayQuestions(questions, categoryName) {
+                let $targetElement = $('#questionsByCategory ul');
+                
+                // If ul doesn't exist, create it
+                if ($targetElement.length === 0) {
+                    console.log('Creating missing ul element in #questionsByCategory');
+                    $('#questionsByCategory').html('<ul class="space-y-3"></ul>');
+                    $targetElement = $('#questionsByCategory ul');
+                }
+                
+                if (questions.length === 0) {
+                    const noQuestionsHTML = `
+                        <li class="text-center py-8 text-gray-500">
+                            <i class="fas fa-question-circle text-2xl text-gray-400 mb-2"></i>
+                            <p>No questions found for this category.</p>
+                        </li>
+                    `;
+                    $targetElement.html(noQuestionsHTML);
+                    console.log('No questions found for category:', categoryName || 'All');
+                    return;
+                }
+                
+                let questionsHTML = '';
+                questions.forEach(function(question) {
+                    questionsHTML += `
+                        <li class="bg-white rounded-lg shadow p-4">
+                            <div class="text-sm text-gray-500 mb-1">${question.category}</div>
+                            <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="${question.question_id}">${question.question_text}</div>
+                        </li>
+                    `;
+                });
+                
+                $targetElement.html(questionsHTML);
+                console.log('Displayed', questions.length, 'questions for category:', categoryName || 'All');
+            }
+
+            // Note: Old loadEvaluationQuestions function removed - using loadEvaluationQuestionsByCategory instead
+            
+            // Function to load evaluation questions by category (AJAX - only called once)
+            function loadEvaluationQuestionsByCategory(selectedCategory) {
+                // Check if the target container exists
+                if ($('#questionsByCategory').length === 0) {
+                    console.log('#questionsByCategory container not found, skipping load');
+                    return;
+                }
+                
+                // If we already have cached questions, use local filtering
+                if (cachedQuestions && cachedQuestions.length > 0) {
+                    console.log('Using cached questions, no AJAX call needed');
+                    filterAndDisplayQuestions(selectedCategory);
+                    return;
+                }
+                
+                console.log('Loading questions from server (first time)...');
+                $.ajax({
+                    url: "ajaxhandler/coordinatorEvaluationQuestionsAjax.php",
+                    type: "GET",
+                    dataType: "json",
                     success: function(response) {
                         if (response && response.success && response.questions && response.questions.length > 0) {
-                            let questionsHTML = '';
-                            response.questions.forEach(function(question) {
-                                questionsHTML += `
-                                    <li class="bg-white rounded-lg shadow p-4">
-                                        <div class="text-gray-700 text-base font-medium" contenteditable="true" data-questionid="${question.question_id}">${question.question_text}</div>
-                                    </li>
-                                `;
-                            });
+                            // Cache the questions for future use
+                            cachedQuestions = response.questions;
+                            console.log('Cached', cachedQuestions.length, 'questions for future filtering');
                             
-                            $('#questionsByCategory ul').html(questionsHTML);
-                            console.log('Loaded', response.questions.length, 'evaluation questions');
+                            // Display the questions using local filtering
+                            filterAndDisplayQuestions(selectedCategory);
                         } else {
-                            const noQuestionsHTML = `
-                                <li class="text-center py-8 text-gray-500">
-                                    <i class="fas fa-question-circle text-2xl text-gray-400 mb-2"></i>
-                                    <p>No evaluation questions found.</p>
-                                </li>
-                            `;
-                            $('#questionsByCategory ul').html(noQuestionsHTML);
+                            console.log('No questions received from server');
+                            displayQuestions([], selectedCategory);
                         }
                     },
                     error: function(e) {
                         console.error("Error loading evaluation questions:", e);
+                        let $ajaxErrorTarget = $('#questionsByCategory ul');
+                        if ($ajaxErrorTarget.length === 0) {
+                            $('#questionsByCategory').html('<ul class="space-y-3"></ul>');
+                            $ajaxErrorTarget = $('#questionsByCategory ul');
+                        }
                         const errorHTML = `
                             <li class="text-center py-8 text-red-500">
                                 <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
                                 <p>Error loading questions. Please try again.</p>
                             </li>
                         `;
-                        $('#questionsByCategory ul').html(errorHTML);
+                        $ajaxErrorTarget.html(errorHTML);
                     }
                 });
             }
+            
+            // Note: Category dropdown change handler is now set up dynamically in loadQuestionCategories()
             
             // Load initial data for default tab
             loadCoordinatorCompanies();
@@ -1947,8 +2066,7 @@ function generateStudentFilterOptions($coordinatorId) {
                 }
                 // Load students for Review tab
                 loadReviewStudents();
-                // Load evaluation questions
-                loadEvaluationQuestions();
+                // Note: Categories already loaded in previous call
                 
                 // Ensure All Questions sub-tab is properly activated
                 $('#evalQuestionsTabBtn').addClass('active');

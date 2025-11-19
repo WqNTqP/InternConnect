@@ -196,10 +196,33 @@ $superadminName = $_SESSION['current_user_name'] ?? 'Super Admin';
                 <div class="table-wrapper">
                     <table>
                         <thead>
-                            <tr><th>HTE ID</th><th>Name</th><th>Industry</th><th>Address</th><th>Contact Email</th><th>Contact Person</th><th>Contact Number</th></tr>
+                            <tr><th>HTE ID</th><th>Name</th><th>Industry</th><th>Address</th><th>Contact Email</th><th>Contact Person</th><th>Contact Number</th><th>MOA Status</th><th>View MOA</th></tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($htes as $hte): ?>
+                            <?php foreach ($htes as $hte): 
+                                // Determine MOA status
+                                $moaStatus = 'No MOA';
+                                $statusClass = 'status-no-moa';
+                                
+                                if (!empty($hte['MOA_FILE_URL'])) {
+                                    $currentDate = date('Y-m-d');
+                                    $endDate = $hte['MOA_END_DATE'];
+                                    
+                                    if (empty($endDate)) {
+                                        $moaStatus = 'Active';
+                                        $statusClass = 'status-active';
+                                    } elseif ($endDate < $currentDate) {
+                                        $moaStatus = 'Expired';
+                                        $statusClass = 'status-expired';
+                                    } elseif ($endDate <= date('Y-m-d', strtotime('+30 days'))) {
+                                        $moaStatus = 'Expiring Soon';
+                                        $statusClass = 'status-expiring';
+                                    } else {
+                                        $moaStatus = 'Active';
+                                        $statusClass = 'status-active';
+                                    }
+                                }
+                            ?>
                                 <tr>
                                     <td><?php echo htmlspecialchars($hte['HTE_ID'] ?? ''); ?></td>
                                     <td><?php echo htmlspecialchars($hte['NAME'] ?? ''); ?></td>
@@ -208,6 +231,23 @@ $superadminName = $_SESSION['current_user_name'] ?? 'Super Admin';
                                     <td><?php echo htmlspecialchars($hte['CONTACT_EMAIL'] ?? ''); ?></td>
                                     <td><?php echo htmlspecialchars($hte['CONTACT_PERSON'] ?? ''); ?></td>
                                     <td><?php echo htmlspecialchars($hte['CONTACT_NUMBER'] ?? ''); ?></td>
+                                    <td>
+                                        <span class="moa-status <?php echo $statusClass; ?>">
+                                            <?php echo $moaStatus; ?>
+                                        </span>
+                                        <?php if (!empty($hte['MOA_END_DATE'])): ?>
+                                            <br><small>Expires: <?php echo date('M d, Y', strtotime($hte['MOA_END_DATE'])); ?></small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($hte['MOA_FILE_URL'])): ?>
+                                            <button class="btn-view-moa" onclick="window.open('<?php echo htmlspecialchars($hte['MOA_FILE_URL']); ?>', '_blank')">
+                                                📄 View PDF
+                                            </button>
+                                        <?php else: ?>
+                                            <span class="no-moa-text">No MOA uploaded</span>
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

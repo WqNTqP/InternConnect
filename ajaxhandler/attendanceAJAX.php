@@ -764,7 +764,7 @@ if ($action == "deleteStudents") {
         
         try {
             // Fetch active evaluation questions from database
-            $sql = "SELECT question_id, category, question_text FROM evaluation_questions WHERE status = 'active' ORDER BY question_id";
+            $sql = "SELECT question_id, category, question_text FROM evaluation_questions WHERE status = 1 ORDER BY question_id";
             $stmt = $dbo->conn->prepare($sql);
             $stmt->execute();
             $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);

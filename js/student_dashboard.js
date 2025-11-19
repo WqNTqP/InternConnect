@@ -102,6 +102,17 @@ $(document).ready(function() {
 
     // Render Personal and Interpersonal Skills questions in the table
     function renderPersonalSkillsTable() {
+        // Show loading spinner in the personal skills table
+        const loadingHTML = `
+            <tr><td colspan="6">
+                <div class="eval-loading-spinner">
+                    <div class="eval-spinner"></div>
+                    <div class="eval-loading-text">Loading personal skills questions...</div>
+                </div>
+            </td></tr>
+        `;
+        $('#personalSkillsTable tbody').html(loadingHTML);
+        
         $.ajax({
             url: 'ajaxhandler/getPersonalSkillsQuestionsAjax.php',
             type: 'GET',
@@ -184,6 +195,15 @@ $(document).ready(function() {
     });
     // Load Personal and Interpersonal Skills questions and render table
     function loadPersonalSkillsTable() {
+        // Show loading spinner in the personal skills panel
+        const loadingHTML = `
+            <div class="eval-loading-spinner">
+                <div class="eval-spinner"></div>
+                <div class="eval-loading-text">Loading personal skills questions...</div>
+            </div>
+        `;
+        $('#personalSkillsTablePanel').html(loadingHTML);
+        
         $.ajax({
             url: 'ajaxhandler/getPersonalSkillsQuestionsAjax.php',
             type: 'GET',
@@ -518,6 +538,20 @@ $(document).ready(function() {
         console.log('Category dropdown changed to:', selectedValue);
         if (selectedValue !== null && selectedValue !== undefined) {
             currentCategoryIdx = parseInt(selectedValue);
+            
+            // Show loading if switching to Personal Skills category (index 4)
+            if (currentCategoryIdx === 4) {
+                const loadingHTML = `
+                    <tr><td colspan="6">
+                        <div class="eval-loading-spinner">
+                            <div class="eval-spinner"></div>
+                            <div class="eval-loading-text">Switching to personal skills...</div>
+                        </div>
+                    </td></tr>
+                `;
+                $('#personalSkillsTable tbody').html(loadingHTML);
+            }
+            
             showPostCategory(currentCategoryIdx);
         }
     });
@@ -533,12 +567,28 @@ $(document).ready(function() {
         $('#postAssessmentTabBtn').removeClass('active');
         $('#preAssessmentTab').show();
         $('#postAssessmentTab').hide();
+        
+        // Show loading and reload questions if switching to pre-assessment
+        showEvaluationLoading('Refreshing questions...');
+        setTimeout(function() {
+            loadStudentEvaluationQuestions();
+        }, 100);
     });
     $('#postAssessmentTabBtn').on('click', function() {
         $(this).addClass('active');
         $('#preAssessmentTabBtn').removeClass('active');
         $('#preAssessmentTab').hide();
         $('#postAssessmentTab').show();
+        
+        // Show loading and reload post-assessment data
+        showPostAssessmentLoading('Loading post-assessment...');
+        setTimeout(function() {
+            loadPersonalSkillsTable();
+            // Re-enable dropdown after a short delay
+            setTimeout(function() {
+                $('#categoryDropdown').prop('disabled', false);
+            }, 500);
+        }, 200);
     });
 
     // Pre-assessment category dropdown functionality
@@ -1184,9 +1234,29 @@ $(function(e) {
         loadAvailableYears();
     }
 
+    // Function to show loading spinner in question containers
+    function showEvaluationLoading(message = 'Loading questions...') {
+        const loadingHTML = `
+            <div class="eval-loading-spinner">
+                <div class="eval-spinner"></div>
+                <div class="eval-loading-text">${message}</div>
+            </div>
+        `;
+        $('#softSkillQuestions').html(loadingHTML);
+        $('#commSkillQuestions').html(loadingHTML);
+        $('#techSkillQuestions').html(loadingHTML);
+        
+        // Disable dropdown during loading
+        $('#preAssessmentCategoryDropdown').prop('disabled', true);
+    }
+
     // Load all active questions for student evaluation
     function loadStudentEvaluationQuestions() {
         const studentId = $('#hiddenStudentId').val();
+        
+        // Show loading spinners immediately
+        showEvaluationLoading();
+        
         // First, check if student has submitted answers
         $.ajax({
             url: 'ajaxhandler/studentEvaluationAjax.php',

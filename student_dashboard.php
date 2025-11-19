@@ -1243,6 +1243,40 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
     <input type="hidden" id="hiddenSessionId" value="<?php echo htmlspecialchars($sessionId ?? ''); ?>">
     <input type="hidden" id="hiddenHteId" value="<?php echo htmlspecialchars($hteId ?? ''); ?>">
 
+    <style>
+    /* Loading spinner for evaluation questions */
+    .eval-loading-spinner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        text-align: center;
+        color: #666;
+    }
+    
+    .eval-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #007bff;
+        border-radius: 50%;
+        animation: eval-spin 1s linear infinite;
+        margin-bottom: 16px;
+    }
+    
+    @keyframes eval-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .eval-loading-text {
+        font-size: 14px;
+        font-weight: 500;
+        margin-top: 8px;
+    }
+    </style>
+
     <script src="js/jquery.js"></script>
     <script src="js/student_dashboard.js"></script>
 

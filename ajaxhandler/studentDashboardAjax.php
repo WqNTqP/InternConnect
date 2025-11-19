@@ -629,38 +629,12 @@ switch ($action) {
                 sendResponse('error', null, 'Student not found');
             }
 
-            // Verify current password - check both actual password and temporary STUDENT_ID password
-            $isValid = false;
-
-            // Debug logging
-            error_log("Current password verification:");
-            error_log("PASSWORD field: " . json_encode($student['PASSWORD']));
-            error_log("STUDENT_ID: " . json_encode($student['STUDENT_ID']));
-            error_log("Input currentPassword: " . json_encode($currentPassword));
-
-            if ($student['PASSWORD'] === null || $student['PASSWORD'] === '') {
-                // If no password is set, use student ID as temporary password
-                error_log("No password set, checking against STUDENT_ID");
-                if ($currentPassword === $student['STUDENT_ID']) {
-                    $isValid = true;
-                    error_log("Password matches STUDENT_ID");
-                } else {
-                    error_log("Password does not match STUDENT_ID");
-                    error_log("Comparison: '" . $currentPassword . "' vs '" . $student['STUDENT_ID'] . "'");
-                }
-            } else {
-                // If password is set, use the actual password
-                error_log("Password set, checking against stored password");
-                if ($currentPassword === $student['PASSWORD']) {
-                    $isValid = true;
-                    error_log("Password matches stored password");
-                } else {
-                    error_log("Password does not match stored password");
-                    error_log("Comparison: '" . $currentPassword . "' vs '" . $student['PASSWORD'] . "'");
-                }
+            // Verify current password using the improved method from Student class
+            $isValid = $sdo->verifyCurrentPassword($dbo, $studentId, $currentPassword);
+            
+            if (!$isValid) {
+                sendResponse('error', null, 'Current password is incorrect');
             }
-
-
 
             // Update password
             $result = $sdo->updatePassword($dbo, $studentId, $newPassword);

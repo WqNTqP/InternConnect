@@ -40,7 +40,7 @@ try {
 
     // Step 3: Check evaluation_questions table
     echo "<h3>Step 3: Check evaluation_questions table</h3>";
-    $stmtEQ = $dbo->conn->prepare("SELECT COUNT(*) as count FROM evaluation_questions WHERE status = 'active'");
+            $stmtEQ = $dbo->conn->prepare("SELECT COUNT(*) as count FROM evaluation_questions WHERE status = 1");
     $stmtEQ->execute();
     $eqCount = $stmtEQ->fetch(PDO::FETCH_ASSOC);
     echo "<p>Active evaluation questions: " . $eqCount['count'] . "</p>";

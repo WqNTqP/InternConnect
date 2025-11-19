@@ -1525,13 +1525,7 @@ function loadPostAssessmentEvaluation(studentId) {
         // Show the selected tab content
         if (this.id === 'evalQuestionsTabBtn') {
             $('#evalQuestionsTabContent').show();
-            // Ensure evaluation questions are loaded when All Questions tab is clicked
-            if ($('#questionsByCategory ul').children().length === 0 || $('#questionsByCategory ul').find('.text-center').length > 0) {
-                // Questions not loaded yet or showing loading/error state, load them
-                if (typeof loadEvaluationQuestions === 'function') {
-                    loadEvaluationQuestions();
-                }
-            }
+            // Questions are now loaded via mainDashboard.php's loadQuestionCategories system
         } else if (this.id === 'rateTabBtn') {
             $('#rateTabContent').show();
             // Show loading state and load pre-assessment data
@@ -4519,38 +4513,7 @@ $(document).on("submit", "#coordinatorForm", function(e) {
 
 
 // --- Coordinator Evaluation Question Management ---
-
-// Fetch and display all evaluation questions
-function loadEvaluationQuestions() {
-    $.ajax({
-        url: 'ajaxhandler/coordinatorEvaluationQuestionsAjax.php',
-        type: 'GET',
-        dataType: 'json',
-        success: function(response) {
-            if (response.success && response.questions) {
-                let html = '<table class="table"><thead><tr><th>Category</th><th>Question</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
-                response.questions.forEach(function(q) {
-                    html += `<tr>
-                        <td>${q.category}</td>
-                        <td>${q.question_text}</td>
-                        <td>${q.status}</td>
-                        <td>
-                            <button class="btn-edit-question" data-id="${q.question_id}">Edit</button>
-                            <button class="btn-deactivate-question" data-id="${q.question_id}">Deactivate</button>
-                        </td>
-                    </tr>`;
-                });
-                html += '</tbody></table>';
-                $('#evaluationQuestionsList').html(html);
-            } else {
-                $('#evaluationQuestionsList').html('<p>No questions found.</p>');
-            }
-        },
-        error: function() {
-            $('#evaluationQuestionsList').html('<p>Error loading questions.</p>');
-        }
-    });
-}
+// Note: Question loading is now handled by mainDashboard.php's loadQuestionCategories system
 
 // Add new evaluation question
 $('#addEvaluationQuestionForm').on('submit', function(e) {
@@ -4565,7 +4528,10 @@ $('#addEvaluationQuestionForm').on('submit', function(e) {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                loadEvaluationQuestions();
+                // Refresh questions via mainDashboard.php system
+                if (typeof loadQuestionCategories === 'function') {
+                    loadQuestionCategories();
+                }
                 $('#addEvaluationQuestionForm')[0].reset();
             } else {
                 alert('Failed to add question.');
@@ -4596,7 +4562,10 @@ $(document).on('click', '.btn-edit-question, .btn-deactivate-question', function
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                loadEvaluationQuestions();
+                // Refresh questions via mainDashboard.php system
+                if (typeof loadQuestionCategories === 'function') {
+                    loadQuestionCategories();
+                }
             } else {
                 alert('Failed to update question.');
             }

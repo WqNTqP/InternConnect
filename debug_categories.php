@@ -1,63 +1,41 @@
 <?php
-require_once 'database/database.php';
+require_once 'config/path_config.php';
+require_once PathConfig::getDatabasePath();
 
 $db = new Database();
 
-echo "<h2>Debug: Categories for Student Evaluation IDs 584-593</h2>\n";
+echo "=== DEBUGGING CATEGORY MISMATCH ===\n\n";
 
-// Check the categories for student evaluation IDs 584-593
-$sql = "SELECT se.id, se.question_id, eq.category, eq.question_text 
-        FROM student_evaluation se 
-        JOIN evaluation_questions eq ON se.question_id = eq.question_id 
-        WHERE se.id BETWEEN 584 AND 593 
-        ORDER BY se.id";
-
+// 1. Check what categories are returned by getCategories endpoint
+echo "1. Categories from getCategories endpoint:\n";
+$sql = "SELECT DISTINCT category FROM evaluation_questions WHERE question_id IS NOT NULL ORDER BY category";
 $stmt = $db->conn->prepare($sql);
 $stmt->execute();
-$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$categories = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-echo "<table border='1' style='border-collapse: collapse;'>\n";
-echo "<tr><th>Student Eval ID</th><th>Question ID</th><th>Category</th><th>Question Text</th></tr>\n";
-
-foreach ($results as $row) {
-    echo "<tr>";
-    echo "<td>{$row['id']}</td>";
-    echo "<td>{$row['question_id']}</td>";
-    echo "<td><strong>{$row['category']}</strong></td>";
-    echo "<td>" . substr($row['question_text'], 0, 50) . "...</td>";
-    echo "</tr>\n";
+foreach ($categories as $cat) {
+    echo "   - '$cat'\n";
 }
+echo "\n";
 
-echo "</table>\n";
+// 2. Check what questions and their categories are returned
+echo "2. Questions and their categories:\n";
+$sql = "SELECT question_id, category, question_text FROM evaluation_questions WHERE question_id IS NOT NULL ORDER BY question_id";
+$stmt = $db->conn->prepare($sql);
+$stmt->execute();
+$questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-echo "<h2>Category Distribution</h2>\n";
-$categories = [];
-foreach ($results as $row) {
-    $cat = $row['category'];
-    if (!isset($categories[$cat])) {
-        $categories[$cat] = 0;
-    }
-    $categories[$cat]++;
+foreach ($questions as $q) {
+    echo "   - ID: {$q['question_id']}, Category: '{$q['category']}', Text: " . substr($q['question_text'], 0, 50) . "...\n";
 }
+echo "\n";
 
-foreach ($categories as $category => $count) {
-    echo "<p><strong>$category:</strong> $count questions</p>\n";
-}
-
-echo "<h2>Category Matching Test</h2>\n";
-foreach ($categories as $category => $count) {
-    $cat = strtolower(trim($category));
-    echo "<p>Category: '$category' (lowercase: '$cat')</p>\n";
-    
-    if (strpos($cat, 'soft') !== false) {
-        echo "<p style='color: green;'>✓ Matches SOFT pattern</p>\n";
-    } elseif (strpos($cat, 'communication') !== false || strpos($cat, 'comm') !== false) {
-        echo "<p style='color: blue;'>✓ Matches COMMUNICATION pattern</p>\n";
-    } elseif (strpos($cat, 'technical') !== false) {
-        echo "<p style='color: orange;'>✓ Matches TECHNICAL pattern</p>\n";
-    } else {
-        echo "<p style='color: red;'>✗ NO MATCH for pre-assessment</p>\n";
-    }
-    echo "<br>\n";
+// 3. Check for any whitespace or encoding issues
+echo "3. Category analysis:\n";
+foreach ($categories as $cat) {
+    echo "   - Category: '$cat'\n";
+    echo "     Length: " . strlen($cat) . "\n";
+    echo "     Trimmed: '" . trim($cat) . "'\n";
+    echo "     Hex: " . bin2hex($cat) . "\n\n";
 }
 ?>

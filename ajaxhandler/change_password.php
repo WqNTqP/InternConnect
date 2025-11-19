@@ -54,14 +54,76 @@ try {
             exit;
         }
         
-        if ($user['PASSWORD'] !== $current_password) {
+        // Verify current password - handle both hashed and plain text
+        $storedPassword = $user['PASSWORD'];
+        $passwordMatch = false;
+        
+        if (strpos($storedPassword, '$2y$') === 0) {
+            // Password is hashed, use password_verify
+            $passwordMatch = password_verify($current_password, $storedPassword);
+        } else {
+            // Password is plain text (legacy), do direct comparison
+            $passwordMatch = ($storedPassword === $current_password);
+        }
+        
+        if (!$passwordMatch) {
             echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
             exit;
         }
         
+        // Hash new password for security
+        $hashedNewPassword = password_hash($new_password, PASSWORD_DEFAULT);
+        
         // Update password
         $stmt = $dbo->conn->prepare("UPDATE coordinator SET PASSWORD = ? WHERE COORDINATOR_ID = ?");
-        $result = $stmt->execute([$new_password, $coordinator_id]);
+        $result = $stmt->execute([$hashedNewPassword, $coordinator_id]);
+        
+        if ($result) {
+            echo json_encode(['success' => true, 'message' => 'Password changed successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update password']);
+        }
+    } elseif ($user_type === 'admin') {
+        if (!isset($_SESSION['admin_user'])) {
+            echo json_encode(['success' => false, 'message' => 'User not logged in']);
+            exit;
+        }
+        
+        $admin_id = $_SESSION['admin_user'];
+        
+        // Check current password
+        $stmt = $dbo->conn->prepare("SELECT PASSWORD FROM coordinator WHERE COORDINATOR_ID = ?");
+        $stmt->execute([$admin_id]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$user) {
+            echo json_encode(['success' => false, 'message' => 'User not found']);
+            exit;
+        }
+        
+        // Verify current password - handle both hashed and plain text
+        $storedPassword = $user['PASSWORD'];
+        $passwordMatch = false;
+        
+        if (strpos($storedPassword, '$2y$') === 0) {
+            // Password is hashed, use password_verify
+            $passwordMatch = password_verify($current_password, $storedPassword);
+        } else {
+            // Password is plain text (legacy), do direct comparison
+            $passwordMatch = ($storedPassword === $current_password);
+        }
+        
+        if (!$passwordMatch) {
+            echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
+            exit;
+        }
+        
+        // Hash new password for security
+        $hashedNewPassword = password_hash($new_password, PASSWORD_DEFAULT);
+        
+        // Update password
+        $stmt = $dbo->conn->prepare("UPDATE coordinator SET PASSWORD = ? WHERE COORDINATOR_ID = ?");
+        $result = $stmt->execute([$hashedNewPassword, $admin_id]);
         
         if ($result) {
             echo json_encode(['success' => true, 'message' => 'Password changed successfully']);

@@ -1,13 +1,24 @@
 <?php
-require_once '../database/database.php';
+require_once __DIR__ . '/../config/path_config.php';
+require_once PathConfig::getDatabasePath();
 header('Content-Type: application/json');
 
 $db = new Database();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // Fetch all evaluation questions
+    // Check if requesting categories only
+    if (isset($_GET['action']) && $_GET['action'] === 'getCategories') {
+        $sql = "SELECT DISTINCT category FROM evaluation_questions WHERE question_id IS NOT NULL ORDER BY category";
+        $stmt = $db->conn->prepare($sql);
+        $stmt->execute();
+        $categories = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        echo json_encode(['success' => true, 'categories' => $categories]);
+        exit;
+    }
+    
+    // Fetch all evaluation questions by ID
     $questions = [];
-    $sql = "SELECT question_id, category, question_text, status FROM evaluation_questions";
+    $sql = "SELECT question_id, category, question_text, status FROM evaluation_questions WHERE question_id IS NOT NULL ORDER BY question_id";
     $stmt = $db->conn->prepare($sql);
     $stmt->execute();
     $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -20,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
     $category = $data['category'];
     $question_text = $data['question_text'];
-    $sql = "INSERT INTO evaluation_questions (category, question_text, status) VALUES (:category, :question_text, 'active')";
+            $sql = "INSERT INTO evaluation_questions (category, question_text, status) VALUES (:category, :question_text, 1)";
     $stmt = $db->conn->prepare($sql);
     $success = $stmt->execute([':category' => $category, ':question_text' => $question_text]);
     echo json_encode(['success' => $success]);

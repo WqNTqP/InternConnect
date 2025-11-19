@@ -77,7 +77,7 @@ try {
     // Prepare insert statement with explicit IDs
     $insertStmt = $conn->prepare("
         INSERT INTO evaluation_questions (question_id, category, question_text, status) 
-        VALUES (?, ?, ?, 'active')
+                    VALUES (?, ?, ?, 1)
     ");
     
     $insertedCount = 0;

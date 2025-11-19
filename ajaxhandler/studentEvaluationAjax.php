@@ -8,7 +8,7 @@ $db = new Database();
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Fetch active evaluation questions
     $questions = [];
-    $sql = "SELECT question_id, category, question_text FROM evaluation_questions WHERE status = 'active'";
+            $sql = "SELECT question_id, category, question_text FROM evaluation_questions WHERE status = 1";
     $stmt = $db->conn->prepare($sql);
     $stmt->execute();
     $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);

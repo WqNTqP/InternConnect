@@ -16,7 +16,29 @@ class coordinator
             $s->execute([":un" => $un]);
             if ($s->rowCount() > 0) {
                 $result = $s->fetchAll(PDO::FETCH_ASSOC)[0];
-                if ($result['password'] == $pw) {
+                $storedPassword = $result['password'];
+                
+                // Check if password is hashed (starts with $2y$ for PASSWORD_DEFAULT)
+                $passwordMatch = false;
+                if (strpos($storedPassword, '$2y$') === 0) {
+                    // Password is hashed, use password_verify
+                    $passwordMatch = password_verify($pw, $storedPassword);
+                } else {
+                    // Password is plain text (legacy), do direct comparison
+                    $passwordMatch = ($storedPassword == $pw);
+                    
+                    // Optional: Update to hashed password for future logins
+                    if ($passwordMatch) {
+                        $hashedPassword = password_hash($pw, PASSWORD_DEFAULT);
+                        $updateStmt = $dbo->conn->prepare("UPDATE coordinator SET password = :hash WHERE COORDINATOR_ID = :id");
+                        $updateStmt->execute([
+                            ":hash" => $hashedPassword,
+                            ":id" => $result['COORDINATOR_ID']
+                        ]);
+                    }
+                }
+                
+                if ($passwordMatch) {
                     // Return the id, status, and role (either COORDINATOR or ADMIN)
                     $rv = ["id" => $result['COORDINATOR_ID'], "status" => "ALL OK", "role" => $result['ROLE']];
                 } else {

@@ -240,6 +240,156 @@ $totalStudents = count($allStudents);
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* Profile Modal Styles */
+        .profile-details {
+            padding: 20px;
+        }
+        
+        .profile-info h3 {
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .info-item label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        
+        .info-item span {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .profile-actions {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .btn-change-password {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+        }
+        
+        .btn-change-password:hover {
+            background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .btn-change-password i {
+            margin-right: 8px;
+        }
+        
+        /* Change Password Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input[type="password"]:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #f5c6cb;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1337,6 +1487,185 @@ $totalStudents = count($allStudents);
         document.getElementById('btnProfile').addEventListener('click', function() {
             loadAdminProfileDetails();
         });
+
+        // Function to load admin profile details
+        function loadAdminProfileDetails() {
+            const adminId = <?php echo json_encode($coordinatorId); ?>;
+            
+            $.ajax({
+                url: 'ajaxhandler/adminDashboardAjax.php',
+                type: 'POST',
+                data: {
+                    action: 'getAdminProfile',
+                    adminId: adminId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const admin = response.data;
+                        const profileContent = `
+                            <div class="profile-details">
+                                <div class="profile-info">
+                                    <h3>Profile Information</h3>
+                                    <div class="info-grid">
+                                        <div class="info-item">
+                                            <label>ID:</label>
+                                            <span>${admin.COORDINATOR_ID || 'N/A'}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <label>Name:</label>
+                                            <span>${admin.NAME || 'N/A'}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <label>Email:</label>
+                                            <span>${admin.EMAIL || 'N/A'}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <label>Contact:</label>
+                                            <span>${admin.CONTACT_NUMBER || 'N/A'}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <label>Department:</label>
+                                            <span>${admin.DEPARTMENT || 'N/A'}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <label>Role:</label>
+                                            <span>${admin.ROLE || 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="profile-actions">
+                                    <button id="adminChangePassword" class="btn-change-password">
+                                        <i class="fas fa-key"></i> Change Password
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        document.getElementById('profileModalContent').innerHTML = profileContent;
+                        document.getElementById('profileModal').style.display = 'block';
+                        
+                        // Add change password event listener
+                        document.getElementById('adminChangePassword').addEventListener('click', function() {
+                            document.getElementById('profileModal').style.display = 'none';
+                            showAdminChangePasswordModal();
+                        });
+                    } else {
+                        alert('Failed to load profile: ' + (response.message || 'Unknown error'));
+                    }
+                },
+                error: function() {
+                    alert('Error loading profile details');
+                }
+            });
+        }
+
+        // Function to show change password modal for admin
+        function showAdminChangePasswordModal() {
+            const changePasswordModal = document.getElementById('adminChangePasswordModal');
+            if (changePasswordModal) {
+                changePasswordModal.style.display = 'block';
+            } else {
+                // Create modal if it doesn't exist
+                const modalHtml = `
+                    <div id="adminChangePasswordModal" class="modal" style="display: block;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h2>Change Password</h2>
+                                <button class="modal-close" id="closeAdminChangePassword">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="adminChangePasswordForm">
+                                    <div class="form-group">
+                                        <label for="adminCurrentPassword">Current Password:</label>
+                                        <input type="password" id="adminCurrentPassword" name="current_password" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="adminNewPassword">New Password:</label>
+                                        <input type="password" id="adminNewPassword" name="new_password" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="adminConfirmPassword">Confirm New Password:</label>
+                                        <input type="password" id="adminConfirmPassword" name="confirm_password" required>
+                                    </div>
+                                    <div id="adminChangePasswordError" class="error-message" style="display: none;"></div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn-primary">Change Password</button>
+                                        <button type="button" id="cancelAdminPasswordChange" class="btn-secondary">Cancel</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                setupAdminChangePasswordHandlers();
+            }
+        }
+
+        // Function to setup change password modal handlers
+        function setupAdminChangePasswordHandlers() {
+            document.getElementById('closeAdminChangePassword').addEventListener('click', function() {
+                document.getElementById('adminChangePasswordModal').remove();
+            });
+            
+            document.getElementById('cancelAdminPasswordChange').addEventListener('click', function() {
+                document.getElementById('adminChangePasswordModal').remove();
+            });
+            
+            document.getElementById('adminChangePasswordForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const currentPassword = document.getElementById('adminCurrentPassword').value;
+                const newPassword = document.getElementById('adminNewPassword').value;
+                const confirmPassword = document.getElementById('adminConfirmPassword').value;
+                const errorDiv = document.getElementById('adminChangePasswordError');
+                
+                errorDiv.style.display = 'none';
+                
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                    errorDiv.textContent = 'All fields are required.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    errorDiv.textContent = 'New passwords do not match.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                
+                if (newPassword.length < 6) {
+                    errorDiv.textContent = 'Password must be at least 6 characters long.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                
+                $.ajax({
+                    url: 'ajaxhandler/change_password.php',
+                    type: 'POST',
+                    data: {
+                        current_password: currentPassword,
+                        new_password: newPassword,
+                        user_type: 'admin'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Password changed successfully!');
+                            document.getElementById('adminChangePasswordModal').remove();
+                        } else {
+                            errorDiv.textContent = response.message || 'Failed to change password.';
+                            errorDiv.style.display = 'block';
+                        }
+                    },
+                    error: function() {
+                        errorDiv.textContent = 'An error occurred. Please try again.';
+                        errorDiv.style.display = 'block';
+                    }
+                });
+            });
+        }
 
         // Modal close functionality
         document.getElementById('closeProfileModal').addEventListener('click', function() {

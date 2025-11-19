@@ -14,7 +14,7 @@ $questions = [
 
 $success = true;
 foreach ($questions as $q) {
-    $sql = "INSERT INTO evaluation_questions (category, question_text, status) VALUES (:category, :question_text, 'active')";
+            $sql = "INSERT INTO evaluation_questions (category, question_text, status) VALUES (:category, :question_text, 1)";
     $stmt = $db->conn->prepare($sql);
     if (!$stmt->execute([':category' => $q['category'], ':question_text' => $q['question_text']])) {
         $success = false;

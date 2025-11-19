@@ -85,14 +85,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            // Hash the password for security
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
             if ($role === 'ADMIN' && $hteId) {
                 // Insert new admin with HTE_ID
                 $stmt = $conn->prepare("INSERT INTO coordinator (COORDINATOR_ID, NAME, EMAIL, CONTACT_NUMBER, DEPARTMENT, USERNAME, PASSWORD, ROLE, HTE_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$coordinatorId, $name, $email, $contactNumber, $department, $username, $password, $role, $hteId]);
+                $stmt->execute([$coordinatorId, $name, $email, $contactNumber, $department, $username, $hashedPassword, $role, $hteId]);
             } else {
                 // Insert new coordinator/superadmin without HTE_ID
                 $stmt = $conn->prepare("INSERT INTO coordinator (COORDINATOR_ID, NAME, EMAIL, CONTACT_NUMBER, DEPARTMENT, USERNAME, PASSWORD, ROLE) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$coordinatorId, $name, $email, $contactNumber, $department, $username, $password, $role]);
+                $stmt->execute([$coordinatorId, $name, $email, $contactNumber, $department, $username, $hashedPassword, $role]);
             }
 
             echo json_encode(['success' => true, 'message' => 'Coordinator added successfully.']);

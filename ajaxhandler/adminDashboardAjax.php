@@ -223,6 +223,29 @@ switch ($action) {
         }
         break;
 
+    case "getAdminProfile":
+        $adminId = $_POST['adminId'] ?? null;
+        
+        if (!$adminId) {
+            sendResponse('error', null, 'Admin ID is required');
+        }
+        
+        try {
+            $stmt = $dbo->conn->prepare("SELECT COORDINATOR_ID, NAME, EMAIL, CONTACT_NUMBER, DEPARTMENT, ROLE FROM coordinator WHERE COORDINATOR_ID = ?");
+            $stmt->execute([$adminId]);
+            $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($admin) {
+                sendResponse('success', $admin, 'Profile retrieved successfully');
+            } else {
+                sendResponse('error', null, 'Admin not found');
+            }
+        } catch (Exception $e) {
+            logError("Error getting admin profile: " . $e->getMessage());
+            sendResponse('error', null, 'Error retrieving profile');
+        }
+        break;
+
     default:
         sendResponse('error', null, 'Invalid action');
 }
