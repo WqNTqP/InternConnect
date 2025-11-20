@@ -1,15 +1,93 @@
 <?php
 /**
- * Simple SMTP Email Sender for Gmail
- * This uses socket connections to send emails via Gmail SMTP
+ * Enhanced Email System for Multiple Hosting Environments
+ * Supports SendGrid API, Gmail SMTP, basic mail(), and logging fallbacks
  */
+
+/**
+ * Try SendGrid API (works on most hosting platforms including Render)
+ */
+function sendEmailViaSendGrid($to, $subject, $message, $fromEmail = null, $fromName = null) {
+    $sendgridApiKey = $_ENV['SENDGRID_API_KEY'] ?? getenv('SENDGRID_API_KEY');
+    
+    if (empty($sendgridApiKey)) {
+        error_log("SendGrid API key not configured");
+        return false;
+    }
+    
+    $fromEmail = $fromEmail ?: ($_ENV['FROM_EMAIL'] ?? getenv('FROM_EMAIL') ?: 'noreply@internconnect.onrender.com');
+    $fromName = $fromName ?: 'InternConnect System';
+    
+    $data = [
+        'personalizations' => [[
+            'to' => [['email' => $to]],
+            'subject' => $subject
+        ]],
+        'from' => [
+            'email' => $fromEmail,
+            'name' => $fromName
+        ],
+        'content' => [[
+            'type' => 'text/html',
+            'value' => $message
+        ]]
+    ];
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://api.sendgrid.com/v3/mail/send');
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $sendgridApiKey,
+        'Content-Type: application/json'
+    ]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode === 202) {
+        error_log("Email sent successfully via SendGrid to: $to");
+        return true;
+    } else {
+        error_log("SendGrid API Error: HTTP $httpCode - $response");
+        return false;
+    }
+}
+
+/**
+ * Fallback to basic PHP mail() function
+ */
+function sendEmailViaPhpMail($to, $subject, $message, $fromEmail = null, $fromName = null) {
+    $fromEmail = $fromEmail ?: ($_ENV['FROM_EMAIL'] ?? getenv('FROM_EMAIL') ?: 'noreply@internconnect.onrender.com');
+    $fromName = $fromName ?: 'InternConnect System';
+    
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= "From: $fromName <$fromEmail>" . "\r\n";
+    $headers .= "Reply-To: $fromEmail" . "\r\n";
+    $headers .= "X-Mailer: PHP/" . phpversion();
+    
+    $success = mail($to, $subject, $message, $headers);
+    
+    if ($success) {
+        error_log("Email sent successfully via PHP mail() to: $to");
+    } else {
+        error_log("PHP mail() failed for: $to");
+    }
+    
+    return $success;
+}
 
 function sendGmailEmail($to, $subject, $message, $fromEmail, $fromName, $gmailPassword) {
     $smtp_server = "smtp.gmail.com";
     $smtp_port = 587;
     
-    // Create socket connection
-    $sock = fsockopen($smtp_server, $smtp_port, $errno, $errstr, 30);
+    // Create socket connection with shorter timeout for faster fallback
+    $sock = fsockopen($smtp_server, $smtp_port, $errno, $errstr, 10);
     
     if (!$sock) {
         error_log("SMTP Error: Cannot connect to $smtp_server:$smtp_port - $errstr ($errno)");
@@ -121,15 +199,22 @@ function sendGmailEmail($to, $subject, $message, $fromEmail, $fromName, $gmailPa
 }
 
 /**
- * Enhanced reset email function using Gmail SMTP
+ * Smart email sending with multiple fallback methods
+ * Tries SendGrid API -> Gmail SMTP -> PHP mail() -> Logging fallback
  */
 function sendResetEmailViaGmail($email, $userName, $resetLink, $userType, $userRole = '') {
     $subject = 'InternConnect - Password Reset Request';
     $roleDisplay = $userRole ?: ucfirst($userType);
     
-    // Get Gmail credentials from environment variables
+    // Determine environment
+    $isProduction = !empty($_ENV['RENDER']) || !empty(getenv('RENDER')) || 
+                   strpos($_SERVER['HTTP_HOST'] ?? '', 'onrender.com') !== false ||
+                   strpos($_SERVER['SERVER_NAME'] ?? '', 'onrender.com') !== false;
+    
+    // Get email credentials from environment
     $gmailEmail = $_ENV['GMAIL_USERNAME'] ?? getenv('GMAIL_USERNAME') ?: 'shadowd6163@gmail.com';
     $gmailPassword = $_ENV['GMAIL_PASSWORD'] ?? getenv('GMAIL_PASSWORD') ?: 'qwjbrxhizcqlgfsz';
+    $fromEmail = $_ENV['FROM_EMAIL'] ?? getenv('FROM_EMAIL') ?: 'noreply@internconnect.onrender.com';
     
     // HTML message
     $htmlMessage = "
@@ -183,58 +268,80 @@ function sendResetEmailViaGmail($email, $userName, $resetLink, $userType, $userR
     </html>
     ";
     
-    // Check if Gmail password is configured
-    if ($gmailPassword === 'YOUR_GMAIL_APP_PASSWORD_HERE' || empty($gmailPassword)) {
-        // Log that Gmail is not configured
-        error_log("Gmail SMTP not configured - App password needed");
+    // Method 1: Try SendGrid API (best for production hosting)
+    if ($isProduction) {
+        error_log("Production environment detected - trying SendGrid first");
+        $success = sendEmailViaSendGrid($email, $subject, $htmlMessage, $fromEmail, 'InternConnect System');
+        if ($success) {
+            logEmailSuccess($email, $subject, 'SendGrid API');
+            return true;
+        }
+        error_log("SendGrid failed, trying PHP mail() fallback");
         
-        // Fallback to basic email logging
-        $logMessage = "=== EMAIL NOT SENT (Gmail Not Configured) ===\n";
-        $logMessage .= "To: $email\n";
-        $logMessage .= "Subject: $subject\n";
-        $logMessage .= "Reset Link: $resetLink\n";
-        $logMessage .= "Note: Configure Gmail App Password in gmail_smtp.php\n";
-        $logMessage .= "Time: " . date('Y-m-d H:i:s') . "\n";
-        $logMessage .= "============================================\n\n";
+        // Method 2: Try PHP mail() as fallback
+        $success = sendEmailViaPhpMail($email, $subject, $htmlMessage, $fromEmail, 'InternConnect System');
+        if ($success) {
+            logEmailSuccess($email, $subject, 'PHP mail()');
+            return true;
+        }
+        error_log("All email methods failed - using logging fallback");
         
-        file_put_contents(__DIR__ . '/../email_config_needed.log', $logMessage, FILE_APPEND | LOCK_EX);
-        
-        return false;
-    }
-    
-    // Debug: Log the Gmail credentials being used
-
-    
-    // Try to send via Gmail SMTP
-    $success = sendGmailEmail($email, $subject, $htmlMessage, $gmailEmail, 'InternConnect System', $gmailPassword);
-    
-    if ($success) {
-        // Log successful email
-        $logMessage = "=== EMAIL SENT SUCCESSFULLY ===\n";
-        $logMessage .= "To: $email\n";
-        $logMessage .= "Subject: $subject\n";
-        $logMessage .= "Method: Gmail SMTP\n";
-        $logMessage .= "Time: " . date('Y-m-d H:i:s') . "\n";
-        $logMessage .= "================================\n\n";
-        
-        file_put_contents(__DIR__ . '/../sent_emails.log', $logMessage, FILE_APPEND | LOCK_EX);
-
     } else {
-        // Log failed attempt with more details
-        $logMessage = "=== EMAIL FAILED ===\n";
-        $logMessage .= "To: $email\n";
-        $logMessage .= "Subject: $subject\n";
-        $logMessage .= "Reset Link: $resetLink\n";
-        $logMessage .= "Gmail Email: $gmailEmail\n";
-        $logMessage .= "Password Set: " . (empty($gmailPassword) ? 'NO' : 'YES') . "\n";
-        $logMessage .= "Method: Gmail SMTP\n";
-        $logMessage .= "Time: " . date('Y-m-d H:i:s') . "\n";
-        $logMessage .= "=====================\n\n";
+        // Local development - try Gmail SMTP first
+        error_log("Local environment detected - trying Gmail SMTP");
+        if (!empty($gmailPassword) && $gmailPassword !== 'YOUR_GMAIL_APP_PASSWORD_HERE') {
+            $success = sendGmailEmail($email, $subject, $htmlMessage, $gmailEmail, 'InternConnect System', $gmailPassword);
+            if ($success) {
+                logEmailSuccess($email, $subject, 'Gmail SMTP');
+                return true;
+            }
+        }
         
-        file_put_contents(__DIR__ . '/../failed_emails.log', $logMessage, FILE_APPEND | LOCK_EX);
-        error_log("Gmail SMTP: Email failed to send to $email");
+        // Fallback to PHP mail for local testing
+        error_log("Gmail SMTP failed or not configured, trying PHP mail()");
+        $success = sendEmailViaPhpMail($email, $subject, $htmlMessage, $fromEmail, 'InternConnect System');
+        if ($success) {
+            logEmailSuccess($email, $subject, 'PHP mail()');
+            return true;
+        }
     }
     
-    return $success;
+    // Final fallback - log the reset link for manual delivery
+    logEmailFallback($email, $subject, $resetLink);
+    
+    // Return true so the user gets a success message (don't reveal email config issues)
+    return true;
+    
+}
+
+/**
+ * Log successful email delivery
+ */
+function logEmailSuccess($email, $subject, $method) {
+    $logMessage = "=== EMAIL SENT SUCCESSFULLY ===\n";
+    $logMessage .= "To: $email\n";
+    $logMessage .= "Subject: $subject\n";
+    $logMessage .= "Method: $method\n";
+    $logMessage .= "Time: " . date('Y-m-d H:i:s') . "\n";
+    $logMessage .= "================================\n\n";
+    
+    file_put_contents(__DIR__ . '/../sent_emails.log', $logMessage, FILE_APPEND | LOCK_EX);
+    error_log("Email sent successfully via $method to: $email");
+}
+
+/**
+ * Log fallback method when email services fail
+ */
+function logEmailFallback($email, $subject, $resetLink) {
+    $logMessage = "=== EMAIL FALLBACK - MANUAL DELIVERY NEEDED ===\n";
+    $logMessage .= "To: $email\n";
+    $logMessage .= "Subject: $subject\n";
+    $logMessage .= "Reset Link: $resetLink\n";
+    $logMessage .= "Instructions: Copy the reset link above and send it manually\n";
+    $logMessage .= "Time: " . date('Y-m-d H:i:s') . "\n";
+    $logMessage .= "================================================\n\n";
+    
+    file_put_contents(__DIR__ . '/../manual_email_delivery.log', $logMessage, FILE_APPEND | LOCK_EX);
+    error_log("EMAIL FALLBACK: Manual delivery needed for $email - Reset link: $resetLink");
 }
 ?>
