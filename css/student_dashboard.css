@@ -1766,6 +1766,29 @@ body.sidebar-open {
     word-break: break-word;
 }
 
+.stat-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    color: #7f8c8d;
+    font-weight: 500;
+}
+
+.stat-loading i {
+    font-size: 1.2rem;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 /* Current Week card icon styling - keep orange color */
 .stat-card:nth-child(3) .stat-icon {
     background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
@@ -2902,6 +2925,28 @@ body.sidebar-open {
 }
 
 /* Attendance History Styles */
+.history-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    padding: 2rem;
+}
+
+.history-loading .loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: #7f8c8d;
+    font-size: 1.1rem;
+}
+
+.history-loading i {
+    font-size: 2rem;
+    color: #667eea;
+}
+
 #historyTab .card-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 14px 14px 0 0;

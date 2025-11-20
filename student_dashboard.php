@@ -505,7 +505,11 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                 </div>
                 <div class="stat-content">
                     <h3>Present Days</h3>
-                    <span class="stat-value" id="presentDays"><?php echo htmlspecialchars($presentDays); ?></span>
+                    <div class="stat-loading" id="presentDaysLoading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading...</span>
+                    </div>
+                    <span class="stat-value" id="presentDays" style="display: none;"><?php echo htmlspecialchars($presentDays); ?></span>
                     <span class="stat-label">This Week</span>
                 </div>
             </div>
@@ -516,7 +520,11 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                 </div>
                 <div class="stat-content">
                     <h3>Total Hours</h3>
-                    <span class="stat-value" id="totalHours">0h</span>
+                    <div class="stat-loading" id="totalHoursLoading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading...</span>
+                    </div>
+                    <span class="stat-value" id="totalHours" style="display: none;">0h</span>
                     <span class="stat-label">Total Hours</span>
                 </div>
             </div>
@@ -527,7 +535,11 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                 </div>
                 <div class="stat-content">
                     <h3>Current Week</h3>
-                    <span class="stat-value" id="currentWeekRange">Loading...</span>
+                    <div class="stat-loading" id="currentWeekRangeLoading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading...</span>
+                    </div>
+                    <span class="stat-value" id="currentWeekRange" style="display: none;">Loading...</span>
                     <span class="stat-label"><?php echo date('Y'); ?></span>
                 </div>
             </div>
@@ -538,7 +550,11 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                 </div>
                 <div class="stat-content">
                     <h3>Attendance Rate</h3>
-                    <span class="stat-value" id="attendanceRate">0%</span>
+                    <div class="stat-loading" id="attendanceRateLoading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading...</span>
+                    </div>
+                    <span class="stat-value" id="attendanceRate" style="display: none;">0%</span>
                     <span class="stat-label">Overall</span>
                 </div>
             </div>
@@ -987,6 +1003,13 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                         <div class="card-body">
 
                             <div id="attendanceHistoryArea">
+                                <!-- Loading state -->
+                                <div id="attendanceHistoryLoading" class="history-loading">
+                                    <div class="loading-content">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <span>Loading attendance history...</span>
+                                    </div>
+                                </div>
                                 <!-- History will be populated here -->
                             </div>
                         </div>

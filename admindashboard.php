@@ -1483,82 +1483,12 @@ $totalStudents = count($allStudents);
             window.location.href = 'ajaxhandler/adminLogout.php';
         });
 
-        // Profile button
+        // Profile button - uses the loadAdminProfileDetails function from admindashboard.js
         document.getElementById('btnProfile').addEventListener('click', function() {
-            loadAdminProfileDetails();
+            if (typeof loadAdminProfileDetails === 'function') {
+                loadAdminProfileDetails();
+            }
         });
-
-        // Function to load admin profile details
-        function loadAdminProfileDetails() {
-            const adminId = <?php echo json_encode($coordinatorId); ?>;
-            
-            $.ajax({
-                url: 'ajaxhandler/adminDashboardAjax.php',
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'getAdminProfile',
-                    adminId: adminId
-                },
-                success: function(response) {
-                    if (response.status === 'success') {
-                        const admin = response.data;
-                        const profileContent = `
-                            <div class="profile-details">
-                                <div class="profile-info">
-                                    <h3>Profile Information</h3>
-                                    <div class="info-grid">
-                                        <div class="info-item">
-                                            <label>ID:</label>
-                                            <span>${admin.COORDINATOR_ID || 'N/A'}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <label>Name:</label>
-                                            <span>${admin.NAME || 'N/A'}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <label>Email:</label>
-                                            <span>${admin.EMAIL || 'N/A'}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <label>Contact:</label>
-                                            <span>${admin.CONTACT_NUMBER || 'N/A'}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <label>Department:</label>
-                                            <span>${admin.DEPARTMENT || 'N/A'}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <label>Role:</label>
-                                            <span>${admin.ROLE || 'N/A'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="profile-actions">
-                                    <button id="adminChangePassword" class="btn-change-password">
-                                        <i class="fas fa-key"></i> Change Password
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                        
-                        document.getElementById('profileModalContent').innerHTML = profileContent;
-                        document.getElementById('profileModal').style.display = 'block';
-                        
-                        // Add change password event listener
-                        document.getElementById('adminChangePassword').addEventListener('click', function() {
-                            document.getElementById('profileModal').style.display = 'none';
-                            showAdminChangePasswordModal();
-                        });
-                    } else {
-                        alert('Failed to load profile: ' + (response.message || 'Unknown error'));
-                    }
-                },
-                error: function() {
-                    alert('Error loading profile details');
-                }
-            });
-        }
 
         // Function to show change password modal for admin
         function showAdminChangePasswordModal() {

@@ -208,6 +208,13 @@
                 </button>
             </div>
 
+            <!-- Forgot Password Link -->
+            <div class="text-center">
+                <a href="forgot_password.php" class="text-sm text-blue-600 hover:text-blue-800 hover:underline transition duration-200">
+                    <i class="fas fa-key mr-1"></i>Forgot your password?
+                </a>
+            </div>
+
             <div id="diverror" class="hidden">
                 <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
                     <div class="flex items-center">

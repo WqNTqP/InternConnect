@@ -13,9 +13,10 @@ public function __construct() {
     $this->loadEnvFile();
     
     // Always use Railway database - production ready configuration
-    $this->servername = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'mainline.proxy.rlwy.net:31782';
-    $this->username = $_ENV['DB_USERNAME'] ?? getenv('DB_USERNAME') ?: 'root';
-    $this->password = $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: 'LYeUTqrnaDxpSAdWiirrGhFAcVVyNMGJ';
+    $this->servername = ($_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'mainline.proxy.rlwy.net') . 
+                       ':' . ($_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: '31782');
+    $this->username = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'root';
+    $this->password = $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: 'JskNNDcPYglKnrAQqhwvnGTkEptWKOZZ';
     $this->dbname = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'railway';
     
     // Log environment detection for debugging
@@ -57,7 +58,7 @@ private function connect() {
                 if (file_exists($sslPath)) {
                     $options[PDO::MYSQL_ATTR_SSL_CA] = $sslPath;
                     $sslFound = true;
-                    error_log("Using SSL certificate: {$sslPath}");
+
                     break;
                 }
             }
@@ -77,7 +78,7 @@ private function connect() {
         // Try SSL connection first, fallback to non-SSL if needed
         try {
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
-            error_log("Railway database connected successfully with SSL");
+
         } catch (PDOException $sslError) {
             // Remove SSL options and retry
             error_log("Railway SSL connection failed, trying without SSL: " . $sslError->getMessage());
@@ -88,7 +89,7 @@ private function connect() {
             
             try {
                 $this->conn = new PDO($dsn, $this->username, $this->password, $options);
-                error_log("Railway database connected successfully without SSL");
+
             } catch (PDOException $nonSslError) {
                 error_log("Railway connection failed even without SSL: " . $nonSslError->getMessage());
                 throw $nonSslError;
@@ -121,7 +122,7 @@ private function loadEnvFile() {
             $value = trim($value);
             // Always use .env file values (they take priority)
             $_ENV[$name] = $value;
-            error_log("Loaded env var: $name = $value");
+
         }
     } else {
         error_log("⚠️ .env file not found at: $envFile");

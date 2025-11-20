@@ -202,6 +202,13 @@
                                 <span>Signing in...</span>
                             </div>
                         </button>
+
+                        <!-- Forgot Password Link -->
+                        <div class="text-center mt-4">
+                            <a href="forgot_password.php" class="text-sm text-blue-600 hover:text-blue-800 hover:underline transition duration-200">
+                                <i class="fas fa-key mr-1"></i>Forgot your password?
+                            </a>
+                        </div>
                     </form>
 
                     <!-- Error Message -->

@@ -1452,6 +1452,14 @@ $(function(e) {
 function loadDashboardStats() {
     const studentId = $("#hiddenStudentId").val();
     
+    // Show loading states
+    $("#presentDaysLoading").show();
+    $("#totalHoursLoading").show();
+    $("#attendanceRateLoading").show();
+    $("#presentDays").hide();
+    $("#totalHours").hide();
+    $("#attendanceRate").hide();
+    
     $.ajax({
         url: "ajaxhandler/studentDashboardAjax.php",
         type: "POST",
@@ -1462,15 +1470,37 @@ function loadDashboardStats() {
         },
         success: function(response) {
             if (response.status === "success") {
-                $("#presentDays").text(response.data.presentDays || 0);
-                $("#totalHours").text((response.data.totalHours || 0) + "h");
-                $("#attendanceRate").text((response.data.attendanceRate || 0) + "%");
+                // Hide loading states and show data
+                $("#presentDaysLoading").hide();
+                $("#totalHoursLoading").hide();
+                $("#attendanceRateLoading").hide();
+                
+                $("#presentDays").text(response.data.presentDays || 0).show();
+                $("#totalHours").text((response.data.totalHours || 0) + "h").show();
+                $("#attendanceRate").text((response.data.attendanceRate || 0) + "%").show();
+            } else {
+                // Show error state
+                showStatsError();
             }
         },
         error: function(xhr, status, error) {
             console.error("Error loading dashboard stats:", error);
+            showStatsError();
         }
     });
+}
+
+// Function to show error state for stats
+function showStatsError() {
+    // Hide loading states
+    $("#presentDaysLoading").hide();
+    $("#totalHoursLoading").hide();
+    $("#attendanceRateLoading").hide();
+    
+    // Show fallback values
+    $("#presentDays").text("--").show();
+    $("#totalHours").text("--").show();
+    $("#attendanceRate").text("--").show();
 }
 
 
@@ -1681,6 +1711,10 @@ function checkAndResetAttendance() {
 function loadCurrentWeek() {
     const studentId = $("#hiddenStudentId").val();
 
+    // Show loading state for current week
+    $("#currentWeekRangeLoading").show();
+    $("#currentWeekRange").hide();
+
     $.ajax({
         url: "ajaxhandler/studentDashboardAjax.php",
         type: "POST",
@@ -1690,6 +1724,8 @@ function loadCurrentWeek() {
             studentId: studentId
         },
         success: function(response) {
+            let weekInfo;
+            
             if (response.status === "success" && response.data) {
                 const startDate = new Date(response.data.week_start);
                 const endDate = new Date(response.data.week_end);
@@ -1704,7 +1740,6 @@ function loadCurrentWeek() {
                 const endYear = endDate.getFullYear();
                 
                 // Format as single line to match other stat cards
-                let weekInfo;
                 if (startMonth === endMonth && startYear === endYear) {
                     weekInfo = `${startMonth} ${startDay} - ${endDay}, ${startYear}`;
                 } else if (startYear === endYear) {
@@ -1712,75 +1747,52 @@ function loadCurrentWeek() {
                 } else {
                     weekInfo = `${startMonth} ${startDay}, ${startYear} - ${endMonth} ${endDay}, ${endYear}`;
                 }
-                
-                $("#currentWeekRange").text(weekInfo);
             } else {
                 // Fallback to current week if no report found
-                const currentDate = new Date();
-                const startOfWeek = new Date(currentDate);
-                startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-                startOfWeek.setHours(0, 0, 0, 0);
-
-                const endOfWeek = new Date(startOfWeek);
-                endOfWeek.setDate(startOfWeek.getDate() + 6);
-                endOfWeek.setHours(23, 59, 59, 999);
-
-                // Format dates more compactly - single line format
-                const startMonth = startOfWeek.toLocaleDateString('en-PH', { month: 'short' });
-                const startDay = startOfWeek.getDate();
-                const startYear = startOfWeek.getFullYear();
-                
-                const endMonth = endOfWeek.toLocaleDateString('en-PH', { month: 'short' });
-                const endDay = endOfWeek.getDate();
-                const endYear = endOfWeek.getFullYear();
-                
-                // Format as single line to match other stat cards
-                let weekInfo;
-                if (startMonth === endMonth && startYear === endYear) {
-                    weekInfo = `${startMonth} ${startDay} - ${endDay}, ${startYear}`;
-                } else if (startYear === endYear) {
-                    weekInfo = `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${startYear}`;
-                } else {
-                    weekInfo = `${startMonth} ${startDay}, ${startYear} - ${endMonth} ${endDay}, ${endYear}`;
-                }
-                
-                $("#currentWeekRange").text(weekInfo);
+                weekInfo = getCurrentWeekInfo();
             }
+            
+            // Hide loading and show data
+            $("#currentWeekRangeLoading").hide();
+            $("#currentWeekRange").text(weekInfo).show();
         },
         error: function(xhr, status, error) {
             console.error("Error loading current week:", error);
-            // Fallback to current week on error
-            const currentDate = new Date();
-            const startOfWeek = new Date(currentDate);
-            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-            startOfWeek.setHours(0, 0, 0, 0);
-
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            endOfWeek.setHours(23, 59, 59, 999);
-
-            // Format dates more compactly - single line format
-            const startMonth = startOfWeek.toLocaleDateString('en-PH', { month: 'short' });
-            const startDay = startOfWeek.getDate();
-            const startYear = startOfWeek.getFullYear();
-            
-            const endMonth = endOfWeek.toLocaleDateString('en-PH', { month: 'short' });
-            const endDay = endOfWeek.getDate();
-            const endYear = endOfWeek.getFullYear();
-            
-            // Format as single line to match other stat cards
-            let weekInfo;
-            if (startMonth === endMonth && startYear === endYear) {
-                weekInfo = `${startMonth} ${startDay} - ${endDay}, ${startYear}`;
-            } else if (startYear === endYear) {
-                weekInfo = `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${startYear}`;
-            } else {
-                weekInfo = `${startMonth} ${startDay}, ${startYear} - ${endMonth} ${endDay}, ${endYear}`;
-            }
-            
-            $("#currentWeekRange").text(weekInfo);
+            // Hide loading and show fallback
+            $("#currentWeekRangeLoading").hide();
+            $("#currentWeekRange").text(getCurrentWeekInfo()).show();
         }
     });
+}
+
+// Helper function to get current week info
+function getCurrentWeekInfo() {
+    const currentDate = new Date();
+    const startOfWeek = new Date(currentDate);
+    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    // Format dates more compactly - single line format
+    const startMonth = startOfWeek.toLocaleDateString('en-PH', { month: 'short' });
+    const startDay = startOfWeek.getDate();
+    const startYear = startOfWeek.getFullYear();
+    
+    const endMonth = endOfWeek.toLocaleDateString('en-PH', { month: 'short' });
+    const endDay = endOfWeek.getDate();
+    const endYear = endOfWeek.getFullYear();
+    
+    // Format as single line to match other stat cards
+    if (startMonth === endMonth && startYear === endYear) {
+        return `${startMonth} ${startDay} - ${endDay}, ${startYear}`;
+    } else if (startYear === endYear) {
+        return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${startYear}`;
+    } else {
+        return `${startMonth} ${startDay}, ${startYear} - ${endMonth} ${endDay}, ${endYear}`;
+    }
 }
 
 function loadAttendanceHistory() {
@@ -1788,6 +1800,16 @@ function loadAttendanceHistory() {
     const filter = $("#historyFilter").val();
     const selectedMonth = $("#monthFilter").val();
     let startDate, endDate;
+
+    // Show loading state
+    $("#attendanceHistoryArea").html(`
+        <div id="attendanceHistoryLoading" class="history-loading">
+            <div class="loading-content">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Loading attendance history...</span>
+            </div>
+        </div>
+    `);
 
     const currentDate = new Date();
 

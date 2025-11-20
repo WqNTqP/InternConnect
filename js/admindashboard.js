@@ -1756,40 +1756,44 @@ function displayAdminProfileDetails(data) {
             <div class="profile-header">
                 <div class="profile-avatar">
                     ${profilePicture ? 
-                        `<img src="${profilePicture}" alt="Profile Picture" class="profile-image">` :
+                        `<img src="${profilePicture}" alt="Profile Picture" class="avatar-placeholder">` :
                         `<div class="avatar-placeholder">
                             <i class="fas fa-user-shield"></i>
                          </div>`
                     }
                 </div>
                 <h2>${data.NAME}</h2>
-                <p class="profile-subtitle">HTE Manager</p>
+                <p class="profile-subtitle">Admin Profile</p>
             </div>
             
             <div class="profile-details">
                 <div class="detail-row">
-                    <span class="detail-label">Manager ID:</span>
-                    <span class="detail-value">${data.COORDINATOR_ID}</span>
+                    <span class="detail-label">Admin ID:</span>
+                    <span class="detail-value">${data.COORDINATOR_ID || 'N/A'}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Full Name:</span>
-                    <span class="detail-value">${data.NAME}</span>
+                    <span class="detail-value">${data.NAME || 'N/A'}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Email:</span>
-                    <span class="detail-value">${data.EMAIL}</span>
+                    <span class="detail-value">${data.EMAIL || 'N/A'}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Contact Number:</span>
-                    <span class="detail-value">${data.CONTACT_NUMBER}</span>
+                    <span class="detail-value">${data.CONTACT_NUMBER || 'N/A'}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Department:</span>
-                    <span class="detail-value">${data.DEPARTMENT}</span>
+                    <span class="detail-value">${data.DEPARTMENT || 'N/A'}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">HTE:</span>
-                    <span class="detail-value">${data.HTE_NAME}</span>
+                    <span class="detail-label">Assigned HTE:</span>
+                    <span class="detail-value">${data.HTE_NAME || 'No HTE Assigned'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Role:</span>
+                    <span class="detail-value">ADMIN</span>
                 </div>
             </div>
             
