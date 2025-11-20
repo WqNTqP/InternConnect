@@ -70,11 +70,7 @@
                         <span class="text-3xl font-bold text-blue-600">Intern</span><span class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400">Connect</span>
                     </span>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <a href="admin.php" class="text-gray-600 hover:text-blue-600">Supervisor</a>
-                    <span class="text-gray-300">|</span>
-                    <a href="index.php" class="text-gray-600 hover:text-blue-600">Coordinator</a>
-                </div>
+
             </div>
         </nav>
     </div>

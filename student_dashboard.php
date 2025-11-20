@@ -477,7 +477,7 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
     </aside>
 
     <!-- Main Content Area -->
-    <div class="transition-all duration-300 p-3 md:p-6 bg-gray-100 min-h-screen pt-20 md:pt-24 ml-0" id="mainContent">
+    <div class="content-area transition-all duration-300 p-3 md:p-6 bg-gray-100 min-h-screen pt-20 md:pt-24 ml-0" id="mainContent">
         <main class="main-content bg-white rounded-lg shadow-md p-3 md:p-6 mb-6">
             <!-- Header -->
             <header class="main-header">
@@ -545,21 +545,6 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
         </section>
         
         <div class="dashboard-grid">
-            <!-- Weekly Overview Card -->
-            <div class="card overview-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-chart-bar"></i> Weekly Overview</h3>
-                </div>
-                <div class="card-body">
-                    <div class="week-overview" id="weekOverview">
-                        <div class="overview-loading">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            <span>Loading weekly data...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Recent Activity Card -->
             <div class="card activity-card">
                 <div class="card-header">
@@ -1316,7 +1301,6 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
             loadDashboardStats();
             loadAttendanceStatus();
             loadCurrentWeek();
-            loadWeekOverview();
             loadRecentActivity();
             updateCurrentDate();
             
@@ -1369,60 +1353,140 @@ $('.sidebar-item').click(function() {
         $(document).ready(function() {
             let sidebarOpen = false;
             let sidebarCollapsed = false;
+            
+            // Initialize sidebar state based on screen size
+            function initializeSidebar() {
+                const sidebar = $('.sidebar');
+                const body = $('body');
+                
+                console.log('Initializing sidebar for screen width:', $(window).width());
+                
+                if ($(window).width() >= 769) {
+                    // Desktop: sidebar is always open, start in expanded state
+                    sidebarOpen = true;
+                    sidebarCollapsed = false;
+                    sidebar.addClass('sidebar-open').removeClass('collapsed');
+                    body.addClass('sidebar-open').removeClass('sidebar-collapsed');
+                    console.log('Desktop: Sidebar initialized as open/expanded');
+                } else {
+                    // Mobile: can be closed completely
+                    sidebarOpen = false;
+                    sidebarCollapsed = false;
+                    sidebar.removeClass('sidebar-open').removeClass('collapsed');
+                    body.removeClass('sidebar-open').removeClass('sidebar-collapsed');
+                    $('#sidebarOverlay').removeClass('active');
+                    console.log('Mobile: Sidebar initialized as closed');
+                }
+                
+                console.log('Initialization complete:', {
+                    sidebarOpen: sidebarOpen,
+                    sidebarCollapsed: sidebarCollapsed,
+                    bodyClasses: body.attr('class')
+                });
+            }
+            
+            // Initialize on page load
+            initializeSidebar();
+            
+            // Reinitialize on window resize
+            $(window).resize(function() {
+                initializeSidebar();
+            });
 
             // Toggle sidebar visibility
             $('#sidebarToggle').click(function() {
                 const sidebar = $('.sidebar');
-                const contentArea = $('.content-area');
+                const body = $('body');
+                
+                console.log('Before toggle:', {
+                    sidebarOpen: sidebarOpen,
+                    sidebarCollapsed: sidebarCollapsed,
+                    bodyClasses: body.attr('class')
+                });
                 
                 if ($(window).width() >= 769) {
-                    // Desktop behavior - toggle collapse/expand
-                    if (!sidebarOpen) {
-                        // Open sidebar
-                        sidebarOpen = true;
-                        sidebar.addClass('sidebar-open');
-                        contentArea.addClass('sidebar-open');
-                        if (sidebarCollapsed) {
-                            contentArea.addClass('sidebar-collapsed');
-                        }
+                    // Desktop behavior - TWO STATES ONLY: expanded <-> collapsed
+                    // Sidebar is ALWAYS open on desktop, just toggles between expanded and collapsed
+                    if (!sidebarCollapsed) {
+                        // State 1: Open (expanded) -> Open (collapsed/icons only)
+                        sidebarCollapsed = true;
+                        sidebar.addClass('collapsed');
+                        body.addClass('sidebar-collapsed');
+                        console.log('Desktop: Expanded -> Collapsed (icons only)');
                     } else {
-                        // Toggle between expanded and collapsed
-                        sidebarCollapsed = !sidebarCollapsed;
-                        if (sidebarCollapsed) {
-                            sidebar.addClass('collapsed');
-                            contentArea.addClass('sidebar-collapsed');
-                        } else {
-                            sidebar.removeClass('collapsed');
-                            contentArea.removeClass('sidebar-collapsed');
-                        }
+                        // State 2: Open (collapsed/icons only) -> Open (expanded)
+                        sidebarCollapsed = false;
+                        sidebar.removeClass('collapsed');
+                        body.removeClass('sidebar-collapsed');
+                        console.log('Desktop: Collapsed (icons only) -> Expanded');
                     }
+                    // sidebarOpen remains TRUE on desktop - never false
                 } else {
-                    // Mobile behavior - toggle show/hide
+                    // Mobile behavior - toggle show/hide (can be completely closed)
                     sidebarOpen = !sidebarOpen;
                     if (sidebarOpen) {
                         sidebar.addClass('sidebar-open');
+                        body.addClass('sidebar-open');
                         $('#sidebarOverlay').addClass('active');
+                        console.log('Mobile: Sidebar opened');
                     } else {
                         sidebar.removeClass('sidebar-open');
+                        body.removeClass('sidebar-open');
                         $('#sidebarOverlay').removeClass('active');
+                        console.log('Mobile: Sidebar closed');
                     }
                 }
+                
+                console.log('After toggle:', {
+                    sidebarOpen: sidebarOpen,
+                    sidebarCollapsed: sidebarCollapsed,
+                    bodyClasses: body.attr('class')
+                });
             });
 
             // Close sidebar when clicking overlay (mobile)
             $('#sidebarOverlay').click(function() {
                 const sidebar = $('.sidebar');
+                const body = $('body');
                 sidebarOpen = false;
                 sidebar.removeClass('sidebar-open');
+                body.removeClass('sidebar-open');
                 $(this).removeClass('active');
             });
 
-            // Handle window resize
-            $(window).resize(function() {
-                if ($(window).width() >= 769) {
-                    $('#sidebarOverlay').removeClass('active');
+            // Click outside sidebar to close/collapse it
+            $(document).on('click', function(e) {
+                const sidebar = $('.sidebar');
+                const sidebarToggle = $('#sidebarToggle');
+                const body = $('body');
+                
+                // Check if click is outside sidebar and not on UI elements that should be ignored
+                if (!sidebar.is(e.target) && !sidebar.has(e.target).length && 
+                    !sidebarToggle.is(e.target) && !sidebarToggle.has(e.target).length &&
+                    !$(e.target).closest('#userProfile, .user-profile, .dropdown, .modal').length) {
+                    
+                    if ($(window).width() >= 769) {
+                        // Desktop: collapse to icons if expanded, or do nothing if already collapsed
+                        if (sidebarOpen && !sidebarCollapsed) {
+                            sidebarCollapsed = true;
+                            sidebar.addClass('collapsed');
+                            body.addClass('sidebar-collapsed');
+                            console.log('Desktop: Auto-collapsed to icons due to outside click');
+                        }
+                    } else {
+                        // Mobile: close completely
+                        if (sidebarOpen) {
+                            sidebarOpen = false;
+                            sidebar.removeClass('sidebar-open');
+                            body.removeClass('sidebar-open');
+                            $('#sidebarOverlay').removeClass('active');
+                            console.log('Mobile: Auto-closed due to outside click');
+                        }
+                    }
                 }
             });
+
+
 
             // Modern user dropdown functionality
             $('#userDropdownToggle').off('click').on('click', function(e) {

@@ -8,15 +8,34 @@ header('Content-Type: application/json');
 $db = new Database();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // Fetch all student answers for evaluation questions
-    $sql = "SELECT se.id as student_evaluation_id, se.STUDENT_ID, id.NAME, id.SURNAME, eq.category, eq.question_text, se.answer
+    // Fetch all student answers for evaluation questions (show all students, check eligibility later)
+    $sql = "SELECT se.id as student_evaluation_id, se.STUDENT_ID, id.NAME, id.SURNAME, eq.category, eq.question_text, se.answer,
+                   -- Add student eligibility info
+                   (
+                       SELECT COUNT(*) FROM student_questions sq 
+                       WHERE sq.student_id = id.INTERNS_ID AND sq.approval_status = 'approved'
+                   ) as approved_questions_count,
+                   (
+                       SELECT COUNT(*) FROM student_questions sq 
+                       WHERE sq.student_id = id.INTERNS_ID AND sq.approval_status = 'pending'
+                   ) as pending_questions_count,
+                   (
+                       SELECT COUNT(*) FROM student_questions sq 
+                       WHERE sq.student_id = id.INTERNS_ID AND sq.approval_status = 'rejected'
+                   ) as rejected_questions_count,
+                   (
+                       SELECT COUNT(*) FROM student_questions sq 
+                       WHERE sq.student_id = id.INTERNS_ID
+                   ) as total_questions_count
             FROM student_evaluation se
             JOIN evaluation_questions eq ON se.question_id = eq.question_id
             JOIN interns_details id ON se.STUDENT_ID = id.STUDENT_ID
             ORDER BY se.STUDENT_ID, eq.category";
+    
     $stmt = $db->conn->prepare($sql);
     $stmt->execute();
     $answers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
     echo json_encode(['success' => true, 'answers' => $answers]);
     exit;
 }

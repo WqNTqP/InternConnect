@@ -95,6 +95,29 @@ function addApprovalStatusIndicator(questionInput, questionData) {
 // Function to manage shown notifications using sessionStorage
 // Day navigation logic for report editor
 $(document).ready(function() {
+    // Ensure Save Questions button is properly enabled
+    setTimeout(function() {
+        const $saveBtn = $('#saveProgressBtn');
+        if ($saveBtn.length) {
+            $saveBtn.prop('disabled', false);
+            $saveBtn.css('pointer-events', 'auto');
+            console.log('Save Questions button found and enabled');
+            
+            // Add a fallback click handler that works immediately
+            $saveBtn.off('click.fallback').on('click.fallback', function(e) {
+                e.preventDefault();
+                console.log('Fallback: Save Questions button clicked');
+                
+                // Simple alert for now to test if button is working
+                if (!$(this).prop('disabled')) {
+                    alert('Save Questions button is working! Enhanced functionality will load when you access the Post Assessment tab.');
+                }
+            });
+        } else {
+            console.warn('Save Questions button not found');
+        }
+    }, 500);
+    
     // Ratings persistence object
     var postAssessmentRatings = {
         sysdev: {}, research: {}, techsup: {}, bizop: {}, personal: {}
@@ -887,7 +910,7 @@ $(function(e) {
     loadDashboardStats();
     loadAttendanceStatus();
     loadCurrentWeek();
-    loadWeekOverview();
+
     loadRecentActivity();
     updateCurrentDate();
 
@@ -1450,37 +1473,7 @@ function loadDashboardStats() {
     });
 }
 
-function loadWeekOverview() {
-    const studentId = $("#hiddenStudentId").val();
-    
-    $.ajax({
-        url: "ajaxhandler/studentDashboardAjax.php",
-        type: "POST",
-        dataType: "json",
-        data: {
-            action: "getWeekOverview",
-            studentId: studentId
-        },
-        success: function(response) {
-            if (response.status === "success") {
-                let html = '<div class="week-chart">';
-                response.data.forEach(day => {
-                    html += `
-                        <div class="day-bar">
-                            <div class="bar" style="height: ${day.percentage}%"></div>
-                            <span>${day.day}</span>
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                $("#weekOverview").html(html);
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error("Error loading week overview:", error);
-        }
-    });
-}
+
 
 function loadRecentActivity() {
     const studentId = $("#hiddenStudentId").val();
@@ -3412,6 +3405,7 @@ function loadStudentEvaluationAnswersAndRatings() {
 
     // Enhanced Post-Assessment Management
     function enhancePostAssessment() {
+        console.log('enhancePostAssessment() called');
         // Update personal skills progress tracking
         function updateSkillsProgress() {
             const totalSkills = $('#personalSkillsTableBody tr').length;
@@ -3457,7 +3451,9 @@ function loadStudentEvaluationAnswersAndRatings() {
         }
 
         // Enhanced save progress functionality - saves ALL categories
-        $('#saveProgressBtn').off('click').on('click', function() {
+        $('#saveProgressBtn').off('click').on('click', function(e) {
+            e.preventDefault();
+            console.log('Save Questions button clicked');
             const $btn = $(this);
             $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
             
@@ -3646,32 +3642,40 @@ function loadStudentEvaluationAnswersAndRatings() {
                 }
 
                 // Use correct AJAX endpoint for saving questions
+                const requestData = {
+                    student_id: $('#hiddenStudentId').val(),
+                    questions: Object.keys(questions).map(num => ({
+                        category: getCategoryName(category),
+                        question_text: questions[num],
+                        question_number: parseInt(num)
+                    }))
+                };
+                
+                console.log('Saving questions for category:', category, requestData);
+                
                 $.ajax({
                     url: 'ajaxhandler/saveStudentQuestionsAjax.php',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({
-                        student_id: $('#hiddenStudentId').val(),
-                        questions: Object.keys(questions).map(num => ({
-                            category: getCategoryName(category),
-                            question_text: questions[num],
-                            question_number: parseInt(num)
-                        }))
-                    }),
+                    data: JSON.stringify(requestData),
                     success: function(response) {
+                        console.log('Save response:', response);
                         try {
                             const result = typeof response === 'string' ? JSON.parse(response) : response;
                             if (result.success) {
                                 resolve();
                             } else {
+                                console.error('Save error:', result.error);
                                 reject(result.error || 'Unknown error');
                             }
                         } catch (e) {
-                            resolve();
+                            console.error('Parse error:', e, 'Response:', response);
+                            reject('Error parsing response');
                         }
                     },
-                    error: function() {
-                        reject('Network error');
+                    error: function(xhr, status, error) {
+                        console.error('AJAX error:', xhr.responseText, status, error);
+                        reject('Network error: ' + error);
                     }
                 });
             });
@@ -3801,7 +3805,31 @@ function loadStudentEvaluationAnswersAndRatings() {
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
+                    // Use the correct logic based on the backend response
                     displayApprovalStatus(response);
+                    
+                    // Update submit button based on can_submit_assessment flag
+                    if (response.can_submit_assessment) {
+                        $('#submitPostAssessmentBtn').prop('disabled', false)
+                            .removeClass('btn-secondary')
+                            .addClass('btn-primary')
+                            .html('<i class="fas fa-paper-plane"></i> Submit Assessment');
+                    } else {
+                        $('#submitPostAssessmentBtn').prop('disabled', true)
+                            .removeClass('btn-primary')
+                            .addClass('btn-secondary');
+                        
+                        // Set button text based on specific condition
+                        if (response.status_counts.total === 0) {
+                            $('#submitPostAssessmentBtn').html('<i class="fas fa-lock"></i> Submit Questions First');
+                        } else if (response.status_counts.pending > 0) {
+                            $('#submitPostAssessmentBtn').html('<i class="fas fa-lock"></i> Pending Approval');
+                        } else if (response.status_counts.rejected > 0) {
+                            $('#submitPostAssessmentBtn').html('<i class="fas fa-edit"></i> Revise Questions');
+                        } else {
+                            $('#submitPostAssessmentBtn').html('<i class="fas fa-lock"></i> Assessment Locked');
+                        }
+                    }
                 }
             },
             error: function() {
@@ -3810,63 +3838,53 @@ function loadStudentEvaluationAnswersAndRatings() {
         });
     }
 
-    function displayApprovalStatus(approvalData) {
-        let statusHtml = '';
-        const statusCounts = approvalData.status_counts;
+    function displayApprovalStatus(response) {
+        const { status_counts, message, can_submit_assessment } = response;
         
-        if (statusCounts.total === 0) {
-            statusHtml = `
-                <div class="approval-status warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Please create and save questions first before submitting your assessment.</span>
-                </div>
-            `;
-            $('#submitPostAssessmentBtn').prop('disabled', true).html('<i class="fas fa-lock"></i> Submit Questions First');
-        } else if (statusCounts.pending > 0) {
-            statusHtml = `
-                <div class="approval-status pending">
-                    <i class="fas fa-clock"></i>
-                    <span>⏳ ${statusCounts.pending} question(s) pending approval. Assessment submission blocked until admin approval.</span>
-                </div>
-            `;
-            $('#submitPostAssessmentBtn').prop('disabled', true).html('<i class="fas fa-lock"></i> Pending Approval');
-        } else if (statusCounts.rejected > 0) {
-            statusHtml = `
-                <div class="approval-status rejected">
-                    <i class="fas fa-times-circle"></i>
-                    <span>❌ ${statusCounts.rejected} question(s) rejected. Please revise and resubmit rejected questions.</span>
-                </div>
-            `;
-            $('#submitPostAssessmentBtn').prop('disabled', true).html('<i class="fas fa-edit"></i> Revise Questions');
-        } else if (statusCounts.approved === statusCounts.total && !approvalData.can_submit_assessment) {
-            statusHtml = `
-                <div class="approval-status warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Please ensure you have submitted enough questions before proceeding.</span>
-                </div>
-            `;
-            $('#submitPostAssessmentBtn').prop('disabled', true).html('<i class="fas fa-lock"></i> Insufficient Questions');
-        } else if (approvalData.can_submit_assessment) {
-            statusHtml = `
-                <div class="approval-status approved">
-                    <i class="fas fa-check-circle"></i>
-                    <span>✅ All questions approved! You can now submit your assessment.</span>
-                </div>
-            `;
-            $('#submitPostAssessmentBtn').prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Submit Assessment');
+        let statusClass = 'warning';
+        let iconClass = 'fa-exclamation-triangle';
+        
+        if (can_submit_assessment) {
+            statusClass = 'approved';
+            iconClass = 'fa-check-circle';
+        } else if (status_counts.rejected > 0) {
+            statusClass = 'rejected';
+            iconClass = 'fa-times-circle';
+        } else if (status_counts.pending > 0) {
+            statusClass = 'pending';
+            iconClass = 'fa-clock';
         }
         
-        // Show approval status above the form buttons
-        if ($('#approvalStatusDisplay').length === 0) {
-            $('.form-actions-wrapper').before('<div id="approvalStatusDisplay" class="approval-status-container"></div>');
-        }
-        $('#approvalStatusDisplay').html(statusHtml);
+        const statusHtml = `
+            <div class="approval-status-container">
+                <div class="approval-status ${statusClass}">
+                    <i class="fas ${iconClass}"></i>
+                    <span>${message}</span>
+                </div>
+            </div>
+        `;
+        
+        // Remove any existing approval status and insert new one before the form actions
+        $('.approval-status-container').remove();
+        $('.form-actions-wrapper').before(statusHtml);
     }
 
-    // Initialize enhanced post-assessment when tab is clicked
+    // Initialize enhanced post-assessment immediately and when tab is clicked
+    try {
+        enhancePostAssessment();
+        console.log('Enhanced post assessment initialized successfully');
+    } catch (error) {
+        console.error('Error initializing enhanced post assessment:', error);
+    }
+    
     $('#postAssessmentTabBtn').off('click.enhanced').on('click.enhanced', function() {
         setTimeout(() => {
-            enhancePostAssessment();
+            try {
+                enhancePostAssessment();
+                console.log('Enhanced post assessment re-initialized on tab click');
+            } catch (error) {
+                console.error('Error re-initializing enhanced post assessment:', error);
+            }
         }, 200);
     });
 

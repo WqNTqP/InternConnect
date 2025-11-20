@@ -1495,12 +1495,13 @@ $totalStudents = count($allStudents);
             $.ajax({
                 url: 'ajaxhandler/adminDashboardAjax.php',
                 type: 'POST',
+                dataType: 'json',
                 data: {
                     action: 'getAdminProfile',
                     adminId: adminId
                 },
                 success: function(response) {
-                    if (response.success) {
+                    if (response.status === 'success') {
                         const admin = response.data;
                         const profileContent = `
                             <div class="profile-details">
@@ -1857,6 +1858,39 @@ $totalStudents = count($allStudents);
                 // Prevent dropdown from closing when clicking inside
                 $('#userDropdown').on('click', function(e) {
                     e.stopPropagation();
+                });
+                
+                // Enhanced click-outside functionality for sidebar
+                $(document).on('click', function(event) {
+                    const target = $(event.target);
+                    const sidebar = $('.sidebar');
+                    const sidebarOverlay = $('#sidebarOverlay');
+                    const toggleBtn = $('#sidebarToggle');
+                    
+                    // Check if click is outside sidebar and not on toggle button
+                    if (!target.closest('.sidebar').length && 
+                        !target.closest('#sidebarToggle').length && 
+                        $(window).width() < 769) {
+                        
+                        // Mobile: Close sidebar if open
+                        if (sidebar.hasClass('sidebar-open')) {
+                            sidebar.removeClass('sidebar-open');
+                            sidebarOverlay.removeClass('active');
+                            sidebarOpen = false;
+                            console.log('Sidebar: Auto-closed on mobile due to outside click');
+                        }
+                    } else if (!target.closest('.sidebar').length && 
+                               !target.closest('#sidebarToggle').length && 
+                               $(window).width() >= 769) {
+                        
+                        // Desktop: Collapse sidebar to icons if expanded
+                        if (!sidebar.hasClass('collapsed')) {
+                            sidebar.addClass('collapsed');
+                            $('.content-area').addClass('sidebar-collapsed');
+                            sidebarCollapsed = true;
+                            console.log('Sidebar: Auto-collapsed to icons due to outside click');
+                        }
+                    }
                 });
             });
         });

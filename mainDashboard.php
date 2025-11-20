@@ -202,7 +202,16 @@ function generateStudentFilterOptions($coordinatorId) {
         <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
     </div>
 
-    <div class="min-h-screen" x-data="{ sidebarOpen: false, isMobile: window.innerWidth < 768 }" @resize.window="isMobile = window.innerWidth < 768">
+    <div class="min-h-screen" x-data="{ 
+        sidebarOpen: false, 
+        isMobile: window.innerWidth < 768,
+        closeSidebar(event) {
+            const toggleButton = event.target.closest('button[aria-label=\'Toggle Sidebar\']');
+            if (!toggleButton && this.sidebarOpen) {
+                this.sidebarOpen = false;
+            }
+        }
+    }" @resize.window="isMobile = window.innerWidth < 768">
         <!-- Mobile Overlay -->
         <div x-show="sidebarOpen && isMobile" @click="sidebarOpen = false" class="fixed inset-0 bg-black bg-opacity-50 z-35 md:hidden"></div>
         
@@ -246,6 +255,7 @@ function generateStudentFilterOptions($coordinatorId) {
                 'w-64 translate-x-0': sidebarOpen && isMobile,
                 '-translate-x-full w-64': !sidebarOpen && isMobile
              }" 
+             @click.outside="closeSidebar($event)"
              style="top: 64px; height: calc(100vh - 64px);" id="sidebar">
             <ul class="py-2">
                 <li class="px-3 md:px-6 py-3 cursor-pointer hover:bg-gray-700 flex items-center space-x-3 overflow-hidden" id="attendanceTab" data-tab="attendance" @click="isMobile && (sidebarOpen = false)">
@@ -1566,6 +1576,9 @@ function generateStudentFilterOptions($coordinatorId) {
                 if (!dataLoaded.companies) {
                     loadCoordinatorCompanies();
                     dataLoaded.companies = true;
+                } else {
+                    // If companies are already loaded, restore the HTE selection state
+                    restoreHTESelectionState();
                 }
             });
             
@@ -1577,11 +1590,15 @@ function generateStudentFilterOptions($coordinatorId) {
                         loadPreassessmentStudentList();
                     }
                     // Load students for Review tab using old system
-                    loadReviewStudents();
+                    if (typeof loadReviewStudents === 'function') {
+                        loadReviewStudents();
+                    }
                     // Keep loading evaluation questions (for the questions tab)
                     // Note: Categories and questions are loaded by loadQuestionCategories()
                     // Load categories for the dropdown
-                    loadQuestionCategories();
+                    if (typeof loadQuestionCategories === 'function') {
+                        loadQuestionCategories();
+                    }
                     dataLoaded.evaluation = true;
                 }
                 
@@ -1597,13 +1614,90 @@ function generateStudentFilterOptions($coordinatorId) {
             // Load all students when control tab is shown
             $(document).on('click', '[data-tab="control"]', function() {
                 if (!dataLoaded.control) {
+                    // Show students container first, then load data
+                    $('.form-container').hide();
+                    $('#allStudentsContainer').show();
+                    
                     // Load all students data automatically
                     if (typeof loadAllStudentsData === 'function') {
                         loadAllStudentsData();
                     }
                     dataLoaded.control = true;
+                } else {
+                    // Restore default view when returning to control tab
+                    restoreControlTabDefaultView();
                 }
             });
+            
+            // Function to restore default view when returning to control tab
+            function restoreControlTabDefaultView() {
+                // Check which container was last active or show a default one
+                let hasVisibleContainer = false;
+                
+                // Check if any main containers are currently visible
+                const mainContainers = [
+                    '#allStudentsContainer',
+                    '#allCompaniesContainer', 
+                    '#studentFormContainer',
+                    '#addHTEFormContainer',
+                    '#sessionFormContainer',
+                    '#deleteStudentFormContainer',
+                    '#deleteHTEFormContainer',
+                    '#deleteSessionFormContainer'
+                ];
+                
+                mainContainers.forEach(function(containerSelector) {
+                    if ($(containerSelector).is(':visible')) {
+                        hasVisibleContainer = true;
+                    }
+                });
+                
+                // If no container is visible, show the students container as default and reload data
+                if (!hasVisibleContainer) {
+                    // Hide all form containers first
+                    $('.form-container').hide();
+                    // Show the students container
+                    $('#allStudentsContainer').show();
+                    
+                    // Reload the student data if the function is available
+                    if (typeof loadAllStudentsData === 'function') {
+                        console.log('Restoring student data in control tab');
+                        loadAllStudentsData();
+                    }
+                } else if ($('#allStudentsContainer').is(':visible')) {
+                    // If students container is visible but might be empty, reload data
+                    const tableBody = $('#allStudentsTableBody');
+                    if (tableBody.length && tableBody.children().length === 0) {
+                        if (typeof loadAllStudentsData === 'function') {
+                            console.log('Reloading student data - table appears empty');
+                            loadAllStudentsData();
+                        }
+                    }
+                }
+            }
+            
+            // Function to restore HTE selection state when returning to attendance tab
+            function restoreHTESelectionState() {
+                let savedSessionId = $('#hiddenSelectedSessionId').val();
+                let savedHteId = $('#hiddenSelectedHteID').val();
+                
+                // Restore session selection
+                if (savedSessionId && savedSessionId !== '-1') {
+                    $('#ddlclass').val(savedSessionId);
+                }
+                
+                // Restore HTE selection if we have both session and HTE saved
+                if (savedSessionId && savedSessionId !== '-1' && savedHteId && savedHteId !== '-1') {
+                    setTimeout(function() {
+                        let companySelect = $('#company-select');
+                        if (companySelect.length > 0) {
+                            companySelect.val(savedHteId);
+                            // Trigger the change event to restore the HTE details and student list
+                            companySelect.trigger('change');
+                        }
+                    }, 100);
+                }
+            }
             
             // Function to load coordinator's companies
             function loadCoordinatorCompanies() {
@@ -1617,8 +1711,12 @@ function generateStudentFilterOptions($coordinatorId) {
                     data: {cdrid: cdrid, sessionid: sessionid, action: "getHTE"},
                     success: function(response) {
                         if (response && response.length > 0) {
-                            let html = getHTEHTML(response);
-                            $("#classlistarea").html(html);
+                            if (typeof getHTEHTML === 'function') {
+                                let html = getHTEHTML(response);
+                                $("#classlistarea").html(html);
+                            } else {
+                                console.error('getHTEHTML function not found');
+                            }
                         } else {
                             $("#classlistarea").html(`
                                 <div class="flex flex-col">
@@ -1866,6 +1964,8 @@ function generateStudentFilterOptions($coordinatorId) {
             loadCoordinatorCompanies();
         });
         
+
+        
     </script>
 
     <script>
@@ -2065,7 +2165,9 @@ function generateStudentFilterOptions($coordinatorId) {
                     loadPreassessmentStudentList();
                 }
                 // Load students for Review tab
-                loadReviewStudents();
+                if (typeof loadReviewStudents === 'function') {
+                    loadReviewStudents();
+                }
                 // Note: Categories already loaded in previous call
                 
                 // Ensure All Questions sub-tab is properly activated
@@ -2292,6 +2394,11 @@ function generateStudentFilterOptions($coordinatorId) {
                                 alert("Student added successfully!");
                                 $('#studentFormContainer').slideUp();
                                 $('#studentForm')[0].reset();
+                                
+                                // Invalidate student cache since new student was added
+                                let cdrid = $('#hiddencdrid').val();
+                                const cacheKey = `allStudents_${cdrid}`;
+                                invalidateCache('students', cacheKey);
                             } else {
                                 alert("Error adding student: " + (response.message || "Unknown error"));
                             }
@@ -2443,6 +2550,11 @@ function generateStudentFilterOptions($coordinatorId) {
                             $('#addHTEFormContainer').slideUp();
                             $('#hteForm')[0].reset();
                             $('#moaStatusPreview').text('Will be calculated automatically');
+                            
+                            // Invalidate companies cache since new HTE was added
+                            let cdrid = $('#hiddencdrid').val();
+                            const cacheKey = `allCompanies_${cdrid}`;
+                            invalidateCache('htes', cacheKey);
                         } else {
                             alert("Error adding HTE: " + response.message);
                         }
@@ -2538,6 +2650,12 @@ function generateStudentFilterOptions($coordinatorId) {
                             if (response.success) {
                                 alert("HTE deleted successfully!");
                                 $('#deleteHTEFormContainer').slideUp();
+                                
+                                // Invalidate companies cache since HTE was deleted
+                                let cdrid = $('#hiddencdrid').val();
+                                const cacheKey = `allCompanies_${cdrid}`;
+                                invalidateCache('htes', cacheKey);
+                                
                                 loadHTEOptions(); // Refresh the dropdown
                             } else {
                                 alert("Error deleting HTE: " + response.message);
@@ -2792,9 +2910,16 @@ function generateStudentFilterOptions($coordinatorId) {
                             $('#deleteStudentForm')[0].reset();
                             $('#deleteStudentList').empty();
                             
+                            // Invalidate student cache since students were deleted
+                            let cdrid = $('#hiddencdrid').val();
+                            const cacheKey = `allStudents_${cdrid}`;
+                            invalidateCache('students', cacheKey);
+                            
                             // Refresh the student list if visible
                             if ($('#allStudentsContainer').is(':visible')) {
-                                loadAllStudents();
+                                if (typeof loadAllStudentsData === 'function') {
+                                    loadAllStudentsData();
+                                }
                             }
                         } else {
                             alert("Error deleting students: " + (response.message || 'Unknown error'));

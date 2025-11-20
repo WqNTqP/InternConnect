@@ -1,4 +1,41 @@
 
+// Data caching system to avoid redundant fetches
+const dataCache = {
+    sessions: null,
+    htesBySession: {}, // Cache HTEs by session ID
+    studentsByHte: {}, // Cache students by HTE ID and date
+    lastUpdated: {
+        sessions: null,
+        htesBySession: {},
+        studentsByHte: {}
+    }
+};
+
+// Cache expiry times (in milliseconds)
+const CACHE_EXPIRY = {
+    sessions: 5 * 60 * 1000, // 5 minutes
+    htes: 3 * 60 * 1000,     // 3 minutes  
+    students: 1 * 60 * 1000   // 1 minute
+};
+
+// Check if cached data is still valid
+function isCacheValid(cacheType, subKey = null) {
+    const now = Date.now();
+    
+    if (cacheType === 'sessions') {
+        const lastUpdated = dataCache.lastUpdated.sessions;
+        return lastUpdated && (now - lastUpdated < CACHE_EXPIRY.sessions);
+    } else if (cacheType === 'hte' && subKey) {
+        const lastUpdated = dataCache.lastUpdated.htesBySession[subKey];
+        return lastUpdated && (now - lastUpdated < CACHE_EXPIRY.htes);
+    } else if (cacheType === 'student' && subKey) {
+        const lastUpdated = dataCache.lastUpdated.studentsByHte[subKey];
+        return lastUpdated && (now - lastUpdated < CACHE_EXPIRY.students);
+    }
+    
+    return false;
+}
+
 // MOA Status Calculation Utility
 function calculateMOAStatus(startDate, endDate) {
     if (!startDate || !endDate) {
@@ -84,6 +121,15 @@ function loadAllCompaniesData() {
         return;
     }
 
+    // Check cache first
+    const cacheKey = `allCompanies_${cdrid}`;
+    if (isCacheValid('hte', cacheKey) && dataCache.htesBySession[cacheKey]) {
+        console.log("Using cached companies data for coordinator:", cdrid);
+        const cachedData = dataCache.htesBySession[cacheKey];
+        renderAllCompaniesData(cachedData);
+        return;
+    }
+
     // Show loading state
     $('#companiesLoadingState').removeClass('hidden');
     $('#companiesContent').addClass('hidden');
@@ -99,25 +145,17 @@ function loadAllCompaniesData() {
         dataType: 'json',
         data: { action: 'getHTEList', cdrid: cdrid },
         success: function(response) {
+            // Cache the data
+            const cacheKey = `allCompanies_${cdrid}`;
+            dataCache.htesBySession[cacheKey] = response;
+            dataCache.lastUpdated.htesBySession[cacheKey] = Date.now();
+            
             // Calculate remaining time to show spinner
             const elapsedTime = Date.now() - loadStartTime;
             const remainingTime = Math.max(0, minLoadingDuration - elapsedTime);
             
             setTimeout(function() {
-                // Hide loading state, show content
-                $('#companiesLoadingState').addClass('hidden');
-                $('#companiesErrorState').addClass('hidden');
-                $('#companiesContent').removeClass('hidden');
-                
-                if (response.success && response.htes && Array.isArray(response.htes)) {
-                    if (response.htes.length > 0) {
-                        renderCompaniesList(response.htes);
-                    } else {
-                        $('#allCompaniesTableBody').html('<tr><td colspan="7" class="text-center text-gray-500 py-6">No companies assigned to you.</td></tr>');
-                    }
-                } else {
-                    $('#allCompaniesTableBody').html('<tr><td colspan="7" class="text-center text-gray-500 py-6">No companies found.</td></tr>');
-                }
+                renderAllCompaniesData(response);
             }, remainingTime);
         },
         error: function() {
@@ -133,6 +171,24 @@ function loadAllCompaniesData() {
             }, remainingTime);
         }
     });
+}
+
+// Render all companies data (extracted for reuse with caching)
+function renderAllCompaniesData(response) {
+    // Hide loading state, show content
+    $('#companiesLoadingState').addClass('hidden');
+    $('#companiesErrorState').addClass('hidden');
+    $('#companiesContent').removeClass('hidden');
+    
+    if (response.success && response.htes && Array.isArray(response.htes)) {
+        if (response.htes.length > 0) {
+            renderCompaniesList(response.htes);
+        } else {
+            $('#allCompaniesTableBody').html('<tr><td colspan="7" class="text-center text-gray-500 py-6">No companies assigned to you.</td></tr>');
+        }
+    } else {
+        $('#allCompaniesTableBody').html('<tr><td colspan="7" class="text-center text-gray-500 py-6">No companies found.</td></tr>');
+    }
 }
 
 // Render companies in the companies table
@@ -834,6 +890,12 @@ $(document).on('submit', '#updateCompanyLogoForm', function(e) {
                 $('#updateCompanyLogoModal').addClass('hidden');
                 $('#updateLogoFile').val('');
                 $('#updateLogoPreview').attr('src', '#').addClass('hidden');
+                
+                // Invalidate companies cache since logo was updated
+                let cdrid = $("#hiddencdrid").val();
+                const cacheKey = `allCompanies_${cdrid}`;
+                invalidateCache('htes', cacheKey);
+                
                 loadAllCompaniesData();
                 $submitBtn.text('✅ Logo Updated');
             } else {
@@ -994,6 +1056,12 @@ $(document).on('submit', '#editHTEForm', function(e) {
                 $('#editHTEModal').addClass('hidden');
                 $('#editHTEForm')[0].reset();
                 $('#editMoaStatusPreview').text('Select dates to see status');
+                
+                // Invalidate companies cache since HTE was updated
+                let cdrid = $("#hiddencdrid").val();
+                const cacheKey = `allCompanies_${cdrid}`;
+                invalidateCache('htes', cacheKey);
+                
                 loadAllCompaniesData(); // Refresh the companies list
             } else {
                 alert('Error updating HTE: ' + response.message);
@@ -3203,6 +3271,15 @@ function loadApprovedReportsWithFilters() {
             return;
         }
 
+        // Check cache first
+        const cacheKey = `allStudents_${cdrid}`;
+        if (isCacheValid('student', cacheKey) && dataCache.studentsByHte[cacheKey]) {
+            console.log("Using cached student data for coordinator:", cdrid);
+            const cachedData = dataCache.studentsByHte[cacheKey];
+            renderAllStudentsData(cachedData);
+            return;
+        }
+
         // Show loading state
         $('#studentsLoadingState').removeClass('hidden');
         $('#studentsContent').addClass('hidden');
@@ -3219,13 +3296,15 @@ function loadApprovedReportsWithFilters() {
                 console.log('AJAX response received:', response);
                 if (response.success) {
                     console.log('Success - Displaying students data');
-                    // Hide loading state, show content
-                    $('#studentsLoadingState').addClass('hidden');
-                    $('#studentsErrorState').addClass('hidden');
-                    $('#studentsContent').removeClass('hidden');
-                    // Handle both response.data and response.students for compatibility
+                    
+                    // Cache the data
+                    const cacheKey = `allStudents_${cdrid}`;
                     const studentsData = response.students || response.data || [];
-                    displayAllStudents(studentsData);
+                    dataCache.studentsByHte[cacheKey] = studentsData;
+                    dataCache.lastUpdated.studentsByHte[cacheKey] = Date.now();
+                    
+                    // Render the data
+                    renderAllStudentsData(studentsData);
                 } else {
                     console.error('Error in response:', response.message);
                     // Show error state
@@ -3242,6 +3321,17 @@ function loadApprovedReportsWithFilters() {
                 $('#studentsErrorState').removeClass('hidden');
             }
         });
+    }
+
+    // Render all students data (extracted for reuse with caching)
+    function renderAllStudentsData(studentsData) {
+        // Hide loading state, show content
+        $('#studentsLoadingState').addClass('hidden');
+        $('#studentsErrorState').addClass('hidden');
+        $('#studentsContent').removeClass('hidden');
+        
+        // Display the students
+        displayAllStudents(studentsData);
     }
 
     // View All Students button click handler
@@ -3343,31 +3433,41 @@ function getSessionHTML(rv)
     return x;
 }
 
+// Render session data (extracted for reuse with caching)
+function renderSessionData(rv) {
+    let x = getSessionHTML(rv);
+    $("#ddlclass").html(x);
+
+    // Auto-select the first session if available
+    if (rv && rv.length > 0) {
+        $("#ddlclass").val(rv[0].ID);
+        // Trigger the change event to load HTEs for the selected session
+        $("#ddlclass").trigger("change");
+    }
+}
+
 function loadSeassions()
 {
+    // Check cache first
+    if (isCacheValid('sessions') && dataCache.sessions) {
+        console.log("Using cached session data");
+        const cachedData = dataCache.sessions;
+        renderSessionData(cachedData);
+        return;
+    }
+    
     $.ajax({
         url: "ajaxhandler/attendanceAJAX.php",
         type: "POST",
         dataType: "json",
         data: {action: "getSession" },
-        beforeSend: function() {
-            // para mo show ni siya loading
-
-        },
         success: function(rv) {
-            {
-                //alert(JSON.stringify(rv));
-                let x=getSessionHTML(rv);
-                $("#ddlclass").html(x);
-
-                // Auto-select the first session if available
-                if (rv && rv.length > 0) {
-                    $("#ddlclass").val(rv[0].ID);
-                    // Trigger the change event to load HTEs for the selected session
-                    $("#ddlclass").trigger("change");
-                }
-
-            }
+            // Cache the data
+            dataCache.sessions = rv;
+            dataCache.lastUpdated.sessions = Date.now();
+            
+            console.log("Session data loaded and cached");
+            renderSessionData(rv);
         },
         error: function(xhr, status, error) {
             console.log("AJAX Error Details:", {
@@ -3414,6 +3514,15 @@ function getHTEHTML(classlist)
 function fetchTHE(cdrid,sessionid)
 {   console.log("Fetching THE for session:", sessionid);
     
+    // Check cache first
+    const cacheKey = `${cdrid}_${sessionid}`;
+    if (isCacheValid('hte', cacheKey) && dataCache.htesBySession[cacheKey]) {
+        console.log("Using cached HTE data for session:", sessionid);
+        const cachedData = dataCache.htesBySession[cacheKey];
+        renderHTEData(cachedData);
+        return;
+    }
+    
     // Track start time for minimum loading duration
     const loadStartTime = Date.now();
     const minLoadingDuration = 600; // Minimum 600ms to show spinner
@@ -3439,28 +3548,17 @@ function fetchTHE(cdrid,sessionid)
         dataType: "json",
         data: {cdrid:cdrid,sessionid:sessionid,action:"getHTE"},
         success: function(rv) {
+            // Cache the data
+            const cacheKey = `${cdrid}_${sessionid}`;
+            dataCache.htesBySession[cacheKey] = rv;
+            dataCache.lastUpdated.htesBySession[cacheKey] = Date.now();
+            
             // Calculate remaining time to show spinner
             const elapsedTime = Date.now() - loadStartTime;
             const remainingTime = Math.max(0, minLoadingDuration - elapsedTime);
             
             setTimeout(function() {
-                if (rv && Array.isArray(rv) && rv.length > 0) {
-                    let x = getHTEHTML(rv);
-                    $("#classlistarea").html(x);
-                } else {
-                    // Show no companies found state
-                    $("#classlistarea").html(`
-                        <div class="flex flex-col">
-                            <label class="text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
-                            <div class="flex items-center justify-center py-8 text-gray-500">
-                                <div class="text-center">
-                                    <i class="fas fa-building text-3xl mb-2 text-gray-400"></i>
-                                    <p>No companies assigned for this session</p>
-                                </div>
-                            </div>
-                        </div>
-                    `);
-                }
+                renderHTEData(rv);
             }, remainingTime);
         },
         error: function(e) {
@@ -3489,6 +3587,41 @@ function fetchTHE(cdrid,sessionid)
             }, remainingTime);
         }
     });
+}
+
+// Render HTE data (extracted from fetchTHE for reuse with caching)
+function renderHTEData(rv) {
+    if (rv && Array.isArray(rv) && rv.length > 0) {
+        let x = getHTEHTML(rv);
+        $("#classlistarea").html(x);
+        
+        // Restore HTE selection if we have a saved HTE ID
+        let savedHteId = $("#hiddenSelectedHteID").val();
+        if (savedHteId && savedHteId !== '-1') {
+            // Wait a bit for the DOM to update, then restore selection
+            setTimeout(function() {
+                let companySelect = $("#company-select");
+                if (companySelect.length > 0) {
+                    companySelect.val(savedHteId);
+                    // Trigger the change event to restore the HTE details and student list
+                    companySelect.trigger('change');
+                }
+            }, 50);
+        }
+    } else {
+        // Show no companies found state
+        $("#classlistarea").html(`
+            <div class="flex flex-col">
+                <label class="text-sm font-medium text-gray-700 mb-1">COMPANIES</label>
+                <div class="flex items-center justify-center py-8 text-gray-500">
+                    <div class="text-center">
+                        <i class="fas fa-building text-3xl mb-2 text-gray-400"></i>
+                        <p>No companies assigned for this session</p>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
 }
 
  function getClassdetailsAreaHTML(building)
@@ -3645,31 +3778,96 @@ function getStudentListHTML(studentList) {
 function fetchStudentList(sessionid,classid,cdrid,ondate)
 {
     console.log("fetchStudentList called with sessionid: " + sessionid + ", classid: " + classid + ", cdrid: " + cdrid + ", ondate: " + ondate);
+    
+    // Check cache first
+    const cacheKey = `${sessionid}_${classid}_${cdrid}_${ondate}`;
+    if (isCacheValid('student', cacheKey) && dataCache.studentsByHte[cacheKey]) {
+        console.log("Using cached student data for:", cacheKey);
+        const cachedData = dataCache.studentsByHte[cacheKey];
+        renderStudentData(cachedData);
+        return;
+    }
+    
+    // Show loading state
+    $("#studentlistarea").html(`
+        <div class="bg-gray-50 rounded-lg shadow-sm p-8">
+            <div class="text-center text-gray-500">
+                <div class="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+                <h3 class="text-lg font-medium text-gray-700 mb-2">Loading Students</h3>
+                <p class="text-sm">Fetching student attendance data...</p>
+            </div>
+        </div>
+    `);
+    
     $.ajax({
         url: "ajaxhandler/attendanceAJAX.php",
         type: "POST",
         dataType: "json",
         data: {cdrid:cdrid,ondate:ondate,sessionid:sessionid,classid:classid, action: "getStudentList" },
-        beforeSend: function() {
-            // para mo show ni siya loading
-
-        },
         success: function(rv) {
-            // console.log("fetchStudentList success: " + JSON.stringify(rv));
-            {
-                // alert(JSON.stringify(rv))
-                console.log('Student data:', rv);
-                let x = getStudentListHTML(rv);
-                $("#studentlistarea").html(x);
-            }
+            // Cache the data
+            dataCache.studentsByHte[cacheKey] = rv;
+            dataCache.lastUpdated.studentsByHte[cacheKey] = Date.now();
+            
+            console.log('Student data loaded and cached:', rv);
+            renderStudentData(rv);
         },
         error: function(xhr, status, error) {
             console.log("fetchStudentList error: " + error);
+            $("#studentlistarea").html(`
+                <div class="bg-red-50 rounded-lg shadow-sm p-8">
+                    <div class="text-center text-red-600">
+                        <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
+                        <h3 class="text-lg font-medium mb-2">Error Loading Students</h3>
+                        <p class="text-sm">Please try again or contact support.</p>
+                        <button onclick="fetchStudentList('${sessionid}','${classid}','${cdrid}','${ondate}')" 
+                                class="mt-3 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">
+                            <i class="fas fa-redo mr-1"></i>Retry
+                        </button>
+                    </div>
+                </div>
+            `);
         }
     });
 }
 
+// Render student data (extracted for reuse with caching)
+function renderStudentData(rv) {
+    let x = getStudentListHTML(rv);
+    $("#studentlistarea").html(x);
+}
 
+// Function to invalidate cache when data changes (e.g., after saving attendance)
+function invalidateCache(type, key = null) {
+    if (type === 'students' && key) {
+        delete dataCache.studentsByHte[key];
+        delete dataCache.lastUpdated.studentsByHte[key];
+    } else if (type === 'htes' && key) {
+        delete dataCache.htesBySession[key];
+        delete dataCache.lastUpdated.htesBySession[key];
+    } else if (type === 'sessions') {
+        dataCache.sessions = null;
+        dataCache.lastUpdated.sessions = null;
+    } else if (type === 'all') {
+        // Clear all caches
+        dataCache.sessions = null;
+        dataCache.htesBySession = {};
+        dataCache.studentsByHte = {};
+        dataCache.lastUpdated = {
+            sessions: null,
+            htesBySession: {},
+            studentsByHte: {}
+        };
+        console.log("All caches cleared");
+    }
+}
+
+// Force refresh function (bypasses cache)
+function forceRefreshData() {
+    invalidateCache('all');
+    // Reload current data
+    loadSeassions();
+}
 
 // after sa  page mag loading kani na ang e call or e execute
 
@@ -3686,6 +3884,14 @@ function  saveAttendance(studentid,hteid,coordinatorid,sessionid,ondate,timein,t
         success: function(rv) {
             if(rv[0] == 1) {
                 alert("Attendance saved successfully!");
+                
+                // Invalidate student cache for this HTE and date since attendance was updated
+                let sessionid = $("#ddlclass").val();
+                let classid = $("#hiddenSelectedHteID").val();
+                let cdrid = $("#hiddencdrid").val();
+                let ondate = $("#dtpondate").val();
+                const cacheKey = `${sessionid}_${classid}_${cdrid}_${ondate}`;
+                invalidateCache('students', cacheKey);
             } else {
                 alert("Error saving attendance: " + rv[0]);
             }
@@ -3792,8 +3998,10 @@ $(function(e)
         currentSessionId = $(this).val();
         $("#hiddenSelectedSessionId").val(currentSessionId);
         
-        // Clear previous data immediately
+        // Clear previous data immediately including HTE selection
         $("#classdetailsarea").html(``);
+        $("#hiddenSelectedHteID").val(-1);
+        currentHteId = null;
         
         if (currentSessionId != -1) {
             let cdrid = $("#hiddencdrid").val();

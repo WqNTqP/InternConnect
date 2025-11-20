@@ -104,15 +104,50 @@ switch ($action) {
         exit;
     case "getStudentsForPreassessment":
         try {
-            $stmt = $dbo->conn->prepare("SELECT INTERNS_ID as id, STUDENT_ID, NAME, SURNAME FROM interns_details");
+            // Show all students with their eligibility status
+            $stmt = $dbo->conn->prepare("
+                SELECT DISTINCT 
+                    id.INTERNS_ID as id, 
+                    id.STUDENT_ID, 
+                    id.NAME, 
+                    id.SURNAME,
+                    (
+                        SELECT COUNT(*) FROM student_questions sq 
+                        WHERE sq.student_id = id.INTERNS_ID AND sq.approval_status = 'approved'
+                    ) as approved_questions_count,
+                    (
+                        SELECT COUNT(*) FROM student_questions sq 
+                        WHERE sq.student_id = id.INTERNS_ID AND sq.approval_status = 'pending'
+                    ) as pending_questions_count,
+                    (
+                        SELECT COUNT(*) FROM student_questions sq 
+                        WHERE sq.student_id = id.INTERNS_ID
+                    ) as total_questions_count,
+                    (
+                        SELECT COUNT(*) FROM student_evaluation se 
+                        WHERE se.STUDENT_ID = id.STUDENT_ID
+                    ) as submitted_evaluation_count
+                FROM interns_details id
+                ORDER BY id.NAME, id.SURNAME
+            ");
             $stmt->execute();
             $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $result = array();
             foreach ($students as $student) {
+                // Determine eligibility
+                $allQuestionsApproved = $student['total_questions_count'] > 0 && $student['pending_questions_count'] == 0;
+                $hasSubmittedEvaluation = $student['submitted_evaluation_count'] > 0;
+                
                 $result[] = array(
                     'id' => $student['id'],
                     'STUDENT_ID' => $student['STUDENT_ID'],
-                    'name' => $student['NAME'] . ' ' . $student['SURNAME']
+                    'name' => $student['NAME'] . ' ' . $student['SURNAME'],
+                    'total_questions' => $student['total_questions_count'],
+                    'approved_questions' => $student['approved_questions_count'],
+                    'pending_questions' => $student['pending_questions_count'],
+                    'has_submitted_evaluation' => $hasSubmittedEvaluation,
+                    'all_questions_approved' => $allQuestionsApproved,
+                    'eligible_for_rating' => $allQuestionsApproved && $hasSubmittedEvaluation
                 );
             }
             echo json_encode(array('success' => true, 'students' => $result));
