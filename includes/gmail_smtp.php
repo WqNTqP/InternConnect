@@ -174,7 +174,7 @@ function sendResetEmailViaGmail($email, $userName, $resetLink, $userType, $userR
             
             <div class='footer'>
                 <p>📧 This email was sent from the InternConnect System<br>
-                🏫 Holy Child Colleges of Davao<br>
+                🏫 Holy Cross of Davao College<br>
                 📅 Sent on " . date('F j, Y \a\t g:i A') . "</p>
                 <p><em>If you have questions, contact your system administrator.</em></p>
             </div>
