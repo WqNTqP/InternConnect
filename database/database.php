@@ -16,7 +16,7 @@ public function __construct() {
     $this->servername = ($_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'mainline.proxy.rlwy.net') . 
                        ':' . ($_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: '31782');
     $this->username = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'root';
-    $this->password = $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: 'JskNNDcPYglKnrAQqhwvnGTkEptWKOZZ';
+    $this->password = $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: 'LYeUTqrnaDxpSAdWiirrGhFAcVVyNMGJ';
     $this->dbname = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'railway';
     
     // Log environment detection for debugging
