@@ -177,10 +177,10 @@
                     <!-- Login Form -->
                     <form id="adminLoginForm" class="space-y-6">
                         <div>
-                            <label for="txtAdminEmail" class="block text-sm font-medium text-gray-700 mb-1">HTE Email</label>
+                            <label for="txtAdminEmail" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
                             <input type="email" id="txtAdminEmail" required 
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Enter your HTE email">
+                                placeholder="Enter your Username">
                         </div>
                         <div>
                             <label for="txtAdminPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>

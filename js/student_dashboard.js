@@ -234,7 +234,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success && response.questions) {
                     let html = '<h4 class="post-eval-category-header">Personal and Interpersonal Skills</h4>';
-                    html += '<table class="table post-eval-table"><thead><tr><th>Question</th><th>Rating</th></tr></thead><tbody>';
+                    html += '<table class="table post-eval-table"><thead><tr><th>Discipline/Task</th><th>Rating</th></tr></thead><tbody>';
                     response.questions.forEach(function(q, idx) {
                         html += `<tr><td>${q.question_text}</td><td>
                             <select name="personal_rating_${q.question_id}" class="personal-rating-select">

@@ -699,7 +699,7 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                             <table class="eval-table">
                                 <thead>
                                     <tr>
-                                        <th>Question</th>
+                                        <th>Discipline/Task</th>
                                         <th colspan="5">Rating (Likert Scale)</th>
                                     </tr>
                                 </thead>
@@ -753,7 +753,7 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                             <table class="eval-table">
                                 <thead>
                                     <tr>
-                                        <th>Question</th>
+                                        <th>Discipline/Task</th>
                                         <th colspan="5">Rating (Likert Scale)</th>
                                     </tr>
                                 </thead>
@@ -806,7 +806,7 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                             <table class="eval-table">
                                 <thead>
                                     <tr>
-                                        <th>Question</th>
+                                        <th>Discipline/Task</th>
                                         <th colspan="5">Rating (Likert Scale)</th>
                                     </tr>
                                 </thead>
@@ -859,7 +859,7 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                             <table class="eval-table">
                                 <thead>
                                     <tr>
-                                        <th>Question</th>
+                                        <th>Discipline/Task</th>
                                         <th colspan="5">Rating (Likert Scale)</th>
                                     </tr>
                                 </thead>

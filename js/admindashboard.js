@@ -1370,7 +1370,7 @@ $(document).ready(function() {
                 var $catDiv = $('<div class="admin-eval-category" style="margin-bottom:32px;"></div>');
                 $catDiv.append('<h3 style="text-transform:uppercase;font-size:18px;margin-bottom:12px;color:#374151;letter-spacing:1px;">'+catTitle+'</h3>');
                     var tableHeader = '<table class="admin-eval-table" style="width:100%;border-collapse:collapse;margin-bottom:12px;"><thead><tr>' +
-                        '<th style="border:1px solid #e5e7eb;padding:10px;background:#f3f4f6;font-weight:600;">Question</th>' +
+                        '<th style="border:1px solid #e5e7eb;padding:10px;background:#f3f4f6;font-weight:600;">Discipline/Task</th>' +
                         '<th class="self-rating-col" style="border:1px solid #e5e7eb;padding:10px;background:#f3f4f6;font-weight:600;width:100px;min-width:100px;max-width:100px;text-align:center;">Self-Rating</th>';
                     for(var i=5;i>=1;i--) {
                         tableHeader += '<th style="border:1px solid #e5e7eb;padding:0;background:#f3f4f6;font-weight:600;width:30px;text-align:center;">'+i+'</th>';

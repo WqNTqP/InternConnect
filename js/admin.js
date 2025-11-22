@@ -31,7 +31,7 @@ function tryLogin() {
                     let errorMessage = "";
                     switch(rv.status) {
                         case "USER NAME DOES NOT EXIST":
-                            errorMessage = "No account found with this email address. Please check your email and try again.";
+                            errorMessage = "No account found with this Username. Please check your email and try again.";
                             break;
                         case "Wrong Password":
                             errorMessage = "Incorrect password. Please check your password and try again.";

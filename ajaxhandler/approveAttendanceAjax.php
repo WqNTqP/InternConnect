@@ -80,9 +80,9 @@ function approveAttendance($id) {
 
         try {
             if (!empty($timeIn) && !empty($timeOut)) {
-                // Insert into interns_attendance only if both timein and timeout are present
-                $stmt = $dbo->conn->prepare("INSERT INTO interns_attendance (COORDINATOR_ID, HTE_ID, ID, INTERNS_ID, ON_DATE, TIMEIN, TIMEOUT) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$coordinatorId, $hteId, $sessionId, $internId, $onDate, $timeIn, $timeOut]);
+                // Insert into interns_attendance only if both timein and timeout are present (let AUTO_INCREMENT handle ID)
+                $stmt = $dbo->conn->prepare("INSERT INTO interns_attendance (COORDINATOR_ID, HTE_ID, INTERNS_ID, ON_DATE, TIMEIN, TIMEOUT) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$coordinatorId, $hteId, $internId, $onDate, $timeIn, $timeOut]);
 
                 // Update status in pending_attendance to approved
                 $stmt = $dbo->conn->prepare("UPDATE pending_attendance SET STATUS = 'approved', updated_at = NOW() WHERE ID = ?");
