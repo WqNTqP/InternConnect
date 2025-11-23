@@ -950,7 +950,7 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                 <div class="form-actions-wrapper">
                     <div class="action-buttons-container">
                         <button type="button" class="btn btn-outline-primary" id="saveProgressBtn">
-                            <i class="fas fa-save"></i> Save Questions
+                            <i class="fas fa-save"></i> Submit
                         </button>
                         <button type="submit" class="btn btn-primary" id="submitPostAssessmentBtn">
                             <i class="fas fa-paper-plane"></i> Submit Assessment

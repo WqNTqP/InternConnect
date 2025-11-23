@@ -84,11 +84,19 @@ function addApprovalStatusIndicator(questionInput, questionData) {
     // Insert after the question input
     questionInput.after(statusHtml);
     
-    // Disable input if question is approved (can't edit approved questions)
+    // Handle input state based on approval status
     if (status === 'approved') {
-        questionInput.prop('readonly', true).css('background-color', '#f9f9f9');
+        questionInput.prop('readonly', true).css('background-color', '#f0f8ff');
+        questionInput.addClass('approved-question');
+    } else if (status === 'rejected') {
+        questionInput.prop('readonly', false).prop('disabled', false);
+        questionInput.css('background-color', '#fff8dc');
+        questionInput.attr('placeholder', 'Edit your question here (needs revision)');
+        questionInput.addClass('rejected-question');
+        console.log('Made question editable:', questionInput.attr('name'));
     } else {
         questionInput.prop('readonly', false).css('background-color', '');
+        questionInput.addClass('pending-question');
     }
 }
 
@@ -136,47 +144,121 @@ $(document).ready(function() {
         `;
         $('#personalSkillsTable tbody').html(loadingHTML);
         
-        $.ajax({
-            url: 'ajaxhandler/getPersonalSkillsQuestionsAjax.php',
-            type: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                if (response.success && response.questions) {
-                    let tbody = '';
-                    response.questions.forEach(function(q, idx) {
-                        tbody += `<tr><td>${q.question_text}</td>
-                            <td><input type="radio" name="personal_r${idx+1}" value="5" data-question-id="${q.question_id}"> 5</td>
-                            <td><input type="radio" name="personal_r${idx+1}" value="4" data-question-id="${q.question_id}"> 4</td>
-                            <td><input type="radio" name="personal_r${idx+1}" value="3" data-question-id="${q.question_id}"> 3</td>
-                            <td><input type="radio" name="personal_r${idx+1}" value="2" data-question-id="${q.question_id}"> 2</td>
-                            <td><input type="radio" name="personal_r${idx+1}" value="1" data-question-id="${q.question_id}"> 1</td>
-                        </tr>`;
-                    });
-                    $('#personalSkillsTable tbody').html(tbody);
-                    // Fetch saved ratings and pre-select radio buttons
-                    $.ajax({
-                        url: 'ajaxhandler/getPostAssessmentAjax.php',
-                        type: 'GET',
-                        dataType: 'json',
-                        success: function(ratingResp) {
-                            if (ratingResp.success && Array.isArray(ratingResp.ratings)) {
-                                let personalRatings = ratingResp.ratings.filter(function(item) {
-                                    return item.category === 'Personal and Interpersonal Skills';
-                                });
-                                personalRatings.forEach(function(item) {
-                                    // Find the radio button with matching data-question-id and value
-                                    $(`input[data-question-id='${item.question_id}'][value='${item.self_rating}']`).prop('checked', true);
-                                });
-                            }
-                        }
-                    });
-                } else {
-                    $('#personalSkillsTable tbody').html('<tr><td colspan="6">No personal/interpersonal skills questions found.</td></tr>');
-                }
-            },
-            error: function() {
-                $('#personalSkillsTable tbody').html('<tr><td colspan="6">Error loading personal/interpersonal skills questions.</td></tr>');
+        // Load both predefined questions AND custom student questions for Personal Skills
+        Promise.all([
+            // Load predefined questions
+            $.ajax({
+                url: 'ajaxhandler/getPersonalSkillsQuestionsAjax.php',
+                type: 'GET',
+                dataType: 'json'
+            }),
+            // Load student's custom questions for this category
+            $.ajax({
+                url: 'ajaxhandler/checkQuestionApprovalStatusAjax.php',
+                type: 'GET',
+                dataType: 'json'
+            })
+        ]).then(function(responses) {
+            const [predefinedResponse, studentQuestionsResponse] = responses;
+            let tbody = '';
+            let questionIndex = 1;
+            
+            // Add predefined questions (these are always approved and for rating only)
+            if (predefinedResponse.success && predefinedResponse.questions) {
+                predefinedResponse.questions.forEach(function(q) {
+                    tbody += `<tr><td>${q.question_text}</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="5" data-question-id="${q.question_id}"> 5</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="4" data-question-id="${q.question_id}"> 4</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="3" data-question-id="${q.question_id}"> 3</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="2" data-question-id="${q.question_id}"> 2</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="1" data-question-id="${q.question_id}"> 1</td>
+                    </tr>`;
+                    questionIndex++;
+                });
             }
+            
+            // Add custom student questions for Personal Skills category (these can be edited if rejected)
+            if (studentQuestionsResponse.success && studentQuestionsResponse.questions) {
+                const personalSkillsQuestions = studentQuestionsResponse.questions.filter(q => 
+                    q.category === 'Personal and Interpersonal Skills' || q.category === 'Personal & Interpersonal Skills'
+                );
+                
+                personalSkillsQuestions.forEach(function(q) {
+                    const isRejected = q.approval_status === 'rejected';
+                    const isApproved = q.approval_status === 'approved';
+                    
+                    let questionDisplay = '';
+                    if (isRejected) {
+                        // Rejected questions show as editable input with feedback
+                        questionDisplay = `
+                            <div class="question-with-status">
+                                <input type="text" name="personal_custom_q${q.question_number}" 
+                                       value="${q.question_text}" 
+                                       class="form-control rejected-question-input" 
+                                       placeholder="Edit your question here (needs revision)"
+                                       style="background-color: #fff8dc; border: 2px solid #ffc107;">
+                                <div class="approval-status-indicator rejected" style="margin-top: 0.5rem;">
+                                    <div class="status-badge">
+                                        <i class="fas fa-redo"></i>
+                                        <span>Needs Redo</span>
+                                    </div>
+                                    ${q.rejection_reason ? `
+                                        <div class="admin-feedback">
+                                            <strong><i class="fas fa-comment"></i> Admin Feedback:</strong>
+                                            <p>${q.rejection_reason}</p>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // Approved or pending questions show as text
+                        questionDisplay = `
+                            <div class="question-with-status">
+                                <span>${q.question_text}</span>
+                                <div class="approval-status-indicator ${q.approval_status}">
+                                    <div class="status-badge">
+                                        <i class="fas ${isApproved ? 'fa-check-circle' : 'fa-clock'}"></i>
+                                        <span>${isApproved ? 'Approved' : 'Pending'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    tbody += `<tr><td>${questionDisplay}</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="5" data-question-id="${q.id}"> 5</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="4" data-question-id="${q.id}"> 4</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="3" data-question-id="${q.id}"> 3</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="2" data-question-id="${q.id}"> 2</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="1" data-question-id="${q.id}"> 1</td>
+                    </tr>`;
+                    questionIndex++;
+                });
+            }
+            
+            $('#personalSkillsTable tbody').html(tbody || '<tr><td colspan="6">No personal/interpersonal skills questions found.</td></tr>');
+            
+            // Fetch saved ratings and pre-select radio buttons
+            $.ajax({
+                url: 'ajaxhandler/getPostAssessmentAjax.php',
+                type: 'GET',
+                dataType: 'json',
+                success: function(ratingResp) {
+                    if (ratingResp.success && Array.isArray(ratingResp.ratings)) {
+                        let personalRatings = ratingResp.ratings.filter(function(item) {
+                            return item.category === 'Personal and Interpersonal Skills';
+                        });
+                        personalRatings.forEach(function(item) {
+                            // Find the radio button with matching data-question-id and value
+                            $(`input[data-question-id='${item.question_id}'][value='${item.self_rating}']`).prop('checked', true);
+                        });
+                    }
+                }
+            });
+        }).catch(function(error) {
+            console.error('Error loading personal skills questions:', error);
+            $('#personalSkillsTable tbody').html('<tr><td colspan="6">Error loading personal/interpersonal skills questions.</td></tr>');
         });
     }
 
@@ -276,11 +358,14 @@ $(document).ready(function() {
         dataType: 'json',
         success: function(response) {
             if (response.success && response.submitted) {
-                // Disable all inputs and buttons in the post-assessment form except category navigation
-                $('#postAssessmentForm :input').not('.category-nav-btn, #categoryDropdown').prop('disabled', true);
+                // Disable all inputs and buttons in the post-assessment form except category navigation and save progress
+                $('#postAssessmentForm :input').not('.category-nav-btn, #categoryDropdown, #saveProgressBtn').prop('disabled', true);
                 // Keep dropdown enabled even if form is submitted (for viewing purposes)
                 $('#categoryDropdown').prop('disabled', false);
-                $('#postAssessmentFormMessage').text('You have already submitted your post-assessment. Editing is disabled.').css('color', 'blue');
+                // Keep save progress button enabled for editing rejected questions
+                $('#saveProgressBtn').prop('disabled', false);
+                
+                $('#postAssessmentFormMessage').text('You have submitted your post-assessment. You can still edit rejected questions and save changes.').css('color', 'blue');
                 // Change submit button color to gray
                 $('#submitPostAssessmentBtn').css({
                     'background-color': '#cccccc',
@@ -3479,8 +3564,56 @@ function loadStudentEvaluationAnswersAndRatings() {
             const $btn = $(this);
             $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
             
-            // Save all categories
+            // Save all categories including personal skills custom questions
             saveAllCategories($btn);
+        });
+        
+        // Save custom personal skills questions when edited
+        $(document).on('blur', 'input.rejected-question-input', function() {
+            const $input = $(this);
+            const questionText = $input.val().trim();
+            const questionName = $input.attr('name');
+            
+            if (questionText && questionName) {
+                // Extract question number from name (personal_custom_q1 -> 1)
+                const questionNumber = questionName.replace('personal_custom_q', '');
+                
+                // Save the updated question
+                const requestData = {
+                    student_id: $('#hiddenStudentId').val(),
+                    questions: [{
+                        category: 'Personal and Interpersonal Skills',
+                        question_text: questionText,
+                        question_number: parseInt(questionNumber)
+                    }]
+                };
+                
+                $.ajax({
+                    url: 'ajaxhandler/saveStudentQuestionsAjax.php',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(requestData),
+                    success: function(response) {
+                        const result = typeof response === 'string' ? JSON.parse(response) : response;
+                        if (result.success) {
+                            // Show brief success feedback
+                            $input.css('border-color', '#28a745').fadeOut(100).fadeIn(100);
+                            
+                            // Refresh the personal skills table after a short delay
+                            setTimeout(() => {
+                                renderPersonalSkillsTable();
+                            }, 1000);
+                        } else {
+                            console.error('Error saving question:', result.error);
+                            $input.css('border-color', '#dc3545');
+                        }
+                    },
+                    error: function() {
+                        console.error('Network error saving question');
+                        $input.css('border-color', '#dc3545');
+                    }
+                });
+            }
         });
 
         function saveAllCategories($btn) {
@@ -3540,7 +3673,7 @@ function loadStudentEvaluationAnswersAndRatings() {
             function checkAllSavesComplete() {
                 if (completedSaves === totalSaves) {
                     if (errors.length === 0) {
-                        showAssessmentMessage(`All progress saved successfully! (${successes.join(', ')})`, 'success');
+                        showAssessmentMessage(`All progress saved successfully! (${successes.join(', ')}) - Questions will be resubmitted for approval.`, 'success');
                     } else if (successes.length === 0) {
                         showAssessmentMessage(`Error saving progress: ${errors.join('; ')}`, 'error');
                     } else {
@@ -3685,6 +3818,10 @@ function loadStudentEvaluationAnswersAndRatings() {
                         try {
                             const result = typeof response === 'string' ? JSON.parse(response) : response;
                             if (result.success) {
+                                // Refresh approval status after saving to update indicators
+                                setTimeout(() => {
+                                    checkQuestionApprovalStatus();
+                                }, 500);
                                 resolve();
                             } else {
                                 console.error('Save error:', result.error);
@@ -3749,11 +3886,17 @@ function loadStudentEvaluationAnswersAndRatings() {
             data: { student_id: $('#hiddenStudentId').val() },
             success: function(response) {
                 if (response.submitted) {
-                    $('#postAssessmentForm input, #postAssessmentForm textarea, #postAssessmentForm button').prop('disabled', true);
+                    // Disable form inputs but keep save progress button enabled for editing rejected questions
+                    $('#postAssessmentForm input, #postAssessmentForm textarea').prop('disabled', true);
+                    $('#submitPostAssessmentBtn').prop('disabled', true);
+                    
+                    // Keep save progress button enabled so users can edit rejected questions
+                    $('#saveProgressBtn').prop('disabled', false);
+                    
                     $('#postAssessmentFormMessage').html(`
                         <div class="message info">
                             <i class="fas fa-info-circle"></i>
-                            <span>You have already submitted your post-assessment. The form is now read-only.</span>
+                            <span>You have submitted your post-assessment. You can still edit rejected questions and save changes.</span>
                         </div>
                     `);
                 }
@@ -3775,11 +3918,13 @@ function loadStudentEvaluationAnswersAndRatings() {
                         $('#submitPostAssessmentBtn').prop('disabled', true)
                             .removeClass('btn-primary')
                             .addClass('btn-secondary')
+                            .css({'color': 'white', 'background-color': '', 'border-color': ''})
                             .html('<i class="fas fa-lock"></i> Assessment Locked');
                     } else {
                         $('#submitPostAssessmentBtn').prop('disabled', false)
                             .removeClass('btn-secondary')
                             .addClass('btn-primary')
+                            .css({'color': 'white', 'background-color': '', 'border-color': ''})
                             .html('<i class="fas fa-paper-plane"></i> Submit Assessment');
                     }
                 }
@@ -3835,11 +3980,13 @@ function loadStudentEvaluationAnswersAndRatings() {
                         $('#submitPostAssessmentBtn').prop('disabled', false)
                             .removeClass('btn-secondary')
                             .addClass('btn-primary')
+                            .css({'color': 'white', 'background-color': '', 'border-color': ''})
                             .html('<i class="fas fa-paper-plane"></i> Submit Assessment');
                     } else {
                         $('#submitPostAssessmentBtn').prop('disabled', true)
                             .removeClass('btn-primary')
-                            .addClass('btn-secondary');
+                            .addClass('btn-secondary')
+                            .css({'color': 'white', 'background-color': '', 'border-color': ''});
                         
                         // Set button text based on specific condition
                         if (response.status_counts.total === 0) {
@@ -3861,7 +4008,7 @@ function loadStudentEvaluationAnswersAndRatings() {
     }
 
     function displayApprovalStatus(response) {
-        const { status_counts, message, can_submit_assessment } = response;
+        const { status_counts, message, can_submit_assessment, questions } = response;
         
         let statusClass = 'warning';
         let iconClass = 'fa-exclamation-triangle';
@@ -3889,11 +4036,108 @@ function loadStudentEvaluationAnswersAndRatings() {
         // Remove any existing approval status and insert new one before the form actions
         $('.approval-status-container').remove();
         $('.form-actions-wrapper').before(statusHtml);
+        
+        // Load existing questions into form fields if any exist
+        if (questions && questions.length > 0) {
+            loadExistingQuestionsIntoForm(questions);
+        }
+    }
+    
+    // Function to load existing questions into the form fields for editing
+    function loadExistingQuestionsIntoForm(questions) {
+        console.log('Loading existing questions into form:', questions);
+        
+        // Category mapping
+        const categoryMap = {
+            'System Development': 'sysdev',
+            'Research Competency': 'research',
+            'Research': 'research', 
+            'Technical Support': 'techsup',
+            'Business Operations': 'bizop',
+            'Business Operation': 'bizop'
+        };
+        
+        // Clear existing questions first
+        $('input[name^="sysdev_q"], input[name^="research_q"], input[name^="techsup_q"], input[name^="bizop_q"]').val('');
+        
+        // Group questions by category
+        const questionsByCategory = {};
+        questions.forEach(function(question) {
+            const category = categoryMap[question.category];
+            if (category) {
+                if (!questionsByCategory[category]) {
+                    questionsByCategory[category] = [];
+                }
+                questionsByCategory[category].push(question);
+            }
+        });
+        
+        // Count rejected questions for user feedback
+        let rejectedCount = 0;
+        questions.forEach(function(question) {
+            if (question.approval_status === 'rejected') {
+                rejectedCount++;
+            }
+        });
+        
+        // Populate form fields with existing questions
+        Object.keys(questionsByCategory).forEach(function(category) {
+            const categoryQuestions = questionsByCategory[category];
+            console.log(`Processing category: ${category}, questions:`, categoryQuestions);
+            
+            categoryQuestions.forEach(function(question) {
+                const inputName = `${category}_q${question.question_number}`;
+                const $input = $(`input[name="${inputName}"]`);
+                
+                console.log(`Looking for input: ${inputName}, found: ${$input.length > 0}, question:`, question);
+                
+                if ($input.length > 0) {
+                    // Populate the question text
+                    $input.val(question.question_text);
+                    console.log(`Populated ${inputName} with: ${question.question_text}`);
+                    
+                    // Add approval status indicator
+                    addApprovalStatusIndicator($input, question);
+                    
+                    // Enable editing for rejected questions
+                    if (question.approval_status === 'rejected') {
+                        $input.prop('readonly', false).css('background-color', '#fff8dc'); // Light yellow background for rejected questions
+                        $input.attr('placeholder', 'Edit your question here (needs revision)');
+                        $input.addClass('rejected-question');
+                        console.log(`Enabled editing for rejected question: ${inputName}`);
+                    } else if (question.approval_status === 'approved') {
+                        $input.prop('readonly', true).css('background-color', '#f0f8ff'); // Light blue for approved
+                        $input.addClass('approved-question');
+                    } else {
+                        $input.prop('readonly', false).css('background-color', '#f9f9f9'); // Light gray for pending
+                        $input.addClass('pending-question');
+                    }
+                } else {
+                    console.warn(`No input field found for: ${inputName}`);
+                }
+            });
+        });
+        
+        // Show helpful message if there are rejected questions
+        if (rejectedCount > 0) {
+            console.log(`Found ${rejectedCount} rejected questions that can be edited`);
+            // Ensure save progress button is enabled when there are rejected questions
+            $('#saveProgressBtn').prop('disabled', false).css('pointer-events', 'auto');
+        }
     }
 
     // Initialize enhanced post-assessment immediately and when tab is clicked
     try {
         enhancePostAssessment();
+        checkQuestionApprovalStatus(); // Load existing questions on page load
+        
+        // Also load personal skills table if this is the default category
+        if (currentCategoryIdx === 4) {
+            setTimeout(() => {
+                renderPersonalSkillsTable();
+            }, 500);
+        }
+        
         console.log('Enhanced post assessment initialized successfully');
     } catch (error) {
         console.error('Error initializing enhanced post assessment:', error);
@@ -3903,6 +4147,10 @@ function loadStudentEvaluationAnswersAndRatings() {
         setTimeout(() => {
             try {
                 enhancePostAssessment();
+                // Ensure we wait for the UI to be ready before loading questions
+                setTimeout(() => {
+                    checkQuestionApprovalStatus(); // Load existing questions on tab activation
+                }, 300);
                 console.log('Enhanced post assessment re-initialized on tab click');
             } catch (error) {
                 console.error('Error re-initializing enhanced post assessment:', error);
