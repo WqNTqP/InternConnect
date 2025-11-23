@@ -57,7 +57,8 @@ $superadminName = $_SESSION['current_user_name'] ?? 'Super Admin';
     <!-- Styles -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/superadmin.css">
-    <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="icon/graduation-cap-favicon.svg">
+    <link rel="alternate icon" href="icon/graduation-cap-favicon.svg">
 
     <!-- jQuery (only include once) -->
     <script src="js/jquery.js"></script>

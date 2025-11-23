@@ -3427,7 +3427,9 @@ function getSessionHTML(rv)
     for(i=0;i<rv.length;i++)
     {
         let cs = rv[i];
-        x=x+ `<option value=${cs['ID']}>${cs['YEAR']+" "+cs['TERM']}</option>`;
+        // Use the new DISPLAY_NAME format or fallback to S.Y. YEAR-YEAR+1
+        let displayName = cs['DISPLAY_NAME'] || ('S.Y. ' + cs['YEAR'] + '-' + (parseInt(cs['YEAR']) + 1));
+        x=x+ `<option value=${cs['ID']}>${displayName}</option>`;
     }
 
     return x;

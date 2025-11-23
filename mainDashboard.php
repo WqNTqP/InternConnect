@@ -138,7 +138,8 @@ function generateStudentFilterOptions($coordinatorId) {
         }
     </script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="icon/graduation-cap-favicon.svg">
+    <link rel="alternate icon" href="icon/graduation-cap-favicon.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <title>InternConnect - Dashboard</title>
     <style>
@@ -299,8 +300,8 @@ function generateStudentFilterOptions($coordinatorId) {
                         <!-- Session Selection -->
                         <div class="bg-gray-50 rounded-lg shadow-sm p-3 md:p-4">
                             <div class="flex flex-col">
-                                <label class="text-xs md:text-sm font-medium text-gray-700 mb-1">SESSION</label>
-                                <select id="ddlclass" class="mt-1 block w-full text-xs md:text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"><option value="-1">SELECT ONE</option><option value="1">2024 FIRST SEMESTER</option><option value="9">2025 SECOND SEMESTER</option></select>
+                                <label class="text-xs md:text-sm font-medium text-gray-700 mb-1">TERM</label>
+                                <select id="ddlclass" class="mt-1 block w-full text-xs md:text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"><option value="-1">SELECT ONE</option></select>
                             </div>
                         </div>
 
@@ -723,18 +724,11 @@ function generateStudentFilterOptions($coordinatorId) {
                                             background-color: #fff;
                                         }
                                     </style>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="grid grid-cols-1 gap-4">
                                         <div>
-                                            <label for="sessionYear" class="block text-sm font-medium text-gray-700 mb-1">Year</label>
-                                            <input type="number" id="sessionYear" name="year" min="2000" max="2050" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Year">
-                                        </div>
-                                        <div>
-                                            <label for="sessionTerm" class="block text-sm font-medium text-gray-700 mb-1">Term</label>
-                                            <select id="sessionTerm" name="term" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                                <option value="">Select Term</option>
-                                                <option value="FIRST SEMESTER">FIRST SEMESTER</option>
-                                                <option value="SECOND SEMESTER">SECOND SEMESTER</option>
-                                            </select>
+                                            <label for="sessionYear" class="block text-sm font-medium text-gray-700 mb-1">School Year</label>
+                                            <input type="number" id="sessionYear" name="year" min="2000" max="2050" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Year (e.g., 2025)">
+                                            <p class="text-xs text-gray-500 mt-1">This will be displayed as "S.Y. 2025-2026"</p>
                                         </div>
                                     </div>
                                     <div class="mt-6 flex gap-4">
@@ -1560,6 +1554,11 @@ function generateStudentFilterOptions($coordinatorId) {
             `);
             
             console.log('Cleared hardcoded student data and evaluation questions - all lists now show loading state');
+            
+            // Load sessions for main attendance dropdown on page load
+            if (typeof loadSeassions === 'function') {
+                loadSeassions();
+            }
             
             // Load coordinator-specific data when tabs are activated
             // This ensures data is loaded dynamically based on the logged-in coordinator
@@ -2423,7 +2422,7 @@ function generateStudentFilterOptions($coordinatorId) {
                             let options = '<option value="">Select Session</option>';
                             response.forEach(function(session) {
                                 const sessionId = session.ID;
-                                const sessionName = session.YEAR + " " + session.TERM;
+                                const sessionName = session.DISPLAY_NAME || ('S.Y. ' + session.YEAR + '-' + (parseInt(session.YEAR) + 1));
                                 options += `<option value="${sessionId}">${sessionName}</option>`;
                             });
                             $('#sessionSelectStudent').html(options);
@@ -2620,7 +2619,7 @@ function generateStudentFilterOptions($coordinatorId) {
                             let options = '<option value="">Select Session</option>';
                             response.forEach(function(session) {
                                 const sessionId = session.ID;
-                                const sessionName = session.YEAR + " " + session.TERM;
+                                const sessionName = session.DISPLAY_NAME || ('S.Y. ' + session.YEAR + '-' + (parseInt(session.YEAR) + 1));
                                 options += `<option value="${sessionId}">${sessionName}</option>`;
                             });
                             $('#sessionSelect').html(options);
@@ -2695,7 +2694,10 @@ function generateStudentFilterOptions($coordinatorId) {
                             alert("Session added successfully!");
                             $('#sessionFormContainer').slideUp();
                             $('#sessionForm')[0].reset();
-                            // Refresh session options in HTE form
+                            // Refresh session options in all dropdowns
+                            if (typeof loadSeassions === 'function') {
+                                loadSeassions();
+                            }
                             loadSessionOptions();
                         } else {
                             alert("Error adding session: " + response.message);
@@ -2748,7 +2750,7 @@ function generateStudentFilterOptions($coordinatorId) {
                             let options = '<option value="">Select Session</option>';
                             response.forEach(function(session) {
                                 const sessionId = session.ID;
-                                const sessionName = session.YEAR + " " + session.TERM;
+                                const sessionName = session.DISPLAY_NAME || ('S.Y. ' + session.YEAR + '-' + (parseInt(session.YEAR) + 1));
                                 options += `<option value="${sessionId}">${sessionName}</option>`;
                             });
                             $('#deleteStudentSessionSelect').html(options);
@@ -2961,7 +2963,7 @@ function generateStudentFilterOptions($coordinatorId) {
                             let options = '<option value="">Select Session</option>';
                             response.forEach(function(session) {
                                 const sessionId = session.ID;
-                                const sessionName = session.YEAR + " " + session.TERM;
+                                const sessionName = session.DISPLAY_NAME || ('S.Y. ' + session.YEAR + '-' + (parseInt(session.YEAR) + 1));
                                 options += `<option value="${sessionId}">${sessionName}</option>`;
                             });
                             $('#deleteSessionSelect').html(options);
@@ -2991,7 +2993,10 @@ function generateStudentFilterOptions($coordinatorId) {
                             if (response.success) {
                                 alert("Session deleted successfully! " + response.message);
                                 $('#deleteSessionFormContainer').slideUp();
-                                // Refresh session options in other forms
+                                // Refresh session options in all forms
+                                if (typeof loadSeassions === 'function') {
+                                    loadSeassions();
+                                }
                                 loadSessionOptions();
                                 loadSessionOptionsForDelete();
                             } else {

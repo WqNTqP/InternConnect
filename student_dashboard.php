@@ -53,7 +53,8 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
 
     <link rel="stylesheet" href="css/student_dashboard.css">
     <!-- <link rel="stylesheet" href="css/attendance.css"> -->
-    <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="icon/graduation-cap-favicon.svg">
+    <link rel="alternate icon" href="icon/graduation-cap-favicon.svg">
     <title>Student Dashboard - Attendance Tracker</title>
         <style>
             /* Enhanced Post-Assessment Styles */

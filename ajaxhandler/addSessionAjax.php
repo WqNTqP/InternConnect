@@ -16,17 +16,10 @@ try {
     
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $year = isset($_POST['year']) ? trim($_POST['year']) : '';
-        $term = isset($_POST['term']) ? trim($_POST['term']) : '';
         
         // Validate inputs
         if (empty($year)) {
             $response['message'] = 'Year is required';
-            echo json_encode($response);
-            exit;
-        }
-        
-        if (empty($term)) {
-            $response['message'] = 'Term is required';
             echo json_encode($response);
             exit;
         }
@@ -38,28 +31,28 @@ try {
         }
         
         // Check if session already exists
-        $checkQuery = "SELECT COUNT(*) FROM session_details WHERE YEAR = ? AND TERM = ?";
+        $checkQuery = "SELECT COUNT(*) FROM session_details WHERE YEAR = ?";
         $stmt = $dbo->conn->prepare($checkQuery);
-        $stmt->execute([$year, $term]);
+        $stmt->execute([$year]);
         $count = $stmt->fetchColumn();
         
         if ($count > 0) {
-            $response['message'] = 'Session already exists for this year and term';
+            $response['message'] = 'Session already exists for this year';
             echo json_encode($response);
             exit;
         }
         
         // Insert new session
-        $insertQuery = "INSERT INTO session_details (YEAR, TERM) VALUES (?, ?)";
+        $insertQuery = "INSERT INTO session_details (YEAR) VALUES (?)";
         $stmt = $dbo->conn->prepare($insertQuery);
-        $stmt->execute([$year, $term]);
+        $stmt->execute([$year]);
         
         $response['success'] = true;
         $response['message'] = 'Session added successfully';
         $response['session'] = [
             'id' => $dbo->conn->lastInsertId(),
             'year' => $year,
-            'term' => $term
+            'display_name' => 'S.Y. ' . $year . '-' . ($year + 1)
         ];
         
     } else {
