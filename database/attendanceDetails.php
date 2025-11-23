@@ -152,7 +152,7 @@ class attendanceDetails
         try{
             $s->execute([":ID"=>$sessionid]);
             $sd=$s->fetchAll(PDO::FETCH_ASSOC)[0];
-            $sessionName=$sd['YEAR']." ".$sd['TERM'];
+            $sessionName="S.Y. ".$sd['YEAR']."-".($sd['YEAR'] + 1);
         }
         catch (Exception $e)
         {
@@ -901,7 +901,7 @@ class attendanceDetails
                     id.EMAIL,
                     id.CONTACT_NUMBER,
                     hte.NAME AS HTE_NAME,
-                    CONCAT(s.YEAR, ' ', s.TERM) AS SESSION_NAME
+                    CONCAT('S.Y. ', s.YEAR, '-', s.YEAR + 1) AS SESSION_NAME
                 FROM interns_details id
                 JOIN intern_details itd ON id.INTERNS_ID = itd.INTERNS_ID
                 JOIN internship_needs ins ON itd.HTE_ID = ins.HTE_ID AND ins.COORDINATOR_ID = :coordinator_id

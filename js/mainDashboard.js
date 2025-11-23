@@ -413,7 +413,8 @@ $(document).on('click', '#toggleSingleEntry', function() {
                 let x = '<option value="">Select Session</option>';
                 for(let i=0; i<rv.length; i++) {
                     let cs = rv[i];
-                    x += `<option value="${cs.ID}">${cs.YEAR} ${cs.TERM}</option>`;
+                    let displayName = cs.DISPLAY_NAME || ('S.Y. ' + cs.YEAR + '-' + (parseInt(cs.YEAR) + 1));
+                    x += `<option value="${cs.ID}">${displayName}</option>`;
                 }
                 $('#singleSessionSelectStudent').html(x);
                 // Auto-select most recent session
@@ -2192,6 +2193,118 @@ $(document).on('click', '#analysisModal', function(e) {
     }
 });
 });
+
+    // --- Prediction Tab Filter Functionality ---
+    let currentPredictionFilter = 'all'; // Track current filter state
+
+    // Filter button click handlers
+    $(document).on('click', '#filterAll', function() {
+        currentPredictionFilter = 'all';
+        updateFilterButtonStyles();
+        filterPredictionTable();
+    });
+
+    $(document).on('click', '#filterReady', function() {
+        currentPredictionFilter = 'ready';
+        updateFilterButtonStyles();
+        filterPredictionTable();
+    });
+
+    $(document).on('click', '#filterNotReady', function() {
+        currentPredictionFilter = 'not-ready';
+        updateFilterButtonStyles();
+        filterPredictionTable();
+    });
+
+    // Update filter button styles
+    function updateFilterButtonStyles() {
+        // Reset all buttons to inactive style
+        $('#filterAll, #filterReady, #filterNotReady').removeClass('bg-gray-600 bg-green-600 bg-red-600 text-white')
+            .addClass('bg-gray-200 text-gray-700');
+
+        // Apply active style to current filter
+        switch(currentPredictionFilter) {
+            case 'all':
+                $('#filterAll').removeClass('bg-gray-200 text-gray-700').addClass('bg-gray-600 text-white');
+                break;
+            case 'ready':
+                $('#filterReady').removeClass('bg-gray-200 text-gray-700').addClass('bg-green-600 text-white');
+                break;
+            case 'not-ready':
+                $('#filterNotReady').removeClass('bg-gray-200 text-gray-700').addClass('bg-red-600 text-white');
+                break;
+        }
+    }
+
+    // Filter the prediction table based on current filter
+    function filterPredictionTable() {
+        const rows = $('#predictionTable tbody tr');
+        
+        rows.each(function() {
+            const $row = $(this);
+            const statusCell = $row.find('td:nth-child(3)'); // Status column (3rd column)
+            
+            if (statusCell.length === 0) return; // Skip if no status cell (like loading/error rows)
+            
+            const statusText = statusCell.text().trim().toLowerCase();
+            let showRow = false;
+
+            switch(currentPredictionFilter) {
+                case 'all':
+                    showRow = true;
+                    break;
+                case 'ready':
+                    // Show students with "Rated" status (ready for prediction)
+                    showRow = statusText.includes('rated') && !statusText.includes('not rated');
+                    break;
+                case 'not-ready':
+                    // Show students with "Not Rated" status (not ready for prediction)
+                    showRow = statusText.includes('not rated') || statusText.includes('incomplete data');
+                    break;
+            }
+
+            if (showRow) {
+                $row.show();
+            } else {
+                $row.hide();
+            }
+        });
+        
+        // Update row count display or show/hide empty state
+        updatePredictionTableDisplay();
+    }
+
+    // Update table display after filtering
+    function updatePredictionTableDisplay() {
+        const visibleRows = $('#predictionTable tbody tr:visible');
+        const totalRows = $('#predictionTable tbody tr');
+        
+        // If no rows are visible and we have data, show a "no matches" message
+        if (visibleRows.length === 0 && totalRows.length > 0) {
+            if ($('#predictionTable tbody .no-matches-row').length === 0) {
+                $('#predictionTable tbody').append(`
+                    <tr class="no-matches-row">
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-search text-2xl text-gray-400 mb-2"></i>
+                                <p>No students match the selected filter.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `);
+            }
+            $('#predictionTable tbody .no-matches-row').show();
+        } else {
+            $('#predictionTable tbody .no-matches-row').hide();
+        }
+    }
+
+    // Initialize filter buttons when prediction tab loads
+    $(document).on('click', '#predictionTab', function() {
+        setTimeout(() => {
+            updateFilterButtonStyles();
+        }, 100);
+    });
 // --- End Prediction Tab Logic ---
 
     // --- Report Tab Filters ---
@@ -2214,7 +2327,7 @@ $(document).on('click', '#analysisModal', function(e) {
                         // Only add if not already added (prevent duplicates)
                         if (!uniqueStudents.has(uniqueKey)) {
                             uniqueStudents.add(uniqueKey);
-                            options += `<option value="${displayName}">${displayName}</option>`;
+                            options += `<option value="${displayName}" data-id="${stu.INTERNS_ID}">${displayName}</option>`;
                         }
                     });
                 }

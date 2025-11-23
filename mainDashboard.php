@@ -232,8 +232,8 @@ function generateStudentFilterOptions($coordinatorId) {
                     <div class="flex items-center">
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none">
-                                <span class="text-xs md:text-sm font-medium hidden sm:inline">KIM CHARLES</span>
-                                <span class="text-xs md:text-sm font-medium sm:hidden">KC</span>
+                                <span class="text-xs md:text-sm font-medium hidden sm:inline"><?php echo htmlspecialchars($displayName); ?></span>
+                                <span class="text-xs md:text-sm font-medium sm:hidden"><?php echo htmlspecialchars(strtoupper(substr($displayName, 0, 2))); ?></span>
                                 <svg class="h-4 w-4 md:h-5 md:w-5" :class="{'transform rotate-180': open}" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                                 </svg>
@@ -635,6 +635,22 @@ function generateStudentFilterOptions($coordinatorId) {
                             <button id="runPredictionBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 flex items-center gap-2">
                                 <i class="fas fa-brain"></i>
                                 Run ML Prediction
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filter Controls -->
+                    <div class="mb-4 flex flex-wrap items-center gap-3">
+                        <span class="text-sm font-medium text-gray-700">Filter by Status:</span>
+                        <div class="flex gap-2">
+                            <button id="filterAll" class="px-4 py-2 text-sm font-medium rounded-md bg-gray-600 text-white shadow-sm transition duration-150 ease-in-out">
+                                All Students
+                            </button>
+                            <button id="filterReady" class="px-4 py-2 text-sm font-medium rounded-md bg-gray-200 text-gray-700 hover:bg-green-100 hover:text-green-700 shadow-sm transition duration-150 ease-in-out">
+                                <i class="fas fa-check-circle mr-1"></i>Ready
+                            </button>
+                            <button id="filterNotReady" class="px-4 py-2 text-sm font-medium rounded-md bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-700 shadow-sm transition duration-150 ease-in-out">
+                                <i class="fas fa-exclamation-circle mr-1"></i>Not Ready
                             </button>
                         </div>
                     </div>
@@ -2150,6 +2166,22 @@ function generateStudentFilterOptions($coordinatorId) {
             var tabSidebar = document.getElementById(tabName + 'Tab');
             if(tabSidebar) {
                 tabSidebar.classList.add('bg-gray-700');
+            }
+            
+            // Trigger tab-specific initialization
+            if (tabName === 'report') {
+                // Trigger report tab initialization with a flag to prevent infinite loops
+                setTimeout(function() {
+                    // Only trigger if not already triggered by this function
+                    if (!window.switchTabReportTriggered) {
+                        window.switchTabReportTriggered = true;
+                        $('#reportTab').trigger('click');
+                        // Reset the flag after a short delay
+                        setTimeout(function() {
+                            window.switchTabReportTriggered = false;
+                        }, 1000);
+                    }
+                }, 100);
             }
         }
 
