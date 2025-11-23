@@ -167,11 +167,11 @@ $(document).ready(function() {
             if (predefinedResponse.success && predefinedResponse.questions) {
                 predefinedResponse.questions.forEach(function(q) {
                     tbody += `<tr><td>${q.question_text}</td>
-                        <td><input type="radio" name="personal_r${questionIndex}" value="5" data-question-id="${q.question_id}"> 5</td>
-                        <td><input type="radio" name="personal_r${questionIndex}" value="4" data-question-id="${q.question_id}"> 4</td>
-                        <td><input type="radio" name="personal_r${questionIndex}" value="3" data-question-id="${q.question_id}"> 3</td>
-                        <td><input type="radio" name="personal_r${questionIndex}" value="2" data-question-id="${q.question_id}"> 2</td>
-                        <td><input type="radio" name="personal_r${questionIndex}" value="1" data-question-id="${q.question_id}"> 1</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="5" data-question-id="${q.question_id}" class="rating-radio"> 5</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="4" data-question-id="${q.question_id}" class="rating-radio"> 4</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="3" data-question-id="${q.question_id}" class="rating-radio"> 3</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="2" data-question-id="${q.question_id}" class="rating-radio"> 2</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="1" data-question-id="${q.question_id}" class="rating-radio"> 1</td>
                     </tr>`;
                     questionIndex++;
                 });
@@ -227,11 +227,11 @@ $(document).ready(function() {
                     }
                     
                     tbody += `<tr><td>${questionDisplay}</td>
-                        <td><input type="radio" name="personal_r${questionIndex}" value="5" data-question-id="${q.id}"> 5</td>
-                        <td><input type="radio" name="personal_r${questionIndex}" value="4" data-question-id="${q.id}"> 4</td>
-                        <td><input type="radio" name="personal_r${questionIndex}" value="3" data-question-id="${q.id}"> 3</td>
-                        <td><input type="radio" name="personal_r${questionIndex}" value="2" data-question-id="${q.id}"> 2</td>
-                        <td><input type="radio" name="personal_r${questionIndex}" value="1" data-question-id="${q.id}"> 1</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="5" data-question-id="${q.id}" class="rating-radio"> 5</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="4" data-question-id="${q.id}" class="rating-radio"> 4</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="3" data-question-id="${q.id}" class="rating-radio"> 3</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="2" data-question-id="${q.id}" class="rating-radio"> 2</td>
+                        <td><input type="radio" name="personal_r${questionIndex}" value="1" data-question-id="${q.id}" class="rating-radio"> 1</td>
                     </tr>`;
                     questionIndex++;
                 });
@@ -256,6 +256,42 @@ $(document).ready(function() {
                     }
                 }
             });
+            
+            // Enable rating based on question approval status
+            setTimeout(() => {
+                // Check if we have any student questions and their approval status
+                $.ajax({
+                    url: 'ajaxhandler/checkQuestionApprovalStatusAjax.php',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(statusResponse) {
+                        if (statusResponse.success) {
+                            const canRate = statusResponse.can_submit_assessment;
+                            
+                            if (canRate) {
+                                // All questions approved - enable rating
+                                $('#personalSkillsTable input[type="radio"], .rating-radio').prop('disabled', false);
+                                console.log('All questions approved - personal skills rating enabled');
+                            } else {
+                                // Still have pending/rejected questions - disable rating
+                                $('#personalSkillsTable input[type="radio"], .rating-radio').prop('disabled', true);
+                                console.log('Questions still need approval - personal skills rating disabled');
+                                
+                                // Add a message to inform the user
+                                if ($('#personalSkillsTable tbody tr').length > 0) {
+                                    $('#personalSkillsTable').after(`
+                                        <div class="rating-disabled-notice" style="padding: 1rem; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 0.5rem; margin-top: 1rem; text-align: center;">
+                                            <i class="fas fa-lock" style="color: #856404; margin-right: 0.5rem;"></i>
+                                            <span style="color: #856404; font-weight: 500;">Rating is disabled until all your custom questions are approved.</span>
+                                        </div>
+                                    `);
+                                }
+                            }
+                        }
+                    }
+                });
+            }, 100);
+            
         }).catch(function(error) {
             console.error('Error loading personal skills questions:', error);
             $('#personalSkillsTable tbody').html('<tr><td colspan="6">Error loading personal/interpersonal skills questions.</td></tr>');
@@ -358,14 +394,31 @@ $(document).ready(function() {
         dataType: 'json',
         success: function(response) {
             if (response.success && response.submitted) {
-                // Disable all inputs and buttons in the post-assessment form except category navigation and save progress
-                $('#postAssessmentForm :input').not('.category-nav-btn, #categoryDropdown, #saveProgressBtn').prop('disabled', true);
-                // Keep dropdown enabled even if form is submitted (for viewing purposes)
+                // Disable text inputs when submitted
+                $('#postAssessmentForm input[type="text"], #postAssessmentForm textarea').prop('disabled', true);
+                $('#submitPostAssessmentBtn').prop('disabled', true);
+                
+                // Keep essential controls enabled
                 $('#categoryDropdown').prop('disabled', false);
-                // Keep save progress button enabled for editing rejected questions
                 $('#saveProgressBtn').prop('disabled', false);
                 
-                $('#postAssessmentFormMessage').text('You have submitted your post-assessment. You can still edit rejected questions and save changes.').css('color', 'blue');
+                // Check approval status to determine if rating should be enabled
+                $.ajax({
+                    url: 'ajaxhandler/checkQuestionApprovalStatusAjax.php',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(statusResponse) {
+                        if (statusResponse.success && statusResponse.can_submit_assessment) {
+                            // All questions approved - enable rating
+                            $('#postAssessmentForm input[type="radio"]').prop('disabled', false);
+                        } else {
+                            // Questions still need approval - disable rating
+                            $('#postAssessmentForm input[type="radio"]').prop('disabled', true);
+                        }
+                    }
+                });
+                
+                $('#postAssessmentFormMessage').text('You have submitted your post-assessment. Rating is enabled when all questions are approved.').css('color', 'blue');
                 // Change submit button color to gray
                 $('#submitPostAssessmentBtn').css({
                     'background-color': '#cccccc',
@@ -3886,17 +3939,33 @@ function loadStudentEvaluationAnswersAndRatings() {
             data: { student_id: $('#hiddenStudentId').val() },
             success: function(response) {
                 if (response.submitted) {
-                    // Disable form inputs but keep save progress button enabled for editing rejected questions
-                    $('#postAssessmentForm input, #postAssessmentForm textarea').prop('disabled', true);
+                    // Disable only text inputs when submitted
+                    $('#postAssessmentForm input[type="text"], #postAssessmentForm textarea').prop('disabled', true);
                     $('#submitPostAssessmentBtn').prop('disabled', true);
                     
                     // Keep save progress button enabled so users can edit rejected questions
                     $('#saveProgressBtn').prop('disabled', false);
                     
+                    // Check approval status to determine if rating should be enabled
+                    $.ajax({
+                        url: 'ajaxhandler/checkQuestionApprovalStatusAjax.php',
+                        type: 'GET',
+                        dataType: 'json',
+                        success: function(statusResponse) {
+                            if (statusResponse.success && statusResponse.can_submit_assessment) {
+                                // All questions approved - enable rating
+                                $('#postAssessmentForm input[type="radio"]').prop('disabled', false);
+                            } else {
+                                // Questions still need approval - disable rating
+                                $('#postAssessmentForm input[type="radio"]').prop('disabled', true);
+                            }
+                        }
+                    });
+                    
                     $('#postAssessmentFormMessage').html(`
                         <div class="message info">
                             <i class="fas fa-info-circle"></i>
-                            <span>You have submitted your post-assessment. You can still edit rejected questions and save changes.</span>
+                            <span>You have submitted your post-assessment. Rating is enabled when all questions are approved.</span>
                         </div>
                     `);
                 }
@@ -4024,18 +4093,34 @@ function loadStudentEvaluationAnswersAndRatings() {
             iconClass = 'fa-clock';
         }
         
+        let ratingStatusMessage = '';
+        if (can_submit_assessment) {
+            ratingStatusMessage = '<br><small style="color: #28a745;"><i class="fas fa-star"></i> You can now rate your skills for all approved questions.</small>';
+        } else {
+            ratingStatusMessage = '<br><small style="color: #6c757d;"><i class="fas fa-lock"></i> Rating will be enabled when all questions are approved.</small>';
+        }
+        
         const statusHtml = `
             <div class="approval-status-container">
                 <div class="approval-status ${statusClass}">
                     <i class="fas ${iconClass}"></i>
-                    <span>${message}</span>
+                    <span>${message}${ratingStatusMessage}</span>
                 </div>
             </div>
         `;
         
         // Remove any existing approval status and insert new one before the form actions
-        $('.approval-status-container').remove();
+        $('.approval-status-container, .rating-disabled-notice').remove();
         $('.form-actions-wrapper').before(statusHtml);
+        
+        // Enable or disable rating based on approval status
+        if (can_submit_assessment) {
+            $('#postAssessmentForm input[type="radio"], .rating-radio').prop('disabled', false);
+            console.log('All questions approved - rating enabled globally');
+        } else {
+            $('#postAssessmentForm input[type="radio"], .rating-radio').prop('disabled', true);
+            console.log('Questions pending approval - rating disabled globally');
+        }
         
         // Load existing questions into form fields if any exist
         if (questions && questions.length > 0) {
@@ -4123,6 +4208,20 @@ function loadStudentEvaluationAnswersAndRatings() {
             console.log(`Found ${rejectedCount} rejected questions that can be edited`);
             // Ensure save progress button is enabled when there are rejected questions
             $('#saveProgressBtn').prop('disabled', false).css('pointer-events', 'auto');
+        }
+        
+        // Enable rating only if all questions are approved
+        const allApproved = questions.every(q => q.approval_status === 'approved');
+        const hasRejected = questions.some(q => q.approval_status === 'rejected');
+        
+        if (allApproved && !hasRejected) {
+            // All questions approved - enable rating
+            $('.rating-radio, input[type="radio"]').prop('disabled', false);
+            console.log('All questions approved - enabling rating functionality');
+        } else {
+            // Still have pending/rejected questions - disable rating
+            $('.rating-radio, input[type="radio"]').prop('disabled', true);
+            console.log('Questions still pending approval - rating disabled');
         }
     }
 
