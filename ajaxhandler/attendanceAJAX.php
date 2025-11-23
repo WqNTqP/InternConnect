@@ -363,6 +363,12 @@ function createPDFReport($list, $filename) {
             // Handle MOA PDF upload
             $moa_file_url = null;
             $moa_public_id = null;
+            error_log("MOA file check - isset: " . (isset($_FILES['MOA_FILE']) ? 'true' : 'false'));
+            if (isset($_FILES['MOA_FILE'])) {
+                error_log("MOA file error: " . $_FILES['MOA_FILE']['error']);
+                error_log("MOA file size: " . $_FILES['MOA_FILE']['size']);
+                error_log("MOA file name: " . $_FILES['MOA_FILE']['name']);
+            }
             if (isset($_FILES['MOA_FILE']) && $_FILES['MOA_FILE']['error'] === UPLOAD_ERR_OK) {
                 // Include Cloudinary configuration
                 require_once $basePath . '/config/cloudinary.php';
@@ -391,9 +397,24 @@ function createPDFReport($list, $filename) {
             error_log("Logo filename: " . $logo_filename);
             error_log("MOA file URL: " . $moa_file_url);
 
+            // Debug validation - check which fields are missing
+            $missing_fields = [];
+            if (!$name) $missing_fields[] = 'NAME';
+            if (!$industry) $missing_fields[] = 'INDUSTRY';
+            if (!$address) $missing_fields[] = 'ADDRESS';
+            if (!$contact_email) $missing_fields[] = 'CONTACT_EMAIL';
+            if (!$contact_person) $missing_fields[] = 'CONTACT_PERSON';
+            if (!$contact_number) $missing_fields[] = 'CONTACT_NUMBER';
+            if (!$coordinator_id) $missing_fields[] = 'COORDINATOR_ID';
+            if (!$session_id) $missing_fields[] = 'SESSION_ID';
+            if (!$moa_start_date) $missing_fields[] = 'MOA_START_DATE';
+            if (!$moa_end_date) $missing_fields[] = 'MOA_END_DATE';
+            if (!$moa_file_url) $missing_fields[] = 'MOA_FILE';
+
             // Validate required fields including MOA data
-            if (!$name || !$industry || !$address || !$contact_email || !$contact_person || !$contact_number || !$coordinator_id || !$session_id || !$moa_start_date || !$moa_end_date || !$moa_file_url) {
-                echo json_encode(['success' => false, 'message' => 'Error: All fields including MOA information are required.']);
+            if (!empty($missing_fields)) {
+                error_log("Missing fields in addHTEControl: " . implode(', ', $missing_fields));
+                echo json_encode(['success' => false, 'message' => 'Error: Missing required fields: ' . implode(', ', $missing_fields)]);
                 return;
             }
 
