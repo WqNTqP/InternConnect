@@ -319,18 +319,26 @@ class attendanceDetails
     public function getPresentListOfAClassByACDROnDate($dbo,$sessionid,$classid,$coordinatorid,$ondate)
     {
         $rv = [];
+        // Fixed query: Remove the incorrect ID = :ID condition since ID is auto-increment, not session ID
+        // The session filtering should be handled by coordinator + HTE + date combination
         $c="select INTERNS_ID, TIMEIN, TIMEOUT from interns_attendance
-            WHERE COORDINATOR_ID = :COORDINATOR_ID AND HTE_ID = :HTE_ID AND ID = :ID
+            WHERE COORDINATOR_ID = :COORDINATOR_ID AND HTE_ID = :HTE_ID 
                 AND ON_DATE = :ON_DATE
                 AND  TIMEIN IS NOT NULL AND TIMEOUT IS NOT NULL";
         $s=$dbo->conn->prepare($c);
         try{
-            $s->execute([":COORDINATOR_ID"=>$coordinatorid,":HTE_ID"=>$classid,":ID"=>$sessionid,":ON_DATE"=>$ondate]);
+            // Log the query parameters for debugging
+            error_log("getPresentListOfAClassByACDROnDate - Fixed query params: classid=$classid, coordinatorid=$coordinatorid, ondate=$ondate");
+            
+            $s->execute([":COORDINATOR_ID"=>$coordinatorid,":HTE_ID"=>$classid,":ON_DATE"=>$ondate]);
             $rv=$s->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Log the results for debugging
+            error_log("getPresentListOfAClassByACDROnDate - Found " . count($rv) . " present students: " . json_encode($rv));
         }
         catch(Exception $e)
         {
-
+            error_log("getPresentListOfAClassByACDROnDate - Error: " . $e->getMessage());
         }
         return $rv;
     }
@@ -893,6 +901,7 @@ class attendanceDetails
         try {
             $stmt = $dbo->conn->prepare("
                 SELECT
+                    id.INTERNS_ID,
                     id.STUDENT_ID,
                     id.NAME,
                     id.SURNAME,

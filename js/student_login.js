@@ -21,7 +21,7 @@ function tryStudentLogin()
                     showStudentMessage("Login successful! Redirecting to your dashboard...", "success");
                     
                     setTimeout(() => {
-                        document.location.replace("student_dashboard.php");
+                        document.location.replace("student/dashboard");
                     }, 1000);
                 } else {
                     // Enhanced error messages based on server response

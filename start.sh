@@ -51,8 +51,8 @@ fi
 
 cd ../..
 
-echo "🌐 Starting PHP server on port $PORT..."
-php -S 0.0.0.0:${PORT:-10000} -t . &
+echo "🌐 Starting PHP server on port $PORT with router..."
+php -S 0.0.0.0:${PORT:-10000} -t . router.php &
 PHP_PID=$!
 echo "✅ PHP server started with PID: $PHP_PID"
 

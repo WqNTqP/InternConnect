@@ -2,7 +2,7 @@
 session_start();
 if(!isset($_SESSION["student_user"]))
 {
-    header("location:student_login.php");
+    header("Location: student");
     die();
 }
 $student_id = $_SESSION["student_user"];
@@ -48,6 +48,8 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php $baseHref = PathConfig::getBaseUrl(); ?>
+    <base href="<?php echo htmlspecialchars($baseHref, ENT_QUOTES); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -366,7 +368,7 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                 <i class="fas fa-bars"></i>
             </button>
             <div class="sidebar-logo">
-                <div class="logo" onclick="window.location.href='student_dashboard.php'">
+                <div class="logo" onclick="window.location.href='student/dashboard'">
                     <span>InternConnect</span>
                 </div>
             </div>
@@ -438,7 +440,7 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
     <!-- Sidebar Navigation -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <div class="logo" onclick="window.location.href='student_dashboard.php'">
+            <div class="logo" onclick="window.location.href='student/dashboard'">
                 <i class="fas fa-calendar-check"></i>
                 <span>InternConnect</span>
             </div>

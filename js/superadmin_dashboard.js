@@ -282,7 +282,11 @@ $(document).ready(function() {
                     
                 },
                 success: function(rv) {
-                    document.location.replace("index.php");
+                    (function(){
+                        var p = window.location.pathname.split('/');
+                        var base = (p.length > 1 ? '/' + p[1] + '/' : '/');
+                        document.location.replace(base);
+                    })();
                 },
                 error: function(xhr, status, error) {
                     alert("Something went wrong!")

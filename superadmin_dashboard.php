@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['current_user_role']) || $_SESSION['current_user_role'] !== 'SUPERADMIN') {
-    header("Location: index.php");
+    header("Location: ./");
     exit();
 }
 
@@ -53,6 +53,8 @@ $superadminName = $_SESSION['current_user_name'] ?? 'Super Admin';
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <?php $baseHref = PathConfig::getBaseUrl(); ?>
+    <base href="<?php echo htmlspecialchars($baseHref, ENT_QUOTES); ?>">
     <title>Super Admin Dashboard - InternConnect</title>
     <!-- Styles -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -71,7 +73,7 @@ $superadminName = $_SESSION['current_user_name'] ?? 'Super Admin';
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
         <div class="sidebar closed" id="sidebar">
-            <div style="padding: 1rem 1.5rem; font-weight:bold; font-size:1.3rem; cursor:pointer; border-bottom: 1px solid rgba(255,255,255,0.1);" onclick="window.location.href='superadmin_dashboard.php'">InternConnect</div>
+            <div style="padding: 1rem 1.5rem; font-weight:bold; font-size:1.3rem; cursor:pointer; border-bottom: 1px solid rgba(255,255,255,0.1);" onclick="window.location.href='superadmin/dashboard'">InternConnect</div>
             <ul class="sidebar-menu">
                 <li class="sidebar-item active" data-tab="dashboard"><span>Dashboard</span></li>
                 <li class="sidebar-item" data-tab="users"><span>Users</span></li>

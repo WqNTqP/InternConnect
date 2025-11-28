@@ -163,10 +163,10 @@
             <div class="mb-6">
                 <p class="text-sm text-gray-500 text-center mb-3">Choose your login type:</p>
                 <div class="flex space-x-2">
-                    <a href="index.php" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
+                    <a href="../" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
                         <i class="fas fa-user-tie mr-1"></i> Coordinator
                     </a>
-                    <a href="admin.php" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
+                    <a href="supervisor" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
                         <i class="fas fa-user-shield mr-1"></i> Supervisor
                     </a>
                     <button class="flex-1 bg-blue-100 text-blue-600 px-3 py-2 rounded-lg text-sm font-medium border border-blue-200" disabled>
@@ -211,7 +211,7 @@
 
             <!-- Forgot Password Link -->
             <div class="text-center">
-                <a href="forgot_password.php" class="text-sm text-blue-600 hover:text-blue-800 hover:underline transition duration-200">
+                <a href="forgot-password" class="text-sm text-blue-600 hover:text-blue-800 hover:underline transition duration-200">
                     <i class="fas fa-key mr-1"></i>Forgot your password?
                 </a>
             </div>

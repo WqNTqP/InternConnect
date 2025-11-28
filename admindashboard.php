@@ -16,7 +16,7 @@ if ($dbo->conn === null) {
 session_start();
 $coordinatorId = $_SESSION["admin_user"] ?? null;
 if (!$coordinatorId) {
-    header("Location: admin.php");
+    header("Location: supervisor");
     exit();
 }
 
@@ -107,6 +107,71 @@ try {
 
 // Set total students count from the query result
 $totalStudents = count($allStudents);
+
+// Calculate attendance statistics for today
+if ($coordinatorHteId && count($allStudents) > 0) {
+    try {
+        $today = date('Y-m-d');
+        
+        // Get attendance records for today for this coordinator's HTE (filter by HTE_ID only)
+        $stmt = $dbo->conn->prepare("
+            SELECT INTERNS_ID, TIMEIN, TIMEOUT
+            FROM interns_attendance
+            WHERE HTE_ID = ? AND ON_DATE = ?
+            AND TIMEIN IS NOT NULL AND TIMEOUT IS NOT NULL
+        ");
+        $stmt->execute([$coordinatorHteId, $today]);
+        $todayAttendance = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Create lookup for attendance by INTERNS_ID
+        $attendanceByIntern = [];
+        foreach ($todayAttendance as $record) {
+            $attendanceByIntern[$record['INTERNS_ID']] = $record;
+        }
+        
+        // Calculate statistics
+        $presentCount = 0;
+        $onTimeCount = 0;
+        $lateCount = 0;
+        $presentList = [];
+        $onTimeList = [];
+        $lateList = [];
+        
+        foreach ($allStudents as $student) {
+            if (isset($attendanceByIntern[$student['INTERNS_ID']])) {
+                $attendance = $attendanceByIntern[$student['INTERNS_ID']];
+                $presentCount++;
+                $presentList[] = $student;
+                
+                // Determine if on time or late based on TIMEIN
+                $timeIn = $attendance['TIMEIN'];
+                $timeInParts = explode(':', $timeIn);
+                $hours = (int)$timeInParts[0];
+                $minutes = (int)$timeInParts[1];
+                
+                // On time if 8:00 AM or earlier
+                if ($hours < 8 || ($hours === 8 && $minutes === 0)) {
+                    $onTimeCount++;
+                    $onTimeList[] = $student;
+                } else {
+                    $lateCount++;
+                    $lateList[] = $student;
+                }
+            }
+        }
+        
+        $attendanceStats = [
+            'present' => $presentCount,
+            'on_time' => $onTimeCount,
+            'late' => $lateCount
+        ];
+        
+        error_log("Admin Dashboard - Calculated attendance for $today: Present=$presentCount, OnTime=$onTimeCount, Late=$lateCount");
+        
+    } catch (Exception $e) {
+        error_log("Error calculating attendance statistics: " . $e->getMessage());
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -114,6 +179,8 @@ $totalStudents = count($allStudents);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php $baseHref = PathConfig::getBaseUrl(); ?>
+    <base href="<?php echo htmlspecialchars($baseHref, ENT_QUOTES); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/admindashboard.css">
     <link rel="icon" type="image/svg+xml" href="icon/graduation-cap-favicon.svg">
@@ -399,7 +466,7 @@ $totalStudents = count($allStudents);
             <div class="header-left">
                 <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle Sidebar">&#9776;</button>
                 <div class="sidebar-logo">
-                    <div class="logo" onclick="window.location.href='admindashboard.php';">
+                    <div class="logo" onclick="window.location.href='admin/dashboard';">
                         <span>InternConnect</span>
                     </div>
                 </div>

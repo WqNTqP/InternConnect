@@ -17,14 +17,36 @@ try {
     $db = new Database();
     $conn = $db->conn;
     // Join to get students under this coordinator
-    $stmt = $conn->prepare("SELECT i.INTERNS_ID, i.STUDENT_ID, i.SURNAME, i.NAME
+    $stmt = $conn->prepare("SELECT 
+            i.INTERNS_ID, 
+            i.STUDENT_ID, 
+            i.SURNAME, 
+            i.NAME,
+            (
+                SELECT COUNT(*) FROM student_evaluation se 
+                WHERE se.STUDENT_ID = i.STUDENT_ID
+            ) AS eval_count,
+            (
+                SELECT COUNT(*) FROM coordinator_evaluation ce 
+                WHERE ce.STUDENT_ID = i.STUDENT_ID 
+                  AND ce.rating IS NOT NULL
+                  AND ce.student_evaluation_id IN (
+                      SELECT se2.id FROM student_evaluation se2 WHERE se2.STUDENT_ID = i.STUDENT_ID
+                  )
+            ) AS rated_count
         FROM interns_details i
         JOIN intern_details d ON i.INTERNS_ID = d.INTERNS_ID
         JOIN internship_needs n ON d.HTE_ID = n.HTE_ID
         WHERE n.COORDINATOR_ID = ?
         ORDER BY i.NAME, i.SURNAME");
     $stmt->execute([$coordinator_id]);
-    $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $students = [];
+    foreach ($rows as $r) {
+        $r['ready_for_post_analysis'] = (intval($r['eval_count']) > 0 && intval($r['rated_count']) === intval($r['eval_count'])) ? 1 : 0;
+        unset($r['eval_count'], $r['rated_count']);
+        $students[] = $r;
+    }
     echo json_encode(["success" => true, "students" => $students]);
 } catch (Exception $e) {
     http_response_code(500);

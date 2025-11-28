@@ -24,9 +24,9 @@ function tryLogin() {
                     // Redirect based on user role
                     setTimeout(() => {
                         if (rv.data.role === 'SUPERADMIN') {
-                            document.location.replace("superadmin_dashboard.php");
+                            document.location.replace("superadmin/dashboard");
                         } else if (rv.data.role === 'COORDINATOR') {
-                            document.location.replace("mainDashboard.php");
+                            document.location.replace("dashboard");
                         }
                     }, 1000);
                 } else {

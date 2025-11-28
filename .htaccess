@@ -1,0 +1,105 @@
+# Enable rewriting
+RewriteEngine On
+
+# Make index.php the default without showing it
+DirectoryIndex index.php
+
+# 1) Canonicalize index and index.php to the directory path (works in subdirs)
+#    Example: /InternConnect/index or /InternConnect/index.php -> /InternConnect/
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{REQUEST_URI} ^(.*/)(?:index(?:\.php)?)$
+RewriteRule ^ %1 [R=301,L]
+
+# 2.5) Canonical redirects from old filenames to pretty slugs (GET-only)
+# Admin dashboard -> Supervisor dashboard
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*admindashboard\.php[?\s]
+RewriteRule ^admindashboard\.php$ supervisor/dashboard [R=301,L]
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*admindashboard[?\s]
+RewriteRule ^admindashboard/?$ supervisor/dashboard [R=301,L]
+
+# Admin login -> Supervisor login
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*admin\.php[?\s]
+RewriteRule ^admin\.php$ supervisor [R=301,L]
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteRule ^admin/?$ supervisor [R=301,L]
+
+# Student login and dashboard
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*student_login\.php[?\s]
+RewriteRule ^student_login\.php$ student [R=301,L]
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*student_dashboard\.php[?\s]
+RewriteRule ^student_dashboard\.php$ student/dashboard [R=301,L]
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*student_dashboard[?\s]
+RewriteRule ^student_dashboard/?$ student/dashboard [R=301,L]
+
+# Coordinator dashboard
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*mainDashboard\.php[?\s]
+RewriteRule ^mainDashboard\.php$ dashboard [R=301,L]
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*mainDashboard[?\s]
+RewriteRule ^mainDashboard/?$ dashboard [R=301,L]
+
+# Superadmin dashboard
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*superadmin_dashboard\.php[?\s]
+RewriteRule ^superadmin_dashboard\.php$ superadmin/dashboard [R=301,L]
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*superadmin_dashboard[?\s]
+RewriteRule ^superadmin_dashboard/?$ superadmin/dashboard [R=301,L]
+
+# Forgot/reset password
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*forgot_password\.php[?\s]
+RewriteRule ^forgot_password\.php$ forgot-password [R=301,L]
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*forgot_password[?\s]
+RewriteRule ^forgot_password/?$ forgot-password [R=301,L]
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*reset_password\.php[?\s]
+RewriteRule ^reset_password\.php$ reset-password [R=301,L]
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteCond %{THE_REQUEST} \s/+.*reset_password[?\s]
+RewriteRule ^reset_password/?$ reset-password [R=301,L]
+
+# 2) Redirect any other \.php to extensionless for non-POST
+#    Exclude ajax and other programmatic endpoints to avoid breaking POSTs
+RewriteCond %{THE_REQUEST} \s/([^\s?]+)\.php[?\s]
+RewriteCond %{REQUEST_URI} !^/?.*ajaxhandler/
+RewriteCond %{REQUEST_URI} !^/?.*api/
+RewriteCond %{REQUEST_URI} !^/?.*fpdf/
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteRule ^(.+)\.php$ $1 [R=301,L]
+
+# Safety: serve existing files/directories as-is (after external canonical redirects)
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# 3) Explicit pretty-route rewrites to underlying PHP files
+RewriteRule ^supervisor/dashboard/?$ admindashboard.php [L]
+RewriteRule ^supervisor/?$ admin.php [L]
+RewriteRule ^admin/dashboard/?$ admindashboard.php [L]
+RewriteRule ^admin/?$ admin.php [L]
+RewriteRule ^student/dashboard/?$ student_dashboard.php [L]
+RewriteRule ^student/?$ student_login.php [L]
+RewriteRule ^superadmin/dashboard/?$ superadmin_dashboard.php [L]
+RewriteRule ^dashboard/?$ mainDashboard.php [L]
+RewriteRule ^forgot-password/?$ forgot_password.php [L]
+RewriteRule ^reset-password/?$ reset_password.php [L]
+
+# 4) Generic extensionless fallback to matching .php if present
+#    Works both at domain root and subdirectory (e.g., /InternConnect)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/?.*ajaxhandler/
+RewriteRule ^(.+?)/?$ $1.php [L]
+
+# Optional: basic security hardening (kept minimal here)
+# Disable directory listings
+Options -Indexes

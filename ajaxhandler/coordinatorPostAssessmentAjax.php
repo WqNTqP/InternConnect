@@ -50,13 +50,22 @@ try {
     $db = new Database();
     $conn = $db->conn;
     
-    // Fetch students assigned to the current coordinator through internship_needs
+    // Fetch students assigned to the current coordinator through internship_needs with session information
     $stmt = $conn->prepare("
-        SELECT DISTINCT id.INTERNS_ID, id.STUDENT_ID, id.SURNAME, id.NAME 
+        SELECT DISTINCT 
+            id.INTERNS_ID, 
+            id.STUDENT_ID, 
+            id.SURNAME, 
+            id.NAME,
+            s.YEAR,
+            s.ID as SESSION_ID,
+            CONCAT('S.Y. ', s.YEAR, '-', s.YEAR + 1) AS SESSION_NAME
         FROM interns_details id
         JOIN intern_details idet ON id.INTERNS_ID = idet.INTERNS_ID
         JOIN internship_needs itn ON idet.HTE_ID = itn.HTE_ID
+        JOIN session_details s ON idet.SESSION_ID = s.ID
         WHERE itn.COORDINATOR_ID = ?
+        ORDER BY s.YEAR DESC, id.SURNAME ASC, id.NAME ASC
     ");
     $stmt->execute([$coordinator_id]);
     $students = $stmt->fetchAll(PDO::FETCH_ASSOC);

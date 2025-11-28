@@ -1,13 +1,27 @@
+// Suppress debug logging in production to protect user information
+(function(){
+    try {
+        const noop = function(){};
+        if (typeof console !== 'undefined') {
+            console.log = noop;
+            console.warn = noop;
+        }
+    } catch(e) {}
+})();
 
 // Data caching system to avoid redundant fetches
 const dataCache = {
     sessions: null,
     htesBySession: {}, // Cache HTEs by session ID
     studentsByHte: {}, // Cache students by HTE ID and date
+    evaluationData: {}, // Cache evaluation data by student ID
+    predictionStudentsByCoordinator: {}, // Cache prediction students by coordinator
     lastUpdated: {
         sessions: null,
         htesBySession: {},
-        studentsByHte: {}
+        studentsByHte: {},
+        evaluationData: {},
+        predictionStudentsByCoordinator: {}
     }
 };
 
@@ -15,7 +29,9 @@ const dataCache = {
 const CACHE_EXPIRY = {
     sessions: 5 * 60 * 1000, // 5 minutes
     htes: 3 * 60 * 1000,     // 3 minutes  
-    students: 1 * 60 * 1000   // 1 minute
+    students: 1 * 60 * 1000,   // 1 minute
+    evaluation: 2 * 60 * 1000,  // 2 minutes for evaluation data
+    prediction: 2 * 60 * 1000   // 2 minutes for prediction student list
 };
 
 // Check if cached data is still valid
@@ -31,6 +47,12 @@ function isCacheValid(cacheType, subKey = null) {
     } else if (cacheType === 'student' && subKey) {
         const lastUpdated = dataCache.lastUpdated.studentsByHte[subKey];
         return lastUpdated && (now - lastUpdated < CACHE_EXPIRY.students);
+    } else if (cacheType === 'evaluation' && subKey) {
+        const lastUpdated = dataCache.lastUpdated.evaluationData[subKey];
+        return lastUpdated && (now - lastUpdated < CACHE_EXPIRY.evaluation);
+    } else if (cacheType === 'prediction' && subKey) {
+        const lastUpdated = dataCache.lastUpdated.predictionStudentsByCoordinator[subKey];
+        return lastUpdated && (now - lastUpdated < CACHE_EXPIRY.prediction);
     }
     
     return false;
@@ -214,15 +236,15 @@ function renderCompaniesList(companies) {
             </div>
         `;
         
-        html += `<tr>
-            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-900\">${company.NAME || '-'}<\/td>
-            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.INDUSTRY || '-'}<\/td>
-            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.ADDRESS || '-'}<\/td>
-            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.CONTACT_PERSON || '-'}<\/td>
-            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.CONTACT_NUMBER || '-'}<\/td>
-            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${moaStatusHtml}<\/td>
-            <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${actionHtml}<\/td>
-        <\/tr>`;
+            html += `<tr>
+                <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-900\">${company.NAME || '-'}<\/td>
+                <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.INDUSTRY || '-'}<\/td>
+                <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.ADDRESS || '-'}<\/td>
+                <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.CONTACT_PERSON || '-'}<\/td>
+                <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${company.CONTACT_NUMBER || '-'}<\/td>
+                <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${moaStatusHtml}<\/td>
+                <td class=\"px-6 py-3 whitespace-nowrap text-sm text-gray-700\">${actionHtml}<\/td>
+            <\/tr>`;
     });
     $('#allCompaniesTableBody').html(html);
 }
@@ -241,6 +263,7 @@ $(document).on('click', '#btnViewAllCompanies', function(e) {
     $('#studentFormContainer').hide();
     $('#addHTEFormContainer').hide();
     $('#allStudentsContainer').hide();
+    $('#controlIntroContainer').hide();
     $('#deleteHTEFormContainer').hide();
     $('#deleteSessionFormContainer').hide();
     $('#deleteStudentFormContainer').hide();
@@ -264,6 +287,7 @@ $(document).on('click', '#btnAddSession', function(e) {
     $('#studentFormContainer').hide();
     $('#addHTEFormContainer').hide();
     $('#allStudentsContainer').hide();
+    $('#controlIntroContainer').hide();
     $('#deleteHTEFormContainer').hide();
     $('#deleteSessionFormContainer').hide();
     $('#deleteStudentFormContainer').hide();
@@ -410,7 +434,7 @@ $(document).on('click', '#toggleSingleEntry', function() {
             dataType: "json",
             data: {action: "getSession" },
             success: function(rv) {
-                let x = '<option value="">Select Session</option>';
+                let x = '<option value="">Select Term</option>';
                 for(let i=0; i<rv.length; i++) {
                     let cs = rv[i];
                     let displayName = cs.DISPLAY_NAME || ('S.Y. ' + cs.YEAR + '-' + (parseInt(cs.YEAR) + 1));
@@ -584,6 +608,52 @@ $(document).on('click', '#studentProfileModal', function(e) {
 
 // --- Post-Analysis Student List Logic ---
 let allPostAnalysisStudents = [];
+// Map of INTERN_ID -> SESSION_NAME for Post-Analysis term filtering
+window.postAnalysisStudentSessionMap = window.postAnalysisStudentSessionMap || {};
+
+function loadPostAnalysisTerms() {
+    const cdrid = $('#hiddencdrid').val();
+    if (!cdrid) { return; }
+    $.ajax({
+        url: 'ajaxhandler/attendanceAJAX.php',
+        type: 'POST',
+        dataType: 'json',
+        data: { action: 'getAllStudentsUnderCoordinator', cdrid: cdrid },
+        success: function(resp) {
+            if (resp && resp.success && Array.isArray(resp.students)) {
+                const map = {};
+                const terms = new Set();
+                resp.students.forEach(function(s){
+                    if (s.INTERNS_ID) map[s.INTERNS_ID] = s.SESSION_NAME || '';
+                    if (s.SESSION_NAME) terms.add(s.SESSION_NAME);
+                });
+                window.postAnalysisStudentSessionMap = map;
+                const $sel = $('#postAnalysisTermFilter');
+                if ($sel && $sel.length) {
+                    const getYear = (t) => {
+                        const m = /([0-9]{4})/.exec(t || '');
+                        return m ? parseInt(m[1], 10) : -Infinity;
+                    };
+                    const sorted = Array.from(terms).sort((a,b)=> getYear(a) - getYear(b));
+                    const latest = sorted.length ? sorted[sorted.length - 1] : null;
+                    // Build options (latest first for convenience)
+                    let opts = '<option value="all">All Terms</option>';
+                    const displayList = sorted.slice().reverse();
+                    displayList.forEach(function(t){
+                        const selectedAttr = (latest && t === latest) ? ' selected' : '';
+                        opts += `<option value=\"${t}\"${selectedAttr}>${t}</option>`;
+                    });
+                    $sel.html(opts);
+                    if (latest) {
+                        $sel.val(latest);
+                        // Trigger filtering if students already loaded
+                        $sel.trigger('change');
+                    }
+                }
+            }
+        }
+    });
+}
 // Handle student selection in Post-Analysis tab
 $(document).on('click', '.postanalysis-student-item', function() {
     // Remove selection from all, add to clicked
@@ -726,7 +796,13 @@ function loadPostAnalysisStudents() {
         success: function(response) {
             if (response.success && response.students) {
                 allPostAnalysisStudents = response.students;
-                renderPostAnalysisStudentList(allPostAnalysisStudents);
+                // Apply current search filter and term filter on first render
+                const q = ($('#postAnalysisStudentSearch').val() || '').trim().toLowerCase();
+                let filtered = allPostAnalysisStudents.filter(function(s){
+                    const name = (s.NAME + ' ' + s.SURNAME).toLowerCase();
+                    return name.includes(q);
+                });
+                renderPostAnalysisStudentList(filtered);
             } else {
                 allPostAnalysisStudents = [];
                 renderEmptyPostAnalysisState('No students found for post-analysis.');
@@ -757,11 +833,26 @@ function renderEmptyPostAnalysisState(message) {
 }
 
 function renderPostAnalysisStudentList(students) {
-    let sorted = students.slice().sort((a, b) => (a.SURNAME + ', ' + a.NAME).localeCompare(b.SURNAME + ', ' + b.NAME));
+    // Apply term filter using mapping
+    const selectedTerm = (($('#postAnalysisTermFilter').val()) || 'all').trim();
+    let list = students;
+    if (selectedTerm !== 'all' && window.postAnalysisStudentSessionMap) {
+        list = students.filter(function(s){
+            const sess = window.postAnalysisStudentSessionMap[s.INTERNS_ID] || '';
+            return sess === selectedTerm;
+        });
+    }
+    let sorted = list.slice().sort((a, b) => (a.SURNAME + ', ' + a.NAME).localeCompare(b.SURNAME + ', ' + b.NAME));
     let html = '';
     sorted.forEach(function(student) {
         const displayName = student.SURNAME + ', ' + student.NAME;
-        html += `<div class="postanalysis-student-item" data-studentid="${student.INTERNS_ID}">${displayName}</div>`;
+        const isReady = !!(student.ready_for_post_analysis);
+        const badgeClass = isReady ? 'text-green-700 bg-green-100' : 'text-gray-600 bg-gray-100';
+        const badgeText = isReady ? 'Ready' : 'Not Ready';
+        html += `<div class=\"postanalysis-student-item\" style=\"display:flex;align-items:center;gap:.5rem;\" data-studentid=\"${student.INTERNS_ID}\">`+
+                `<span style=\"flex:1 1 auto;min-width:0;\">${displayName}</span>`+
+                `<span class=\"ml-auto inline-block rounded-full ${badgeClass}\" style=\"font-size:.68rem;font-weight:500;padding:.15rem .5rem;white-space:nowrap;\">${badgeText}</span>`+
+            `</div>`;
     });
     $('#postAnalysisStudentListPanel').html(html);
 }
@@ -825,12 +916,24 @@ $(document).on('input', '#postAnalysisStudentSearch', function() {
 });
 
 $(document).on('click', '#postAnalysisTab', function() {
+    loadPostAnalysisTerms();
     loadPostAnalysisStudents();
 });
 $(document).ready(function() {
     if ($('#postAnalysisContent').is(':visible')) {
+        loadPostAnalysisTerms();
         loadPostAnalysisStudents();
     }
+});
+
+// Change handler: re-render list when term changes (no refetch)
+$(document).on('change', '#postAnalysisTermFilter', function(){
+    const q = ($('#postAnalysisStudentSearch').val() || '').trim().toLowerCase();
+    let filtered = allPostAnalysisStudents.filter(function(s){
+        const name = (s.NAME + ' ' + s.SURNAME).toLowerCase();
+        return name.includes(q);
+    });
+    renderPostAnalysisStudentList(filtered);
 });
 
 // --- Update Company Logo Modal Logic ---
@@ -1205,6 +1308,48 @@ function getSessionHTML(rv) {
 
     // Modal for displaying student dashboard info (all stats)
     function showStudentDashboardModal(stats) {
+        // If inline Tailwind modal exists (no #studentDashboardModalContent), populate it and exit
+        if ($("#studentDashboardModal").length > 0 && $("#studentDashboardModalContent").length === 0) {
+            const present = typeof stats.presentDays === 'number' ? stats.presentDays : 0;
+            const hours = typeof stats.totalHours === 'number' ? stats.totalHours : 0;
+            const rate = typeof stats.attendanceRate === 'number' ? stats.attendanceRate : 0;
+            $('#weeklyPresentCount').text(present);
+            $('#totalHours').text(`${hours}h`);
+            $('#attendancePercentage').text(`${rate}%`);
+            const studentId = arguments[1];
+            $.ajax({
+                url: 'ajaxhandler/studentDashboardAjax.php',
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'getRecentReportStatus', studentId },
+                success: function(response) {
+                    let tableHtml = '';
+                    if (response.status === 'success' && Array.isArray(response.data) && response.data.length > 0) {
+                        tableHtml += `<div class="weekly-report-table-wrapper"><table class="weekly-report-table"><thead><tr><th>Week</th><th>Status</th><th>Submitted</th><th>Approved</th></tr></thead><tbody>`;
+                        response.data.forEach(report => {
+                            const approvedClass = report.approved_at ? '' : 'na';
+                            tableHtml += `
+                                <tr class="weekly-report-row">
+                                    <td>${report.week_start} to ${report.week_end}</td>
+                                    <td>${report.status} / ${report.approval_status}</td>
+                                    <td>${report.created_at || 'N/A'}</td>
+                                    <td class="weekly-report-approved ${approvedClass}">${report.approved_at || 'N/A'}</td>
+                                </tr>
+                            `;
+                        });
+                        tableHtml += '</tbody></table></div>';
+                    } else {
+                        tableHtml = '<p class="text-gray-500 text-center py-4">No recent weekly report submissions found.</p>';
+                    }
+                    $('#dashboardRecentActivityTable').html(tableHtml);
+                },
+                error: function() {
+                    $('#dashboardRecentActivityTable').html('<p class="text-red-500 text-center py-4">Error loading recent weekly report status.</p>');
+                }
+            });
+            $('#studentDashboardModal').removeClass('hidden').show();
+            return;
+        }
         // Create modal if not exists
         if ($("#studentDashboardModal").length === 0) {
             $("body").append(`
@@ -1346,9 +1491,20 @@ $(function() {
     // --- Post-Assessment Student List Logic ---
     let allPostStudents = [];
     let selectedPostStudentId = null;
+    let currentPostPage = 1;
+    let postStudentsPerPage = 5;
+    let totalPostStudents = 0;
 
-    function renderPostStudentList(students) {
-        let sorted = students.slice().sort((a, b) => (a.SURNAME + ', ' + a.NAME).localeCompare(b.SURNAME + ', ' + b.NAME));
+    function renderPostStudentList(students, sessions = []) {
+        // Pagination logic
+        const startIndex = (currentPostPage - 1) * postStudentsPerPage;
+        const endIndex = startIndex + postStudentsPerPage;
+        const paginatedStudents = students.slice(startIndex, endIndex);
+        const totalPages = Math.ceil(students.length / postStudentsPerPage);
+        
+        totalPostStudents = students.length;
+        
+        let sorted = paginatedStudents.slice().sort((a, b) => (a.SURNAME + ', ' + a.NAME).localeCompare(b.SURNAME + ', ' + b.NAME));
         let studentListHtml = '';
         sorted.forEach(function(student) {
             const displayName = student.SURNAME + ', ' + student.NAME;
@@ -1361,31 +1517,80 @@ $(function() {
                 </div>
             `;
         });
+        
+        // Generate pagination HTML
+        let paginationHtml = '';
+        if (totalPages > 1) {
+            paginationHtml += `<div class='flex flex-col items-center mt-4 px-2'>`;
+            paginationHtml += `<div class='text-sm text-gray-600 mb-2'>Page ${currentPostPage} of ${totalPages}</div>`;
+            paginationHtml += `<div class='flex gap-1'>`;
+            
+            // First page button
+            const firstDisabled = currentPostPage <= 1;
+            paginationHtml += `<button class='postassessment-page-btn px-3 py-2 text-sm border rounded ${firstDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='1' ${firstDisabled ? 'disabled' : ''}>&lt;&lt;</button>`;
+            
+            // Previous button
+            const prevDisabled = currentPostPage <= 1;
+            paginationHtml += `<button class='postassessment-page-btn px-3 py-2 text-sm border rounded ${prevDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${currentPostPage - 1}' ${prevDisabled ? 'disabled' : ''}>&lt;</button>`;
+            
+            // Next button
+            const nextDisabled = currentPostPage >= totalPages;
+            paginationHtml += `<button class='postassessment-page-btn px-3 py-2 text-sm border rounded ${nextDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${currentPostPage + 1}' ${nextDisabled ? 'disabled' : ''}>&gt;</button>`;
+            
+            // Last page button
+            const lastDisabled = currentPostPage >= totalPages;
+            paginationHtml += `<button class='postassessment-page-btn px-3 py-2 text-sm border rounded ${lastDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${totalPages}' ${lastDisabled ? 'disabled' : ''}>&gt;&gt;</button>`;
+            
+            paginationHtml += `</div>`;
+            paginationHtml += `</div>`;
+        }
         // 20/80 layout for Post-Assessment tab
         // On mobile, this will stack vertically with student list on top
     let html = `<div class='postassessment-main-wrapper flex flex-col md:flex-row w-full'>`;
     html += `<div class='postassessment-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
     const searchValue = window.postStudentSearchValue || '';
     html += `<div class='mb-4'><input type='text' id='postStudentSearch' value='${searchValue.replace(/'/g, "&#39;").replace(/"/g, '&quot;')}' placeholder='Search student name' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
-    html += `<div id='postStudentListPanel' class='overflow-y-auto min-h-[500px] max-h-[700px] flex flex-col gap-1'>${studentListHtml}</div>`;
+    html += `<div class='mb-4'><select id='postAssessmentSessionFilter' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'><option value='all'>All Terms</option></select></div>`;
+    html += `<div id='postStudentListPanel' class='overflow-y-auto min-h-[400px] max-h-[500px] flex flex-col gap-1'>${studentListHtml}</div>`;
+    html += `<div id='postPaginationContainer'>${paginationHtml}</div>`;
         html += `</div>`;
         html += `<div class='postassessment-evaluation-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
+        // Always render evaluation list container so AJAX population works after first selection
+        html += `<div id='postEvalList' class='space-y-4 max-h-[700px] overflow-y-auto pr-2'>`;
         if (!selectedPostStudentId) {
             html += `
-            <div class="flex flex-col items-center justify-center h-full">
-                <div class="bg-blue-50 rounded-full p-6 mb-4">
-                    <svg xmlns='http://www.w3.org/2000/svg' class='h-12 w-12 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
+                <div class="flex flex-col items-center justify-center h-full">
+                    <div class="bg-blue-50 rounded-full p-6 mb-4">
+                        <svg xmlns='http://www.w3.org/2000/svg' class='h-12 w-12 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
+                    </div>
+                    <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
+                    <div class="text-gray-500 text-base">Select a student from the list to view their post-assessment details.</div>
                 </div>
-                <div class="text-xl font-semibold text-blue-700 mb-2">No student selected</div>
-                <div class="text-gray-500 text-base">Select a student from the list to view their post-assessment details.</div>
-            </div>
             `;
-        } else {
-            html += `<div id='postEvalList' class='space-y-4 max-h-[700px] overflow-y-auto pr-2'></div>`;
         }
+        html += `</div>`; // close postEvalList
         html += `</div>`;
         html += `</div>`;
         $('#postAssessmentContentArea').html(html);
+        
+        // Populate session dropdown immediately after HTML insertion
+        if (sessions && sessions.length > 0) {
+            let sessionOptions = '<option value="all">All Terms</option>';
+            sessions.forEach(session => { 
+                sessionOptions += `<option value='${session}'>${session}</option>`; 
+            });
+            
+            console.log('[POST-ASSESSMENT] Session options HTML:', sessionOptions);
+            console.log('[POST-ASSESSMENT] Dropdown element exists:', $('#postAssessmentSessionFilter').length > 0);
+            
+            // Populate dropdown
+            $('#postAssessmentSessionFilter').html(sessionOptions);
+            
+            // Auto-select most recent session (same logic as Pre-Assessment and Review)
+            console.log('[POST-ASSESSMENT] Auto-selecting session:', sessions[0]);
+            $('#postAssessmentSessionFilter').val(sessions[0]);
+        }
+        
         // Restore focus and cursor position if search bar was focused
         if (window.shouldRefocusPostSearch) {
             const input = document.getElementById('postStudentSearch');
@@ -1397,9 +1602,118 @@ $(function() {
             window.shouldRefocusPostSearch = false;
         }
     }
+    
+    // Update only the Post-Assessment student list display without rebuilding dropdown or right panel
+    function updatePostStudentListDisplay(students, resetPage = true) {
+        console.log('[POST-ASSESSMENT] updatePostStudentListDisplay called with', students.length, 'students');
+        
+        if (resetPage) {
+            currentPostPage = 1;
+        }
+        
+        // Pagination logic
+        const startIndex = (currentPostPage - 1) * postStudentsPerPage;
+        const endIndex = startIndex + postStudentsPerPage;
+        const paginatedStudents = students.slice(startIndex, endIndex);
+        const totalPages = Math.ceil(students.length / postStudentsPerPage);
+        
+        totalPostStudents = students.length;
+        
+        let sorted = paginatedStudents.slice().sort((a, b) => (a.SURNAME + ', ' + a.NAME).localeCompare(b.SURNAME + ', ' + b.NAME));
+        let studentListHtml = '';
+        
+        sorted.forEach(function(student) {
+            const displayName = student.SURNAME + ', ' + student.NAME;
+            studentListHtml += `
+                <div class="postassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${student.INTERNS_ID === selectedPostStudentId ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.INTERNS_ID}">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
+                    </span>
+                    <span class="truncate">${displayName}</span>
+                </div>
+            `;
+        });
+        
+        // Generate pagination HTML
+        let paginationHtml = '';
+        if (totalPages > 1) {
+            paginationHtml += `<div class='flex flex-col items-center mt-4 px-2'>`;
+            paginationHtml += `<div class='text-sm text-gray-600 mb-2'>Page ${currentPostPage} of ${totalPages}</div>`;
+            paginationHtml += `<div class='flex gap-1'>`;
+            
+            // First page button
+            const firstDisabled = currentPostPage <= 1;
+            paginationHtml += `<button class='postassessment-page-btn px-3 py-2 text-sm border rounded ${firstDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='1' ${firstDisabled ? 'disabled' : ''}>&lt;&lt;</button>`;
+            
+            // Previous button
+            const prevDisabled = currentPostPage <= 1;
+            paginationHtml += `<button class='postassessment-page-btn px-3 py-2 text-sm border rounded ${prevDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${currentPostPage - 1}' ${prevDisabled ? 'disabled' : ''}>&lt;</button>`;
+            
+            // Next button
+            const nextDisabled = currentPostPage >= totalPages;
+            paginationHtml += `<button class='postassessment-page-btn px-3 py-2 text-sm border rounded ${nextDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${currentPostPage + 1}' ${nextDisabled ? 'disabled' : ''}>&gt;</button>`;
+            
+            // Last page button
+            const lastDisabled = currentPostPage >= totalPages;
+            paginationHtml += `<button class='postassessment-page-btn px-3 py-2 text-sm border rounded ${lastDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${totalPages}' ${lastDisabled ? 'disabled' : ''}>&gt;&gt;</button>`;
+            
+            paginationHtml += `</div>`;
+            paginationHtml += `</div>`;
+        }
+        
+        // Update student list and pagination
+        $('#postStudentListPanel').html(studentListHtml);
+        $('#postPaginationContainer').html(paginationHtml);
+        
+        console.log('[POST-ASSESSMENT] Student list updated - Page', currentPostPage, 'of', totalPages, '- Showing', sorted.length, 'students');
+    }
+    
+    // Function to change page in Post-Assessment student list
+    function changePostAssessmentPage(page) {
+        console.log('[POST-ASSESSMENT] changePostAssessmentPage called with page:', page);
+        console.log('[POST-ASSESSMENT] Current page before change:', currentPostPage);
+        currentPostPage = page;
+        console.log('[POST-ASSESSMENT] Current page after change:', currentPostPage);
+        
+        // Get current filtered students
+        const selectedSession = $('#postAssessmentSessionFilter').val() || 'all';
+        const searchQuery = ($('#postStudentSearch').val() || '').trim();
+        console.log('[POST-ASSESSMENT] Current session filter:', selectedSession);
+        console.log('[POST-ASSESSMENT] Current search query:', searchQuery);
+        
+        let filteredStudents = allPostStudents.slice();
+        
+        // Apply session filter
+        if (selectedSession && selectedSession !== 'all') {
+            filteredStudents = filteredStudents.filter(student => {
+                const studentSession = student.SESSION_NAME || '';
+                return studentSession === selectedSession;
+            });
+        }
+        
+        // Apply search filter
+        if (searchQuery.length > 0) {
+            filteredStudents = filteredStudents.filter(s => {
+                const displayName = (s.SURNAME + ', ' + s.NAME).toLowerCase();
+                return displayName.includes(searchQuery.toLowerCase());
+            });
+        }
+        
+        // Update display with current page (don't reset page number)
+        updatePostStudentListDisplay(filteredStudents, false);
+    }
 
     // Flag to track if post-assessment data has been loaded
     let postAssessmentDataLoaded = false;
+    // Cache for individual student post-assessment evaluations to avoid repeated fetches
+    // Keyed by INTERN_ID; value stores the full response object used to render
+    let postAssessmentEvalCache = {};
+    // Invalidate a single student's cached evaluation (call after an update/save if implemented later)
+    function invalidatePostAssessmentEvaluation(studentId) {
+        if (postAssessmentEvalCache[studentId]) {
+            delete postAssessmentEvalCache[studentId];
+        }
+    }
 
     // Populate post-assessment student list when tab is activated
     // Load post-assessment students for coordinator
@@ -1423,7 +1737,7 @@ $(function() {
                     showPostAssessmentContent();
                     if (response.students.length > 0) {
                         allPostStudents = response.students;
-                        renderPostStudentList(allPostStudents);
+                        displayPostAssessmentStudents(allPostStudents);
                     } else {
                         allPostStudents = [];
                         renderEmptyPostAssessmentState('No students assigned to you for post-assessment.');
@@ -1452,7 +1766,9 @@ $(function() {
         let html = `<div class='postassessment-main-wrapper flex flex-col md:flex-row w-full'>`;
         html += `<div class='postassessment-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
         html += `<div class='mb-4'><input type='text' id='postStudentSearch' placeholder='Search student name' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200' disabled></div>`;
-        html += `<div id='postStudentListPanel' class='overflow-y-auto min-h-[500px] max-h-[700px] flex flex-col gap-1'></div>`;
+        html += `<div class='mb-4'><select id='postAssessmentSessionFilter' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200' disabled><option value='all'>All Terms</option></select></div>`;
+        html += `<div id='postStudentListPanel' class='overflow-y-auto min-h-[400px] max-h-[500px] flex flex-col gap-1'></div>`;
+        html += `<div id='postPaginationContainer'></div>`;
         html += `</div>`;
         html += `<div class='postassessment-evaluation-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
         html += `
@@ -1488,87 +1804,167 @@ $(function() {
         }
     });
 
-    // Search filter for post-assessment student list
+    // Function to display post-assessment students with session filtering (same logic as Pre-Assessment and Review)
+    function displayPostAssessmentStudents(students) {
+        console.log('[POST-ASSESSMENT] displayPostAssessmentStudents called with data:', students);
+        
+        // Debug: Check what session data we have
+        console.log('[POST-ASSESSMENT] Sample student data:', students.slice(0, 3));
+        console.log('[POST-ASSESSMENT] All SESSION_NAME values:', students.map(s => s.SESSION_NAME));
+        console.log('[POST-ASSESSMENT] Students with SESSION_NAME:', students.filter(s => s.SESSION_NAME));
+        console.log('[POST-ASSESSMENT] Students without SESSION_NAME:', students.filter(s => !s.SESSION_NAME));
+        
+        // Get unique sessions and sort (most recent first) - same logic as Pre-Assessment and Review
+        const sessions = [...new Set((students || []).map(s => s.SESSION_NAME).filter(Boolean))];
+        sessions.sort((a, b) => b.localeCompare(a));
+        
+        console.log('[POST-ASSESSMENT] Extracted sessions:', sessions);
+        console.log('[POST-ASSESSMENT] Number of unique sessions:', sessions.length);
+        
+        // Store data globally for filtering
+        allPostStudents = students;
+        
+        // Filter students by latest session first, then render
+        let initialStudents = students;
+        if (sessions && sessions.length > 0) {
+            const latestSession = sessions[0];
+            initialStudents = students.filter(student => {
+                const studentSession = student.SESSION_NAME || '';
+                return studentSession === latestSession;
+            });
+            console.log('[POST-ASSESSMENT] Filtered students for latest session:', latestSession, '- Count:', initialStudents.length);
+        }
+        
+        // Initial render with filtered students and populate dropdown
+        renderPostStudentList(initialStudents, sessions);
+        
+        // Session filter change handler (same logic as Pre-Assessment and Review)
+        $('#postAssessmentSessionFilter').off('change').on('change', function() {
+            console.log('[POST-ASSESSMENT] Session filter changed to:', $(this).val());
+            applyPostAssessmentFilters(allPostStudents);
+        });
+        
+        // Also update search handler to work with session filter
+        $('#postStudentSearch').off('input').on('input', function() {
+            console.log('[POST-ASSESSMENT] Search input changed to:', $(this).val());
+            applyPostAssessmentFilters(allPostStudents);
+        });
+        
+        // Pagination click handler using event delegation
+        $(document).off('click', '.postassessment-page-btn').on('click', '.postassessment-page-btn', function(e) {
+            e.preventDefault();
+            console.log('[POST-ASSESSMENT] Pagination button clicked!');
+            const page = parseInt($(this).data('page'));
+            if (!$(this).prop('disabled') && page > 0) {
+                changePostAssessmentPage(page);
+            }
+        });
+    }
+    
+    // Apply both session and search filters for Post-Assessment 
+    function applyPostAssessmentFilters(allStudentsData, resetPage = true) {
+        const selectedSession = $('#postAssessmentSessionFilter').val() || 'all';
+        const searchQuery = ($('#postStudentSearch').val() || '').trim();
+        
+        console.log('[POST-ASSESSMENT] Applying filters - Session:', selectedSession, 'Search:', searchQuery);
+        console.log('[POST-ASSESSMENT] Total students before filtering:', allStudentsData.length);
+        
+        let filtered = allStudentsData.slice();
+        
+        // Apply session filter first
+        if (selectedSession && selectedSession !== 'all') {
+            console.log('[POST-ASSESSMENT] Filtering by session:', selectedSession);
+            console.log('[POST-ASSESSMENT] Sample student sessions:', allStudentsData.slice(0, 3).map(s => s.SESSION_NAME));
+            
+            filtered = filtered.filter(student => {
+                const studentSession = student.SESSION_NAME || '';
+                const matches = studentSession === selectedSession;
+                if (!matches) {
+                    console.log('[POST-ASSESSMENT] Student session mismatch:', studentSession, 'vs', selectedSession);
+                }
+                return matches;
+            });
+            console.log('[POST-ASSESSMENT] After session filter:', filtered.length, 'students');
+        }
+        
+        // Apply search filter
+        if (searchQuery.length > 0) {
+            // Store search value for restoration
+            window.postStudentSearchValue = searchQuery;
+            window.shouldRefocusPostSearch = true;
+            
+            filtered = filtered.filter(s => {
+                const displayName = (s.SURNAME + ', ' + s.NAME).toLowerCase();
+                return displayName.includes(searchQuery.toLowerCase());
+            });
+            console.log('[POST-ASSESSMENT] After search filter:', filtered.length, 'students');
+        }
+        
+        // Update display; optionally reset page (default true for filter changes)
+        updatePostStudentListDisplay(filtered, resetPage);
+        
+        // Restore search input focus if it was focused (dropdown value is already correct)
+        const $input = $('#postStudentSearch');
+        if ($input.length > 0) {
+            $input.val(searchQuery);
+            if (document.activeElement === $input[0]) {
+                $input.focus();
+            }
+        }
+    }
+
+    // Search filter for post-assessment student list (updated to work with session filtering)
     $(document).on('input', '#postStudentSearch', function() {
         const query = $(this).val();
         window.postStudentSearchValue = query;
         window.shouldRefocusPostSearch = true;
-        let filtered = allPostStudents.filter(s => {
-            const displayName = (s.SURNAME + ', ' + s.NAME).toLowerCase();
-            return displayName.includes(query.trim().toLowerCase());
-        });
-        renderPostStudentList(filtered);
+        applyPostAssessmentFilters(allPostStudents);
     });
 
     // Handle student selection in Post-Assessment tab
     $(document).on('click', '.postassessment-student-item', function() {
     selectedPostStudentId = $(this).data('studentid');
     // Re-render student list to update highlight, preserving search value
-    renderPostStudentList(allPostStudents);
+    applyPostAssessmentFilters(allPostStudents, false);
     loadPostAssessmentEvaluation(selectedPostStudentId);
 // Load and display post-assessment evaluation for selected student
 function loadPostAssessmentEvaluation(studentId) {
-    // Show loading indicator (optional)
-    $('#postEvalList').html('<div class="loading">Loading evaluation...</div>');
+    // If cached, render immediately without flicker
+    if (postAssessmentEvalCache[studentId]) {
+        renderPostAssessmentEvaluation(postAssessmentEvalCache[studentId]);
+        return;
+    }
+    // Otherwise show enhanced loading skeleton then fetch
+    const loadingHtml = `
+        <div class="flex flex-col items-center py-10 animate-fade-in">
+            <div class="mb-4">
+                <div class="w-14 h-14 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            </div>
+            <div class="text-gray-600 font-medium mb-6">Loading post-assessment evaluation...</div>
+            <div class="w-full max-w-2xl space-y-4">
+                ${[1,2,3].map(i => `
+                    <div class='bg-white rounded-lg shadow p-4 border border-gray-100'>
+                        <div class='h-5 w-40 bg-gray-200 rounded mb-3 animate-pulse'></div>
+                        <div class='space-y-2'>
+                            <div class='h-4 w-full bg-gray-100 rounded animate-pulse'></div>
+                            <div class='h-4 w-5/6 bg-gray-100 rounded animate-pulse'></div>
+                            <div class='h-4 w-2/3 bg-gray-100 rounded animate-pulse'></div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>`;
+    $('#postEvalList').html(loadingHtml);
     $.ajax({
         url: 'ajaxhandler/coordinatorPostAssessmentAjax.php',
         type: 'POST',
         dataType: 'json',
-        data: {
-            action: 'getStudentPostAssessment',
-            interns_id: studentId
-        },
+        data: { action: 'getStudentPostAssessment', interns_id: studentId },
         success: function(response) {
             if (response.success) {
-                if (response.hasSupervisorRating && response.records.length > 0) {
-                    // Group records by category
-                    const grouped = {};
-                    response.records.forEach(function(rec) {
-                        if (!grouped[rec.category]) grouped[rec.category] = [];
-                        grouped[rec.category].push(rec);
-                    });
-                    let html = `<div class="post-eval-container max-h-[700px] overflow-y-auto pr-2">
-                        <h3 class="text-2xl font-bold text-blue-700 mb-6">Post-Evaluation</h3>`;
-                    Object.keys(grouped).forEach(function(category) {
-                        html += `<div class="mb-8">
-                            <h4 class="post-eval-category-header text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-1">${category}</h4>
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full bg-white rounded-lg shadow border border-gray-200">
-                                    <thead class="bg-blue-50">
-                                        <tr>
-                                            <th class="px-4 py-2 text-left text-sm font-bold text-blue-700">Disciplines/Task</th>
-                                            <th class="px-4 py-2 text-center text-sm font-bold text-blue-700 w-32">Self Rating</th>
-                                            <th class="px-4 py-2 text-center text-sm font-bold text-blue-700 w-32">Supervisor Rating</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${grouped[category].map(rec => `
-                                            <tr class="hover:bg-blue-50">
-                                                <td class="px-4 py-2 text-gray-700">${rec.question_text ?? rec.question_id}</td>
-                                                <td class="px-4 py-2 text-center text-blue-600 font-semibold w-32">${rec.self_rating ?? ''}</td>
-                                                <td class="px-4 py-2 text-center text-green-600 font-semibold w-32">${rec.supervisor_rating ?? ''}</td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>`;
-                    });
-                    // Show the comment only once below all tables
-                    const firstComment = response.records.find(rec => rec.comment && rec.comment.trim() !== '');
-                    if (firstComment) {
-                        html += `<div class="mt-6">
-                            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow">
-                                <div class="font-bold text-yellow-700 mb-2">Comment/Recommendation</div>
-                                <div class="text-gray-800 text-base">${firstComment.comment}</div>
-                            </div>
-                        </div>`;
-                    }
-                    html += `</div>`;
-                    $('#postEvalList').html(html);
-                } else {
-                    $('#postEvalList').html('<div class="no-eval">Not rated yet by supervisor.</div>');
-                }
+                // Cache raw response for future reuse
+                postAssessmentEvalCache[studentId] = response;
+                renderPostAssessmentEvaluation(response);
             } else {
                 showPostAssessmentContent();
                 $('#postAssessmentContentArea').html('<div class="flex flex-col items-center justify-center py-16 text-center"><div class="text-gray-500">No evaluation data found.</div></div>');
@@ -1580,6 +1976,95 @@ function loadPostAssessmentEvaluation(studentId) {
     });
 }
     });
+// Helper to render a post-assessment evaluation response (cached or fresh)
+function renderPostAssessmentEvaluation(response) {
+    const records = response.records || [];
+    const hasAnyRecords = records.length > 0;
+    const selfRatings = records.filter(r => r.self_rating !== null && r.self_rating !== '' && r.self_rating !== undefined);
+    const supervisorRatings = records.filter(r => r.supervisor_rating !== null && r.supervisor_rating !== '' && r.supervisor_rating !== undefined);
+    const studentCompleted = hasAnyRecords && selfRatings.length > 0;
+    const supervisorCompleted = response.hasSupervisorRating && supervisorRatings.length > 0;
+
+    if (!hasAnyRecords) {
+        $('#postEvalList').html(`
+            <div class='flex flex-col items-center justify-center py-12'>
+                <div class='bg-red-50 rounded-full p-5 mb-4'>
+                    <svg xmlns='http://www.w3.org/2000/svg' class='h-10 w-10 text-red-500' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                        <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z' />
+                    </svg>
+                </div>
+                <div class='text-xl font-semibold text-red-600 mb-2'>Post-Assessment Not Started</div>
+                <p class='text-gray-600 max-w-md text-center'>This student has not yet begun the post-assessment. Once the student submits their self ratings, you will be able to view them here.</p>
+            </div>`);
+        return;
+    }
+
+    if (!studentCompleted) {
+        $('#postEvalList').html(`
+            <div class='flex flex-col items-center justify-center py-12'>
+                <div class='bg-yellow-50 rounded-full p-5 mb-4'>
+                    <svg xmlns='http://www.w3.org/2000/svg' class='h-10 w-10 text-yellow-500' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                        <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z' />
+                    </svg>
+                </div>
+                <div class='text-xl font-semibold text-yellow-600 mb-2'>Awaiting Student Submission</div>
+                <p class='text-gray-600 max-w-md text-center'>The post-assessment form is open but the student has not provided self ratings yet. Encourage the student to complete their post-assessment.</p>
+            </div>`);
+        return;
+    }
+
+    const grouped = {};
+    records.forEach(function(rec) {
+        if (!grouped[rec.category]) grouped[rec.category] = [];
+        grouped[rec.category].push(rec);
+    });
+    let html = `<div class="post-eval-container max-h-[700px] overflow-y-auto pr-2">
+        <h3 class="text-2xl font-bold text-blue-700 mb-4">Post-Evaluation</h3>`;
+    if (!supervisorCompleted) {
+        html += `<div class='mb-6 bg-blue-50 border border-blue-200 rounded p-4 flex items-start gap-3'>
+            <svg xmlns='http://www.w3.org/2000/svg' class='h-6 w-6 text-blue-500 flex-shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M13 16h-1v-4h-1m1-4h.01M12 18a6 6 0 100-12 6 6 0 000 12z' />
+            </svg>
+            <div class='text-sm text-blue-700'>Student self ratings received. Awaiting supervisor evaluation.</div>
+        </div>`;
+    }
+    Object.keys(grouped).forEach(function(category) {
+        html += `<div class="mb-8">
+            <h4 class="post-eval-category-header text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-1">${category}</h4>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white rounded-lg shadow border border-gray-200">
+                    <thead class="bg-blue-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-sm font-bold text-blue-700">Disciplines/Task</th>
+                            <th class="px-4 py-2 text-center text-sm font-bold text-blue-700 w-32">Self Rating</th>
+                            <th class="px-4 py-2 text-center text-sm font-bold text-blue-700 w-40">${supervisorCompleted ? 'Supervisor Rating' : 'Supervisor Rating (Pending)'}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${grouped[category].map(rec => `
+                            <tr class="hover:bg-blue-50">
+                                <td class="px-4 py-2 text-gray-700">${rec.question_text ?? rec.question_id}</td>
+                                <td class="px-4 py-2 text-center text-blue-600 font-semibold w-32">${rec.self_rating ?? ''}</td>
+                                <td class="px-4 py-2 text-center ${rec.supervisor_rating ? 'text-green-600 font-semibold' : 'text-gray-400 italic'} w-40">${rec.supervisor_rating ?? (supervisorCompleted ? '' : '—')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+    });
+    const firstComment = records.find(rec => rec.comment && rec.comment.trim() !== '');
+    if (firstComment) {
+        html += `<div class="mt-6">
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow">
+                <div class="font-bold text-yellow-700 mb-2">Comment/Recommendation</div>
+                <div class="text-gray-800 text-base">${firstComment.comment}</div>
+            </div>
+        </div>`;
+    }
+    html += `</div>`;
+    $('#postEvalList').html(html);
+}
     // Evaluation tab bar navigation
     $('#evalQuestionsTabBtn, #rateTabBtn, #postAssessmentTabBtn, #reviewTabBtn').click(function() {
         // Remove active class from all tab buttons
@@ -1599,14 +2084,17 @@ function loadPostAssessmentEvaluation(studentId) {
             $('#rateTabContent').show();
             // Show loading state and load pre-assessment data
             showPreAssessmentLoading();
-            setTimeout(loadPreAssessmentData, 300);
+            // Single attempt; actual loader lives in inner tab logic (avoids retry spam)
+            loadPreAssessmentData();
         } else if (this.id === 'postAssessmentTabBtn') {
             $('#postAssessmentTabContent').show();
             // Only load data if it hasn't been loaded before
             if (!postAssessmentDataLoaded) {
                 // Show loading state and load post-assessment data
                 showPostAssessmentLoading();
-                setTimeout(loadPostAssessmentData, 300);
+                setTimeout(function() {
+                    loadPostAssessmentData();
+                }, 300);
             } else {
                 // Data already loaded, just show the content
                 showPostAssessmentContent();
@@ -1615,7 +2103,9 @@ function loadPostAssessmentEvaluation(studentId) {
             $('#reviewTabContent').show();
             // Show loading state and load review data
             showReviewLoading();
-            setTimeout(loadReviewData, 300);
+            setTimeout(function() {
+                loadReviewData();
+            }, 300);
         // Removed stats tab logic
         }
     });
@@ -1638,6 +2128,11 @@ function loadPostAssessmentEvaluation(studentId) {
         $('#preAssessmentErrorState').addClass('hidden');
         $('#preAssessmentContent').removeClass('hidden');
     }
+
+    // Expose helpers globally for later closures referencing these functions
+    window.showPreAssessmentLoading = showPreAssessmentLoading;
+    window.showPreAssessmentError = showPreAssessmentError;
+    window.showPreAssessmentContent = showPreAssessmentContent;
     
     function showPostAssessmentLoading() {
         $('#postAssessmentLoadingState').removeClass('hidden');
@@ -1676,11 +2171,15 @@ function loadPostAssessmentEvaluation(studentId) {
     }
     
     // Placeholder loading functions for evaluation tabs
+    // Pre-Assessment loader: single attempt (will load again via inner tab handler once defined)
     function loadPreAssessmentData() {
-        // Simulate loading delay
-        setTimeout(() => {
-            showPreAssessmentContent();
-        }, 1000);
+        if (typeof loadPreassessmentStudentList === 'function') {
+            loadPreassessmentStudentList();
+        } else if (typeof window.loadPreassessmentStudentList === 'function') {
+            window.loadPreassessmentStudentList();
+        } else {
+            console.warn('[Pre-Assessment] student loader not available yet (inner tab click will handle).');
+        }
     }
     
     function loadPostAssessmentData() {
@@ -1707,92 +2206,6 @@ function loadPostAssessmentEvaluation(studentId) {
         loadReviewData();
     });
 
-    // Helper functions for evaluation loading states
-    function showPreAssessmentLoading() {
-        $('#preAssessmentLoadingState').removeClass('hidden');
-        $('#preAssessmentErrorState').addClass('hidden');
-        $('#preAssessmentContent').addClass('hidden');
-    }
-    
-    function showPreAssessmentError() {
-        $('#preAssessmentLoadingState').addClass('hidden');
-        $('#preAssessmentErrorState').removeClass('hidden');
-        $('#preAssessmentContent').addClass('hidden');
-    }
-    
-    function showPreAssessmentContent() {
-        $('#preAssessmentLoadingState').addClass('hidden');
-        $('#preAssessmentErrorState').addClass('hidden');
-        $('#preAssessmentContent').removeClass('hidden');
-    }
-    
-    function showPostAssessmentLoading() {
-        $('#postAssessmentLoadingState').removeClass('hidden');
-        $('#postAssessmentErrorState').addClass('hidden');
-        $('#postAssessmentContentArea').addClass('hidden');
-    }
-    
-    function showPostAssessmentError() {
-        $('#postAssessmentLoadingState').addClass('hidden');
-        $('#postAssessmentErrorState').removeClass('hidden');
-        $('#postAssessmentContentArea').addClass('hidden');
-    }
-    
-    function showPostAssessmentContent() {
-        $('#postAssessmentLoadingState').addClass('hidden');
-        $('#postAssessmentErrorState').addClass('hidden');
-        $('#postAssessmentContentArea').removeClass('hidden');
-    }
-    
-    function showReviewLoading() {
-        $('#reviewLoadingState').removeClass('hidden');
-        $('#reviewErrorState').addClass('hidden');
-        $('#reviewContentArea').addClass('hidden');
-    }
-    
-    function showReviewError() {
-        $('#reviewLoadingState').addClass('hidden');
-        $('#reviewErrorState').removeClass('hidden');
-        $('#reviewContentArea').addClass('hidden');
-    }
-    
-    function showReviewContent() {
-        $('#reviewLoadingState').addClass('hidden');
-        $('#reviewErrorState').addClass('hidden');
-        $('#reviewContentArea').removeClass('hidden');
-    }
-    
-    // Placeholder loading functions for evaluation tabs
-    function loadPreAssessmentData() {
-        // Simulate loading delay
-        setTimeout(() => {
-            showPreAssessmentContent();
-        }, 1000);
-    }
-    
-    function loadPostAssessmentData() {
-        loadPostAssessmentStudents();
-    }
-    
-    function loadReviewData() {
-        // Simulate loading delay
-        setTimeout(() => {
-            showReviewContent();
-        }, 1000);
-    }
-    
-    // Retry button handlers
-    $(document).on('click', '#retryLoadPreAssessment', function() {
-        loadPreAssessmentData();
-    });
-    
-    $(document).on('click', '#retryLoadPostAssessment', function() {
-        loadPostAssessmentData();
-    });
-    
-    $(document).on('click', '#retryLoadReview', function() {
-        loadReviewData();
-    });
 
     // Show default tab on page load
     $('#evalQuestionsTabContent').show();
@@ -1814,10 +2227,101 @@ function loadPostAssessmentEvaluation(studentId) {
     // --- Prediction Tab Logic ---
     // Load students for prediction tab on tab switch or page load
     let predictionLoading = false; // Flag to prevent duplicate loading
+
+    // Populate Prediction term dropdown and build mapping of INTERN_ID -> SESSION_NAME
+    function loadPredictionTerms(callback) {
+        const coordinatorId = $('#hiddencdrid').val();
+        if (!coordinatorId) { if (typeof callback === 'function') callback(); return; }
+        $.ajax({
+            url: 'ajaxhandler/attendanceAJAX.php',
+            type: 'POST',
+            dataType: 'json',
+            data: { cdrid: coordinatorId, action: 'getAllStudentsUnderCoordinator' },
+            success: function(resp) {
+                const students = (resp && (resp.students || resp.data)) || [];
+                const sessions = [...new Set(students.map(s => s.SESSION_NAME).filter(Boolean))];
+                sessions.sort((a,b) => b.localeCompare(a));
+                let opts = '<option value="all">All Terms</option>';
+                sessions.forEach(s => { opts += `<option value="${s}">${s}</option>`; });
+                $('#predictionTermFilter').html(opts);
+                if (sessions.length > 0) { $('#predictionTermFilter').val(sessions[0]); }
+                window.predictionStudentSessionMap = {};
+                students.forEach(s => { if (s.INTERNS_ID) window.predictionStudentSessionMap[s.INTERNS_ID] = s.SESSION_NAME || ''; });
+                if (typeof callback === 'function') callback();
+            },
+            error: function() {
+                $('#predictionTermFilter').html('<option value="all">All Terms</option>');
+                window.predictionStudentSessionMap = {};
+                if (typeof callback === 'function') callback();
+            }
+        });
+    }
     
     function loadPredictionStudents() {
         if (predictionLoading) {
             console.log('[PREDICTION] Already loading, skipping duplicate request');
+            return;
+        }
+        // Serve from cache when available to avoid refetch on term change
+        const cdrid = $('#hiddencdrid').val() || '';
+        const cacheKey = `prediction_${cdrid}`;
+        if (isCacheValid('prediction', cacheKey) && dataCache.predictionStudentsByCoordinator[cacheKey]) {
+            let students = dataCache.predictionStudentsByCoordinator[cacheKey] || [];
+            const selectedTerm = ($('#predictionTermFilter').val() || 'all').trim();
+            if (selectedTerm !== 'all' && window.predictionStudentSessionMap) {
+                students = students.filter(function(stu){
+                    const sess = window.predictionStudentSessionMap[stu.INTERNS_ID] || '';
+                    return sess === selectedTerm;
+                });
+            }
+            if (!students || students.length === 0) {
+                $('#predictionTable tbody').html('<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No students assigned to you for prediction.</td></tr>');
+                window.predictionStudents = [];
+                return;
+            }
+            let tbody = '';
+            students.forEach(function(student, idx) {
+                const sessName = (window.predictionStudentSessionMap && window.predictionStudentSessionMap[student.INTERNS_ID]) || '';
+                let statusDisplay = student.STATUS === 'Rated' 
+                    ? '<span class="font-semibold text-green-600">Rated</span>'
+                    : '<span class="font-semibold text-red-600" title="Missing: ' + (student.missing || []).join(', ') + '">Not Rated</span>';
+                let hasPrediction = student.pre_assessment && student.pre_assessment.ojt_placement;
+                let placementText;
+                if (hasPrediction) {
+                    placementText = `<span class=\"inline-block bg-green-100 text-green-700 font-bold px-2 md:px-3 py-1 rounded-full text-xs\">${student.pre_assessment.ojt_placement}</span>`;
+                } else if (student.valid) {
+                    placementText = `<span class=\"inline-block bg-blue-100 text-blue-700 font-bold px-2 md:px-3 py-1 rounded-full text-xs\">Ready for Prediction</span>`;
+                } else {
+                    placementText = `<span class=\"inline-block bg-gray-100 text-gray-500 font-bold px-2 md:px-3 py-1 rounded-full text-xs\">Incomplete Data</span>`;
+                }
+                let analysisData = {};
+                if (hasPrediction) {
+                    analysisData = {
+                        placement: student.pre_assessment.ojt_placement,
+                        reasoning: student.pre_assessment.prediction_reasoning || "",
+                        probabilities: student.pre_assessment.prediction_probabilities ? JSON.parse(student.pre_assessment.prediction_probabilities) : {},
+                        confidence: student.pre_assessment.prediction_confidence
+                    };
+                } else if (student.valid) {
+                    analysisData = { ready: true, message: "This student has complete data and is ready for ML prediction. Click 'Run ML Prediction' to generate placement recommendation.", studentData: student };
+                } else {
+                    analysisData = { error: "Incomplete Data", message: "This student has not completed their pre-assessment or is missing required academic grades. Please ensure all required data is available before running predictions." };
+                }
+                let analysisBtnClass;
+                if (!student.valid) analysisBtnClass = 'bg-gray-400 hover:bg-gray-500';
+                else if (hasPrediction) analysisBtnClass = 'bg-green-600 hover:bg-green-700';
+                else analysisBtnClass = 'bg-blue-600 hover:bg-blue-700';
+                tbody += `<tr data-row=\"${idx}\" data-session=\"${sessName}\" class=\"hover:bg-blue-50 transition\">`+
+                    `<td class=\"px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900\">${student.NAME}</td>`+
+                    `<td class=\"px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-700\">${student.HTE_ASSIGNED || ''}</td>`+
+                    `<td class=\"px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm\">${statusDisplay}</td>`+
+                    `<td class=\"px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm\">${placementText}</td>`+
+                    `<td class=\"px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm\">`+
+                    `<button class=\"analysis-btn ${analysisBtnClass} text-white px-2 md:px-4 py-1 md:py-2 rounded-lg shadow transition text-xs md:text-sm\" data-analysis=\"${encodeURIComponent(JSON.stringify(analysisData))}\">Analysis</button>`+
+                    `</td></tr>`;
+            });
+            $('#predictionTable tbody').html(tbody);
+            window.predictionStudents = students;
             return;
         }
         
@@ -1834,7 +2338,18 @@ function loadPostAssessmentEvaluation(studentId) {
                     alert('Error: ' + response.error);
                     return;
                 }
-                let students = response.students;
+                let students = response.students || [];
+                // Cache full set for coordinator
+                dataCache.predictionStudentsByCoordinator[cacheKey] = students.slice();
+                dataCache.lastUpdated.predictionStudentsByCoordinator[cacheKey] = Date.now();
+                // Apply selected term filter using mapping
+                const selectedTerm = ($('#predictionTermFilter').val() || 'all').trim();
+                if (selectedTerm !== 'all' && window.predictionStudentSessionMap) {
+                    students = students.filter(function(stu){
+                        const sess = window.predictionStudentSessionMap[stu.INTERNS_ID] || '';
+                        return sess === selectedTerm;
+                    });
+                }
                 
                 // Handle empty student list
                 if (!students || students.length === 0) {
@@ -1845,6 +2360,7 @@ function loadPostAssessmentEvaluation(studentId) {
                 
                 let tbody = '';
                 students.forEach(function(student, idx) {
+                    const sessName = (window.predictionStudentSessionMap && window.predictionStudentSessionMap[student.INTERNS_ID]) || '';
                         // Color-coded status text instead of icons
                         let statusDisplay = student.STATUS === 'Rated' 
                             ? '<span class="font-semibold text-green-600">Rated</span>'
@@ -1903,7 +2419,7 @@ function loadPostAssessmentEvaluation(studentId) {
                             // Ready for prediction - blue button
                             analysisBtnClass = 'bg-blue-600 hover:bg-blue-700';
                         }
-                        tbody += `<tr data-row="${idx}" class="hover:bg-blue-50 transition">
+                        tbody += `<tr data-row="${idx}" data-session="${sessName}" class="hover:bg-blue-50 transition">
                             <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900">${student.NAME}</td>
                             <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-700">${student.HTE_ASSIGNED}</td>
                             <td class="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm">
@@ -1931,8 +2447,8 @@ function loadPostAssessmentEvaluation(studentId) {
 
     // Load students when prediction tab is shown (use .off() to prevent duplicate bindings)
     $('#predictionTab').off('click.predictionLoader').on('click.predictionLoader', function() {
-        console.log('[PREDICTION] Tab clicked, loading students...');
-        loadPredictionStudents();
+        console.log('[PREDICTION] Tab clicked, loading term options and students...');
+        loadPredictionTerms(function(){ loadPredictionStudents(); });
     });
 
     // Run prediction and update database
@@ -2192,6 +2708,11 @@ $(document).on('click', '#analysisModal', function(e) {
         $('body').css('overflow', '');
     }
 });
+    // Make prediction loaders available globally for external listeners
+    window.loadPredictionStudents = loadPredictionStudents;
+    if (typeof loadPredictionTerms === 'function') {
+        window.loadPredictionTerms = loadPredictionTerms;
+    }
 });
 
     // --- Prediction Tab Filter Functionality ---
@@ -2239,6 +2760,7 @@ $(document).on('click', '#analysisModal', function(e) {
     // Filter the prediction table based on current filter
     function filterPredictionTable() {
         const rows = $('#predictionTable tbody tr');
+        const selectedTerm = ($('#predictionTermFilter').val() || 'all').trim();
         
         rows.each(function() {
             const $row = $(this);
@@ -2247,6 +2769,7 @@ $(document).on('click', '#analysisModal', function(e) {
             if (statusCell.length === 0) return; // Skip if no status cell (like loading/error rows)
             
             const statusText = statusCell.text().trim().toLowerCase();
+            const sessionName = ($row.attr('data-session') || '').trim();
             let showRow = false;
 
             switch(currentPredictionFilter) {
@@ -2261,6 +2784,10 @@ $(document).on('click', '#analysisModal', function(e) {
                     // Show students with "Not Rated" status (not ready for prediction)
                     showRow = statusText.includes('not rated') || statusText.includes('incomplete data');
                     break;
+            }
+
+            if (selectedTerm !== 'all') {
+                showRow = showRow && (sessionName === selectedTerm);
             }
 
             if (showRow) {
@@ -2305,56 +2832,83 @@ $(document).on('click', '#analysisModal', function(e) {
             updateFilterButtonStyles();
         }, 100);
     });
+    // Apply term filter immediately on change
+    $(document).on('change', '#predictionTermFilter', function() {
+        // If loader function is available, reload to apply term strictly
+        if (typeof window.loadPredictionStudents === 'function') {
+            window.loadPredictionStudents();
+            return;
+        }
+        // Fallback: if students are already rendered, filter locally
+        filterPredictionTable();
+    });
 // --- End Prediction Tab Logic ---
 
     // --- Report Tab Filters ---
     function loadStudentFilterDropdown() {
         var coordinatorId = $("#hiddencdrid").val();
+        // Fetch students under coordinator with session info to power both dropdowns
         $.ajax({
-            url: "ajaxhandler/adminDashboardAjax.php",
+            url: "ajaxhandler/attendanceAJAX.php",
             type: "POST",
             dataType: "json",
-            data: { action: "getAllStudents", coordinatorId: coordinatorId },
-            success: function(rv) {
+            data: { cdrid: coordinatorId, action: "getAllStudentsUnderCoordinator" },
+            success: function(response) {
+                const students = (response && (response.students || response.data)) || [];
                 let options = ``;
                 const uniqueStudents = new Set();
-                if (rv && rv.data && Array.isArray(rv.data)) {
-                    rv.data.forEach(function(stu) {
-                        // Use format: "Surname, Name" with INTERNS_ID as unique identifier
-                        const displayName = `${stu.SURNAME}, ${stu.NAME}`;
-                        const uniqueKey = `${stu.INTERNS_ID}_${displayName}`;
-                        
-                        // Only add if not already added (prevent duplicates)
-                        if (!uniqueStudents.has(uniqueKey)) {
-                            uniqueStudents.add(uniqueKey);
-                            options += `<option value="${displayName}" data-id="${stu.INTERNS_ID}">${displayName}</option>`;
-                        }
-                    });
-                }
+
+                // Build datalist options
+                students.forEach(function(stu) {
+                    const displayName = `${stu.SURNAME || ''}, ${stu.NAME || ''}`.trim();
+                    const key = `${stu.INTERNS_ID}_${displayName}`;
+                    if (!uniqueStudents.has(key) && stu.INTERNS_ID) {
+                        uniqueStudents.add(key);
+                        options += `<option value="${displayName}" data-id="${stu.INTERNS_ID}">${displayName}</option>`;
+                    }
+                });
                 $("#studentFilterList").html(options);
+
+                // Build term/session dropdown
+                const sessions = [...new Set(students.map(s => s.SESSION_NAME).filter(Boolean))];
+                sessions.sort((a,b) => b.localeCompare(a));
+                let sessionOptions = `<option value="all">All Terms</option>`;
+                sessions.forEach(sess => { sessionOptions += `<option value="${sess}">${sess}</option>`; });
+                $("#reportTermFilter").html(sessionOptions);
+                if (sessions.length > 0) {
+                    $("#reportTermFilter").val(sessions[0]);
+                }
+
+                // Store a map for filtering reports later (interns_id -> session)
+                window.reportStudentSessionMap = {};
+                students.forEach(s => { if (s.INTERNS_ID) window.reportStudentSessionMap[s.INTERNS_ID] = s.SESSION_NAME || ''; });
+
+                // If report tab just opened, load reports now that filters are ready
+                if ($('#reportsLoadingState').is(':visible')) {
+                    loadApprovedReportsWithFilters();
+                }
             },
             error: function() {
                 $("#studentFilterList").html('');
+                $("#reportTermFilter").html('<option value="all">All Terms</option>');
+                window.reportStudentSessionMap = {};
             }
         });
     }
 
     // Enhanced datalist functionality for student filter (similar to admin dashboard)
-    $(document).on('focus click', '#filterStudent', function() {
+    $(document).on('focus click', '#filterStudent', function(evt) {
         const input = this;
         if (input.list && input.list.options.length > 0) {
-            // Show all options when input is focused or clicked
-            setTimeout(() => {
-                if (input.value === '') {
-                    // Show all options when empty
-                    input.value = ' ';
-                    input.value = '';
-                }
-                // Try to show the picker if available
-                if (input.showPicker) {
-                    input.showPicker();
-                }
-            }, 10);
+            // When empty, briefly set a space to force all options to appear, then clear
+            if (input.value === '') {
+                input.value = ' ';
+                input.value = '';
+            }
+            // showPicker must be called directly in a trusted user gesture (e.g. click)
+            if (evt.type === 'click' && input.showPicker) {
+                try { input.showPicker(); } catch (e) { /* silently ignore NotAllowedError */ }
+            }
         }
     });
 
@@ -2493,8 +3047,26 @@ function loadApprovedReportsWithFilters() {
             success: function(rv) {
                 // Render reports from rv.reports if status is success
                 if (rv && rv.status === "success" && Array.isArray(rv.reports) && rv.reports.length > 0) {
+                    // Apply client-side term filter using session mapping
+                    const selectedTerm = (($("#reportTermFilter").val() || 'all') + '').trim();
+                    let reports = rv.reports.slice();
+                    if (selectedTerm && selectedTerm !== 'all' && window.reportStudentSessionMap) {
+                        reports = reports.filter(function(rep) {
+                            const sid = rep.interns_id || rep.INTERNS_ID;
+                            const sess = window.reportStudentSessionMap[sid] || '';
+                            return sess === selectedTerm;
+                        });
+                    }
+                    if (!reports || reports.length === 0) {
+                        // Hide loading state, show empty state
+                        $('#reportsLoadingState').addClass('hidden');
+                        $('#approvedReportsList').addClass('hidden');
+                        $('#reportsErrorState').addClass('hidden');
+                        $('#reportsEmptyState').removeClass('hidden');
+                        return;
+                    }
                     let html = "";
-                    rv.reports.forEach(function(report, reportIdx) {
+                    reports.forEach(function(report, reportIdx) {
                         html += `<div class="bg-white rounded-2xl shadow-lg p-6 mb-8 transition hover:shadow-2xl relative">
                             <div class="flex items-center justify-between mb-4">
                                 <div class="flex items-center gap-4">
@@ -2572,7 +3144,7 @@ function loadApprovedReportsWithFilters() {
                     $("#approvedReportsList").removeClass("hidden");
                     // Modal JS
                     window.showZoomModal = function(reportIdx, day) {
-                        const report = rv.reports[reportIdx];
+                        const report = reports[reportIdx];
                         let imagesHtml = "";
                         if (report.imagesPerDay && report.imagesPerDay[day] && report.imagesPerDay[day].length > 0) {
                             report.imagesPerDay[day].forEach(function(img) {
@@ -2637,14 +3209,14 @@ function loadApprovedReportsWithFilters() {
             $('#reportsEmptyState').addClass('hidden');
             $('#reportsErrorState').addClass('hidden');
             
+            // Load students + sessions; actual report load occurs on success
             loadStudentFilterDropdown();
-            setTimeout(loadApprovedReportsWithFilters, 300); // slight delay to ensure dropdown is populated
             reportTabLoaded = true;
         }
     });
 
     // Reset flag if user changes filter (forces reload)
-    $(document).on('change', '#filterStudent, #filterDate', function() {
+    $(document).on('change', '#filterStudent, #filterDate, #reportTermFilter', function() {
         reportTabLoaded = false;
     });
 
@@ -3360,7 +3932,7 @@ function loadApprovedReportsWithFilters() {
             window.allStudentsList = [];
         }
     });
-    function loadAllStudentsData() {
+    function loadAllStudentsData(showContainer = true) {
         // Close other forms
         $('#studentFormContainer').fadeOut(function() {
             $('#studentForm')[0].reset();
@@ -3372,15 +3944,21 @@ function loadApprovedReportsWithFilters() {
         $('#deleteHTEFormContainer').hide();
         $('#deleteSessionFormContainer').hide();
         $('#deleteStudentFormContainer').hide();
+        // Only hide the intro if we intend to show a replacement container.
+        // For silent preloads (showContainer === false) keep the intro visible.
+        if (showContainer) {
+            $('#controlIntroContainer').hide();
+        }
 
         let cdrid = $("#hiddencdrid").val();
 
         if (!cdrid) {
-            // Show error state
             $('#studentsLoadingState').addClass('hidden');
             $('#studentsContent').addClass('hidden');
-            $('#studentsErrorState').removeClass('hidden');
-            $('#allStudentsContainer').fadeIn();
+            if (showContainer) {
+                $('#studentsErrorState').removeClass('hidden');
+                $('#allStudentsContainer').fadeIn();
+            }
             return;
         }
 
@@ -3389,15 +3967,17 @@ function loadApprovedReportsWithFilters() {
         if (isCacheValid('student', cacheKey) && dataCache.studentsByHte[cacheKey]) {
             console.log("Using cached student data for coordinator:", cdrid);
             const cachedData = dataCache.studentsByHte[cacheKey];
-            renderAllStudentsData(cachedData);
+            renderAllStudentsData(cachedData, showContainer);
             return;
         }
 
-        // Show loading state
+        // Prepare states (only reveal container if requested)
         $('#studentsLoadingState').removeClass('hidden');
         $('#studentsContent').addClass('hidden');
         $('#studentsErrorState').addClass('hidden');
-        $('#allStudentsContainer').fadeIn();
+        if (showContainer) {
+            $('#allStudentsContainer').fadeIn();
+        }
 
         console.log('Making AJAX request with cdrid:', cdrid);
         $.ajax({
@@ -3416,45 +3996,49 @@ function loadApprovedReportsWithFilters() {
                     dataCache.studentsByHte[cacheKey] = studentsData;
                     dataCache.lastUpdated.studentsByHte[cacheKey] = Date.now();
                     
-                    // Render the data
-                    renderAllStudentsData(studentsData);
+                    // Render / cache the data
+                    renderAllStudentsData(studentsData, showContainer);
                 } else {
                     console.error('Error in response:', response.message);
-                    // Show error state
                     $('#studentsLoadingState').addClass('hidden');
                     $('#studentsContent').addClass('hidden');
-                    $('#studentsErrorState').removeClass('hidden');
+                    if (showContainer) {
+                        $('#studentsErrorState').removeClass('hidden');
+                    }
                 }
             },
             error: function(xhr, status, error) {
                 console.error("AJAX error:", status, error);
-                // Show error state
                 $('#studentsLoadingState').addClass('hidden');
                 $('#studentsContent').addClass('hidden');
-                $('#studentsErrorState').removeClass('hidden');
+                if (showContainer) {
+                    $('#studentsErrorState').removeClass('hidden');
+                }
             }
         });
     }
 
     // Render all students data (extracted for reuse with caching)
-    function renderAllStudentsData(studentsData) {
-        // Hide loading state, show content
-        $('#studentsLoadingState').addClass('hidden');
-        $('#studentsErrorState').addClass('hidden');
-        $('#studentsContent').removeClass('hidden');
-        
-        // Display the students
-        displayAllStudents(studentsData);
+    function renderAllStudentsData(studentsData, showContainer = true) {
+        if (showContainer) {
+            $('#studentsLoadingState').addClass('hidden');
+            $('#studentsErrorState').addClass('hidden');
+            $('#studentsContent').removeClass('hidden');
+            displayAllStudents(studentsData);
+        } else {
+            // Silent cache only
+            window.allStudentsList = studentsData || [];
+        }
     }
 
     // View All Students button click handler
     $(document).on('click', '#btnViewAllStudents', function() {
-        loadAllStudentsData();
+        loadAllStudentsData(true);
     });
 
     // Retry loading students button
     $(document).on('click', '#retryLoadStudents', function() {
-        loadAllStudentsData();
+        loadAllStudentsData(true);
     });
 
     // Retry loading companies button
@@ -3594,6 +4178,12 @@ function loadSeassions()
             alert("OOPS! Session loading failed. Check console for details.");
         }
     });
+}
+
+// Function to load coordinator companies (used by mainDashboard.php)
+function loadCoordinatorCompanies() {
+    console.log('loadCoordinatorCompanies called');
+    loadAllCompaniesData();
 }
 
 function getHTEHTML(classlist)
@@ -3742,7 +4332,6 @@ function renderHTEData(rv) {
  function getClassdetailsAreaHTML(building)
 {
     let dobj=new Date();
-    let ondate=`2024-09-11`;
     let year=dobj.getFullYear();//format ni sa data
     let month=dobj.getMonth()+1;//para sa 0-11 na months
     if(month<10)
@@ -3754,8 +4343,18 @@ function renderHTEData(rv) {
         {
             day="0"+day;//para ma string siya
         }
-    ondate=year+"-"+month+"-"+day;
-    // alert(ondate);
+    let ondate=year+"-"+month+"-"+day;
+    
+    // Calculate yesterday's date for quick access
+    let yesterday = new Date(dobj);
+    yesterday.setDate(yesterday.getDate() - 1);
+    let yesterdayYear = yesterday.getFullYear();
+    let yesterdayMonth = yesterday.getMonth() + 1;
+    if(yesterdayMonth < 10) yesterdayMonth = "0" + yesterdayMonth;
+    let yesterdayDay = yesterday.getDate();
+    if(yesterdayDay < 10) yesterdayDay = "0" + yesterdayDay;
+    let yesterdayDate = yesterdayYear + "-" + yesterdayMonth + "-" + yesterdayDay;
+    
     let logoHtml = '';
     if (building['LOGO']) {
         // Support both Cloudinary URLs and legacy local paths
@@ -3778,9 +4377,13 @@ function renderHTEData(rv) {
                 ${logoHtml}
                 <div class="font-semibold text-lg text-gray-800 mb-1">${building['NAME']}</div>
                 <div class="text-sm text-gray-500 mb-2">${building['INDUSTRY']}</div>
-                <div class="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                <div class="flex flex-col gap-2 text-sm text-gray-600 mb-2">
+                    <label class="font-medium text-gray-700">Select Date:</label>
                     <input type="date" value='${ondate}' id='dtpondate' class='border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300' />
-                    <span class="icon-calendar"></span>
+                    <div class="flex gap-1">
+                        <button onclick="setDateAndRefresh('${ondate}')" class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200">Today</button>
+                        <button onclick="setDateAndRefresh('${yesterdayDate}')" class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200">Yesterday</button>
+                    </div>
                 </div>
             </div>`;
     return x;
@@ -3806,12 +4409,22 @@ function convertTo12Hour(time24) {
 function getStudentListHTML(studentList) {
     // Handle empty student list
     if (!studentList || studentList.length === 0) {
+        const selectedDate = $("#dtpondate").val() || 'the selected date';
+        const today = new Date().toISOString().split('T')[0];
+        const isToday = selectedDate === today;
+        
         return `
             <div class="bg-gray-50 rounded-lg shadow-sm p-8">
                 <div class="text-center text-gray-500">
                     <i class="fas fa-user-slash text-4xl mb-4 text-gray-400"></i>
                     <h3 class="text-lg font-medium text-gray-700 mb-2">No Students Found</h3>
-                    <p class="text-sm">There are no students assigned to this company for the selected date.</p>
+                    <p class="text-sm mb-4">There are no students assigned to this company for ${selectedDate}.</p>
+                    ${!isToday ? `
+                        <div class="text-xs text-blue-600 bg-blue-50 p-3 rounded-lg">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Tip: If you're looking for recent attendance, try selecting yesterday's date or check if students were assigned to this company.
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -3924,7 +4537,20 @@ function fetchStudentList(sessionid,classid,cdrid,ondate)
             dataCache.studentsByHte[cacheKey] = rv;
             dataCache.lastUpdated.studentsByHte[cacheKey] = Date.now();
             
-            console.log('Student data loaded and cached:', rv);
+            console.log('Student data loaded and cached for', ondate, ':', rv);
+            console.log('Found', rv.length, 'total students,', rv.filter(s => s.ispresent === 'YES').length, 'with attendance');
+            
+            // Log students with attendance for debugging
+            const studentsWithAttendance = rv.filter(s => s.ispresent === 'YES');
+            if (studentsWithAttendance.length > 0) {
+                console.log('Students with attendance:', studentsWithAttendance.map(s => ({
+                    id: s.STUDENT_ID,
+                    name: s.SURNAME + ', ' + s.NAME,
+                    timeIn: s.timein,
+                    timeOut: s.timeout
+                })));
+            }
+            
             renderStudentData(rv);
         },
         error: function(xhr, status, error) {
@@ -4067,7 +4693,13 @@ $(function(e)
                     
                 },
                 success: function(rv) {
-                    document.location.replace("index.php");
+                    if (typeof getBaseUrl === 'function') {
+                        document.location.replace(getBaseUrl());
+                    } else {
+                        var p = window.location.pathname.split('/');
+                        var base = (p.length > 1 ? '/' + p[1] + '/' : '/');
+                        document.location.replace(base);
+                    }
                 },
                 error: function(xhr, status, error) {
                     alert("Something went wrong!")
@@ -4251,12 +4883,19 @@ $(function(e)
         let classid= $("#hiddenSelectedHteID").val();
         let cdrid=$("#hiddencdrid").val();
         let ondate=$("#dtpondate").val();
+        console.log("Date changed to:", ondate, "for session:", sessionid, "HTE:", classid, "coordinator:", cdrid);
         if(sessionid!=-1)
         {
         
             fetchStudentList(sessionid,classid,cdrid,ondate);
         }
     });
+
+    // Function to quickly set date and refresh attendance
+    window.setDateAndRefresh = function(date) {
+        $("#dtpondate").val(date);
+        $("#dtpondate").trigger('change');
+    };
     $(document).on("click", "#btnReport", function() {
         if (currentSessionId != -1 && currentHteId) {
             let cdrid = $("#hiddencdrid").val();
@@ -4908,7 +5547,10 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response.success && response.questions) {
-                    const activeQuestions = response.questions.filter(q => q.status === 'active');
+                    const activeQuestions = response.questions.filter(q => {
+                        const s = q.status;
+                        return s === 'active' || s === 1 || s === '1' || s === true;
+                    });
                     // Collect unique categories
                     const categories = [...new Set(activeQuestions.map(q => q.category ? q.category.trim() : 'Other'))];
                     // On mobile, this will stack vertically with categories on top
@@ -5242,6 +5884,7 @@ $(document).ready(function() {
         loadPreassessmentStudentList();
     });
     $('#reviewTabBtn').click(function() {
+        console.log('[DEBUG] === REVIEW TAB CLICKED ===');
         $(this).addClass('active');
         $('#evalQuestionsTabBtn').removeClass('active');
         $('#rateTabBtn').removeClass('active');
@@ -5249,9 +5892,14 @@ $(document).ready(function() {
         $('#evalQuestionsTabContent').removeClass('active');
         $('#rateTabContent').removeClass('active');
         
-        // Load review students if not already loaded
-        if (allReviewStudents.length === 0) {
-            console.log('[DEBUG] Loading review students for the first time');
+        console.log('[DEBUG] Review tab activated, allStudents length:', allStudents.length);
+        
+        // Check if Pre-Assessment data exists, if so reuse it
+        if (allStudents.length > 0) {
+            console.log('[DEBUG] Reusing existing Pre-Assessment data for Review tab');
+            initializeReviewTab();
+        } else {
+            console.log('[DEBUG] Loading review students (fresh load)');
             loadReviewStudentList();
         }
     });
@@ -5441,17 +6089,50 @@ $(document).ready(function() {
     // Initial load for Rate and Review tabs
     // --- Pre-Assessment Tab: Left-Right UI Logic ---
     let allStudents = [];
+    let allReviewStudents = [];
     let selectedStudentId = null;
+    let selectedReviewStudentId = null;
+    let currentPage = 1;
+    let currentReviewPage = 1;
+    let studentsPerPage = 5;
+    let reviewStudentsPerPage = 5;
+    let totalStudents = 0;
+    let totalReviewStudents = 0;
 
     function loadPreassessmentStudentList() {
         console.log('=== LOADING PRE-ASSESSMENT STUDENTS ===');
+        
+        // Get coordinator ID (same as Control tab)
+        let cdrid = $("#hiddencdrid").val();
+        
+        if (!cdrid) {
+            console.error('No coordinator ID found');
+            renderEmptyPreAssessmentState('No coordinator ID found.');
+            return;
+        }
+        
+        console.log('Making AJAX request with cdrid:', cdrid);
+        // Ensure loading state visible (in case of manual refresh)
+        if (typeof showPreAssessmentLoading === 'function') {
+            showPreAssessmentLoading();
+        }
+        // Fallback timeout to avoid endless spinner
+        const preAssessTimeout = setTimeout(function() {
+            if ($('#preAssessmentLoadingState').is(':visible')) {
+                console.warn('[Pre-Assessment] Timeout exceeded, showing error state');
+                if (typeof showPreAssessmentError === 'function') {
+                    showPreAssessmentError();
+                }
+            }
+        }, 10000); // 10 seconds
         // Fetch all students eligible for rating (AJAX or from global)
         $.ajax({
             url: 'ajaxhandler/studentDashboardAjax.php',
             type: 'POST',
             dataType: 'json',
-            data: { action: 'getStudentsForPreassessment' },
+            data: { action: 'getStudentsForPreassessment', cdrid: cdrid },
             success: function(response) {
+                clearTimeout(preAssessTimeout);
                 if (response.success && Array.isArray(response.students)) {
                     allStudents = response.students;
                     console.log('=== STUDENT DATA DEBUG ===');
@@ -5465,25 +6146,158 @@ $(document).ready(function() {
                             name: student.name
                         });
                     });
-                    renderStudentList(allStudents);
+                    
+                    // Apply session filtering logic (same as View All Students)
+                    // Hide loading, show content area before rendering list
+                    if (typeof showPreAssessmentContent === 'function') {
+                        showPreAssessmentContent();
+                    } else {
+                        console.warn('[Pre-Assessment] showPreAssessmentContent undefined at success (will attempt global).');
+                        if (typeof window.showPreAssessmentContent === 'function') {
+                            window.showPreAssessmentContent();
+                        }
+                    }
+                    displayPreAssessmentStudents(allStudents);
                 } else {
+                    if (typeof showPreAssessmentContent === 'function') {
+                        showPreAssessmentContent();
+                    } else if (typeof window.showPreAssessmentContent === 'function') {
+                        window.showPreAssessmentContent();
+                    }
                     renderEmptyPreAssessmentState('No students found.');
                 }
             },
             error: function() {
+                clearTimeout(preAssessTimeout);
+                if (typeof showPreAssessmentError === 'function') {
+                    showPreAssessmentError();
+                } else {
+                    if (typeof showPreAssessmentContent === 'function') {
+                        showPreAssessmentContent();
+                    } else if (typeof window.showPreAssessmentContent === 'function') {
+                        window.showPreAssessmentContent();
+                    }
+                }
                 renderEmptyPreAssessmentState('Error loading students.');
             }
         });
     }
 
-    function renderStudentList(students) {
+    // Function to display pre-assessment students with session filtering (same logic as View All Students)
+    function displayPreAssessmentStudents(students) {
+        console.log('displayPreAssessmentStudents called with data:', students);
+        
+        // Debug: Check what session data we have
+        console.log('Sample student data:', students.slice(0, 3));
+        console.log('All SESSION_NAME values:', students.map(s => s.SESSION_NAME));
+        console.log('Students with SESSION_NAME:', students.filter(s => s.SESSION_NAME));
+        console.log('Students without SESSION_NAME:', students.filter(s => !s.SESSION_NAME));
+        
+        // Get unique sessions and sort (most recent first) - same logic as View All Students  
+        const sessions = [...new Set((students || []).map(s => s.SESSION_NAME).filter(Boolean))];
+        sessions.sort((a, b) => b.localeCompare(a));
+        
+        console.log('Extracted sessions for Pre-Assessment:', sessions);
+        console.log('Number of unique sessions:', sessions.length);
+        console.log('Sessions array details:', sessions);
+        
+        // Filter students by latest session first, then render
+        let initialStudents = students;
+        if (sessions && sessions.length > 0) {
+            const latestSession = sessions[0];
+            initialStudents = students.filter(student => {
+                const studentSession = student.SESSION_NAME || '';
+                return studentSession === latestSession;
+            });
+            console.log('Filtered students for latest session:', latestSession, '- Count:', initialStudents.length);
+        }
+        
+        // Initial render with filtered students and populate dropdown
+        renderStudentList(initialStudents, sessions);
+        
+        // Session filter change handler (same logic as View All Students)
+        $('#preAssessmentSessionFilter').off('change').on('change', function() {
+            console.log('[DEBUG] Session filter changed to:', $(this).val());
+            applyPreAssessmentFilters(allStudents);
+        });
+        
+        // Also update search handler to work with session filter
+        $('#rateStudentSearch').off('input').on('input', function() {
+            console.log('[DEBUG] Search input changed to:', $(this).val());
+            applyPreAssessmentFilters(allStudents);
+        });
+        
+        // Pagination click handler using event delegation
+        $(document).off('click', '.preassessment-page-btn').on('click', '.preassessment-page-btn', function(e) {
+            e.preventDefault();
+            console.log('Pagination button clicked!');
+            const page = parseInt($(this).data('page'));
+            console.log('Target page:', page);
+            console.log('Button disabled:', $(this).prop('disabled'));
+            if (!$(this).prop('disabled') && page > 0) {
+                console.log('Calling changePreAssessmentPage with page:', page);
+                changePreAssessmentPage(page);
+            } else {
+                console.log('Button is disabled or invalid page');
+            }
+        });
+    }
+    
+    // Apply both session and search filters for Pre-Assessment 
+    function applyPreAssessmentFilters(allStudentsData) {
+        const selectedSession = $('#preAssessmentSessionFilter').val();
+        const searchQuery = $('#rateStudentSearch').val().trim();
+        
+        let filtered = allStudentsData;
+        
+        // Apply session filter first
+        if (selectedSession !== 'all') {
+            filtered = filtered.filter(s => s.SESSION_NAME === selectedSession);
+        }
+        
+        // Apply search filter
+        if (searchQuery.length > 0) {
+            // Remove any previous invalid message
+            $('#studentSearchInvalidMsg').remove();
+            if (/[^0-9]/.test(searchQuery)) {
+                // Show invalid input message below the search bar
+                $('#rateStudentSearch').after('<div id="studentSearchInvalidMsg" class="text-red-600 text-sm mt-1">Invalid input: Only numbers allowed</div>');
+                return;
+            }
+            filtered = filtered.filter(s => {
+                let idStr = (s.STUDENT_ID || s.student_id || '').toString();
+                return idStr.includes(searchQuery);
+            });
+        }
+        
+        // Update student list without rebuilding dropdown
+        updateStudentListDisplay(filtered);
+        
+        // Restore search input focus if it was focused
+        const $input = $('#rateStudentSearch');
+        $input.val(searchQuery);
+        if (document.activeElement === $input[0]) {
+            $input.focus();
+        }
+    }
+
+    function renderStudentList(students, sessions = []) {
         let sorted = students.slice().sort((a, b) => {
             let aId = (a.STUDENT_ID || a.student_id || '').toString();
             let bId = (b.STUDENT_ID || b.student_id || '').toString();
             return aId.localeCompare(bId);
         });
+        
+        totalStudents = sorted.length;
+        const totalPages = Math.ceil(totalStudents / studentsPerPage);
+        
+        // Get students for current page
+        const startIndex = (currentPage - 1) * studentsPerPage;
+        const endIndex = startIndex + studentsPerPage;
+        const paginatedStudents = sorted.slice(startIndex, endIndex);
+        
         let studentListHtml = '';
-        sorted.forEach(function(student) {
+        paginatedStudents.forEach(function(student) {
             let displayId = student.STUDENT_ID || student.student_id || 'Unknown ID';
             console.log('[DEBUG] Rendering student:', { 
                 id: student.id, 
@@ -5500,12 +6314,41 @@ $(document).ready(function() {
                 </div>
             `;
         });
+        
+        // Generate pagination controls
+        let paginationHtml = '';
+        if (totalPages > 1) {
+            paginationHtml += `<div class='flex flex-col items-center mt-4 px-2'>`;
+            paginationHtml += `<div class='text-sm text-gray-600 mb-2'>Page ${currentPage} of ${totalPages}</div>`;
+            paginationHtml += `<div class='flex gap-1'>`;
+            
+            // First page button
+            const firstDisabled = currentPage <= 1;
+            paginationHtml += `<button class='preassessment-page-btn px-3 py-2 text-sm border rounded ${firstDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='1' ${firstDisabled ? 'disabled' : ''}>&lt;&lt;</button>`;
+            
+            // Previous button
+            const prevDisabled = currentPage <= 1;
+            paginationHtml += `<button class='preassessment-page-btn px-3 py-2 text-sm border rounded ${prevDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${currentPage - 1}' ${prevDisabled ? 'disabled' : ''}>&lt;</button>`;
+            
+            // Next button
+            const nextDisabled = currentPage >= totalPages;
+            paginationHtml += `<button class='preassessment-page-btn px-3 py-2 text-sm border rounded ${nextDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${currentPage + 1}' ${nextDisabled ? 'disabled' : ''}>&gt;</button>`;
+            
+            // Last page button
+            const lastDisabled = currentPage >= totalPages;
+            paginationHtml += `<button class='preassessment-page-btn px-3 py-2 text-sm border rounded ${lastDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${totalPages}' ${lastDisabled ? 'disabled' : ''}>&gt;&gt;</button>`;
+            
+            paginationHtml += `</div>`;
+            paginationHtml += `</div>`;
+        }
         // Build the 20/80 column layout
         // On mobile, this will stack vertically with student list on top
         let html = `<div class='preassessment-main-wrapper flex flex-col md:flex-row w-full'>`;
         html += `<div class='preassessment-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
     html += `<div class='mb-4'><input type='text' id='rateStudentSearch' placeholder='Search student' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
-    html += `<div id='studentListPanel' class='overflow-y-auto min-h-[500px] max-h-[700px] flex flex-col gap-1'>${studentListHtml}</div>`;
+    html += `<div class='mb-4'><select id='preAssessmentSessionFilter' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'><option value='all'>All Terms</option></select></div>`;
+    html += `<div id='studentListPanel' class='overflow-y-auto min-h-[400px] max-h-[500px] flex flex-col gap-1'>${studentListHtml}</div>`;
+    html += `<div id='paginationContainer'>${paginationHtml}</div>`;
         html += `</div>`;
         html += `<div class='preassessment-content-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
         if (!selectedStudentId) {
@@ -5524,30 +6367,161 @@ $(document).ready(function() {
         html += `</div>`;
         html += `</div>`;
         $('#rateTabContent').html(html);
-    }
-
-    // Search filter for student list
-    $(document).on('input', '#rateStudentSearch', function() {
-        const query = $(this).val().trim();
-        // Remove any previous invalid message
-        $('#studentSearchInvalidMsg').remove();
-        if (query.length > 0 && /[^0-9]/.test(query)) {
-            // Show invalid input message below the search bar
-            $(this).after('<div id="studentSearchInvalidMsg" class="text-red-600 text-sm mt-1">Invalid input: Only numbers allowed</div>');
-            return;
+        
+        // Populate session dropdown immediately after HTML insertion
+        if (sessions && sessions.length > 0) {
+            let sessionOptions = '<option value="all">All Terms</option>';
+            sessions.forEach(session => { 
+                sessionOptions += `<option value='${session}'>${session}</option>`; 
+            });
+            
+            console.log('Session options HTML:', sessionOptions);
+            console.log('Dropdown element exists immediately:', $('#preAssessmentSessionFilter').length > 0);
+            
+            // Populate dropdown
+            $('#preAssessmentSessionFilter').html(sessionOptions);
+            
+            // Auto-select most recent session (same logic as View All Students)
+            console.log('Auto-selecting session:', sessions[0]);
+            $('#preAssessmentSessionFilter').val(sessions[0]).trigger('change');
         }
-        let filtered = allStudents.filter(s => {
-            let idStr = (s.STUDENT_ID || s.student_id || '').toString();
-            return idStr.includes(query);
+        
+        // Directly bind click events to pagination buttons after HTML is inserted
+        $('.preassessment-page-btn').off('click').on('click', function(e) {
+            e.preventDefault();
+            console.log('Direct click handler from renderStudentList triggered!');
+            const page = parseInt($(this).data('page'));
+            console.log('Page from renderStudentList direct handler:', page);
+            if (!$(this).prop('disabled') && page > 0) {
+                changePreAssessmentPage(page);
+            }
         });
-    // Store current selected student before re-render
-    let currentSelectedId = selectedStudentId;
-    renderStudentList(filtered);
-    // Restore selected student and search input
-    selectedStudentId = currentSelectedId;
-    const $input = $('#rateStudentSearch');
-    $input.val(query);
-    $input.focus();
+    }
+    
+    // Update only the student list display without rebuilding dropdown or right panel
+    function updateStudentListDisplay(students, resetPage = true) {
+        let sorted = students.slice().sort((a, b) => {
+            let aId = (a.STUDENT_ID || a.student_id || '').toString();
+            let bId = (b.STUDENT_ID || b.student_id || '').toString();
+            return aId.localeCompare(bId);
+        });
+        
+        totalStudents = sorted.length;
+        const totalPages = Math.ceil(totalStudents / studentsPerPage);
+        
+        // Reset to page 1 only when filtering, not when changing pages
+        if (resetPage) {
+            currentPage = 1;
+        }
+        
+        // Get students for current page
+        const startIndex = (currentPage - 1) * studentsPerPage;
+        const endIndex = startIndex + studentsPerPage;
+        const paginatedStudents = sorted.slice(startIndex, endIndex);
+        
+        let studentListHtml = '';
+        paginatedStudents.forEach(function(student) {
+            let displayId = student.STUDENT_ID || student.student_id || 'Unknown ID';
+            studentListHtml += `
+                <div class="preassessment-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${student.id === selectedStudentId ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.id}">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 616 0z' /></svg>
+                    </span>
+                    <span class="truncate">${displayId}</span>
+                </div>
+            `;
+        });
+        
+        // Generate pagination controls
+        let paginationHtml = '';
+        if (totalPages > 1) {
+            paginationHtml += `<div class='flex flex-col items-center mt-4 px-2'>`;
+            paginationHtml += `<div class='text-sm text-gray-600 mb-2'>Page ${currentPage} of ${totalPages}</div>`;
+            paginationHtml += `<div class='flex gap-1'>`;
+            
+            // First page button
+            const firstDisabled = currentPage <= 1;
+            paginationHtml += `<button class='preassessment-page-btn px-3 py-2 text-sm border rounded ${firstDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='1' ${firstDisabled ? 'disabled' : ''}>&lt;&lt;</button>`;
+            
+            // Previous button
+            const prevDisabled = currentPage <= 1;
+            paginationHtml += `<button class='preassessment-page-btn px-3 py-2 text-sm border rounded ${prevDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${currentPage - 1}' ${prevDisabled ? 'disabled' : ''}>&lt;</button>`;
+            
+            // Next button
+            const nextDisabled = currentPage >= totalPages;
+            paginationHtml += `<button class='preassessment-page-btn px-3 py-2 text-sm border rounded ${nextDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${currentPage + 1}' ${nextDisabled ? 'disabled' : ''}>&gt;</button>`;
+            
+            // Last page button
+            const lastDisabled = currentPage >= totalPages;
+            paginationHtml += `<button class='preassessment-page-btn px-3 py-2 text-sm border rounded ${lastDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${totalPages}' ${lastDisabled ? 'disabled' : ''}>&gt;&gt;</button>`;
+            
+            paginationHtml += `</div>`;
+            paginationHtml += `</div>`;
+        }
+        
+        // Update student list and pagination containers
+        $('#studentListPanel').html(studentListHtml);
+        $('#paginationContainer').html(paginationHtml);
+        
+        // Debug: Check if pagination buttons were created
+        console.log('Pagination HTML generated:', paginationHtml);
+        console.log('Pagination buttons found after update:', $('.preassessment-page-btn').length);
+        
+        // Directly bind click events to pagination buttons after they're created
+        $('.preassessment-page-btn').off('click').on('click', function(e) {
+            e.preventDefault();
+            console.log('Direct click handler triggered!');
+            const page = parseInt($(this).data('page'));
+            console.log('Page from direct handler:', page);
+            if (!$(this).prop('disabled') && page > 0) {
+                changePreAssessmentPage(page);
+            }
+        });
+    }
+    
+    // Function to change page in Pre-Assessment student list
+    function changePreAssessmentPage(page) {
+        console.log('changePreAssessmentPage called with page:', page);
+        console.log('Current page before change:', currentPage);
+        currentPage = page;
+        console.log('Current page after change:', currentPage);
+        
+        // Get current filtered students
+        const selectedSession = $('#preAssessmentSessionFilter').val();
+        const searchQuery = $('#rateStudentSearch').val().trim();
+        console.log('Current session filter:', selectedSession);
+        console.log('Current search query:', searchQuery);
+        
+        let filteredStudents = allStudents.slice();
+        
+        // Apply session filter
+        if (selectedSession && selectedSession !== 'all') {
+            filteredStudents = filteredStudents.filter(student => {
+                const studentSession = student.SESSION_NAME || '';
+                return studentSession === selectedSession;
+            });
+        }
+        
+        // Apply search filter
+        if (searchQuery.length > 0) {
+            filteredStudents = filteredStudents.filter(s => {
+                let idStr = (s.STUDENT_ID || s.student_id || '').toString();
+                return idStr.includes(searchQuery);
+            });
+        }
+        
+        // Update display with current page (don't reset page number)
+        updateStudentListDisplay(filteredStudents, false);
+    }
+    
+    // Make the function globally accessible
+    window.changePreAssessmentPage = changePreAssessmentPage;
+
+    // Unified search handler: use session-aware filtering
+    // Remove any previous handlers to avoid duplicates
+    $(document).off('input', '#rateStudentSearch').on('input', '#rateStudentSearch', function() {
+        // Delegate to the centralized filter function which applies session + search
+        applyPreAssessmentFilters(allStudents);
     });
 
     // Handle student selection - Load both grades and evaluation data
@@ -5560,10 +6534,62 @@ $(document).ready(function() {
     let studentDbId = selectedStudent && selectedStudent.STUDENT_ID ? selectedStudent.STUDENT_ID : selectedStudentId;
     console.log('[Pre-Assessment] Selected INTERNS_ID:', selectedStudentId, '| Mapped STUDENT_ID:', studentDbId, '| Student object:', selectedStudent);
     
-    // Re-render the layout to create the #rateEvalList container
-    renderStudentList(allStudents);
+    // Just update visual selection without rebuilding HTML
+    $('.preassessment-student-item').removeClass('bg-blue-100 border-blue-400 font-semibold text-blue-700').addClass('text-gray-800');
+    $(this).removeClass('text-gray-800').addClass('bg-blue-100 border-blue-400 font-semibold text-blue-700');
     
-    // Show loading in right panel (now that #rateEvalList exists)
+    // Make sure right panel exists, if not create it
+    if ($('#rateEvalList').length === 0) {
+        // Only rebuild HTML if the right panel doesn't exist
+        console.log('[DEBUG] Right panel missing, rebuilding HTML structure');
+        
+        // Get current state before rebuilding
+        let currentSession = $('#preAssessmentSessionFilter').val();
+        let currentSearch = $('#rateStudentSearch').val();
+        let currentPageNum = currentPage;
+        
+        // Get currently filtered students (same logic as applyPreAssessmentFilters)
+        let currentStudents = allStudents.slice();
+        if (currentSession && currentSession !== 'all') {
+            currentStudents = currentStudents.filter(student => {
+                const studentSession = student.SESSION_NAME || '';
+                return studentSession === currentSession;
+            });
+        }
+        if (currentSearch && currentSearch.trim().length > 0) {
+            currentStudents = currentStudents.filter(s => {
+                let idStr = (s.STUDENT_ID || s.student_id || '').toString();
+                return idStr.includes(currentSearch.trim());
+            });
+        }
+        
+        // Get unique sessions for dropdown
+        const sessions = [...new Set(allStudents.map(s => s.SESSION_NAME).filter(Boolean))];
+        sessions.sort((a, b) => b.localeCompare(a));
+        
+        // Rebuild with current filtered students and proper sessions
+        renderStudentList(currentStudents, sessions);
+        
+        // Restore all state
+        $('#preAssessmentSessionFilter').val(currentSession);
+        $('#rateStudentSearch').val(currentSearch);
+        currentPage = currentPageNum; // Restore page number
+        
+        // Rebind event handlers after HTML rebuild
+        $('#preAssessmentSessionFilter').off('change').on('change', function() {
+            console.log('[DEBUG] Session filter changed (rebound):', $(this).val());
+            applyPreAssessmentFilters(allStudents);
+        });
+        
+        $('#rateStudentSearch').off('input').on('input', function() {
+            console.log('[DEBUG] Search input changed (rebound):', $(this).val());
+            applyPreAssessmentFilters(allStudents);
+        });
+        
+        console.log('[DEBUG] Restored state - Session:', currentSession, 'Search:', currentSearch, 'Page:', currentPageNum);
+    }
+    
+    // Show loading in right panel
     $('#rateEvalList').html('<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><div class="mt-2 text-gray-600">Loading student data...</div></div>');
     
     // Load both grades and evaluation data simultaneously
@@ -5584,8 +6610,23 @@ $(document).ready(function() {
         }
     }
 
+
+
     // Combined function to load both grades and evaluation data
     function loadStudentGradesAndEvaluation(studentDbId, internsId) {
+        // Check cache using your existing system
+        const cacheKey = `evaluation_${studentDbId}_${internsId}`;
+        
+        if (isCacheValid('evaluation', cacheKey) && dataCache.evaluationData[cacheKey]) {
+            console.log('[DEBUG] ⚡ Using cached data for student:', studentDbId);
+            const cached = dataCache.evaluationData[cacheKey];
+            
+            // Render cached data instantly
+            renderEvaluationData(cached.gradesData, cached.evaluationData, cached.studentDbId);
+            return;
+        }
+        
+        console.log('[DEBUG] 🔄 Fetching fresh data for student:', studentDbId);
         let gradesData = null;
         let evaluationData = null;
         let completedRequests = 0;
@@ -5594,6 +6635,26 @@ $(document).ready(function() {
         function renderCombinedData() {
             if (completedRequests < 2) return; // Wait for both requests
             
+            console.log('[DEBUG] All data loaded for student:', studentDbId);
+            console.log('[DEBUG] Grades data:', gradesData);
+            console.log('[DEBUG] Evaluation data:', evaluationData);
+            
+            // Cache the data using your existing system
+            const cacheKey = `evaluation_${studentDbId}_${internsId}`;
+            dataCache.evaluationData[cacheKey] = {
+                gradesData: gradesData,
+                evaluationData: evaluationData,
+                studentDbId: studentDbId,
+                internsId: internsId
+            };
+            dataCache.lastUpdated.evaluationData[cacheKey] = Date.now();
+            console.log('[DEBUG] 💾 Cached evaluation data for:', cacheKey);
+            
+            renderEvaluationData(gradesData, evaluationData, studentDbId);
+        }
+        
+        // Common render function for both fresh and cached data
+        function renderEvaluationData(gradesData, evaluationData, studentDbId) {
             // Create horizontal layout: Grades (20%) | Evaluation (80%)
             // On mobile, this will stack vertically with CSS
             let html = `<div class="preassessment-content-wrapper flex flex-col md:flex-row gap-4 h-full">`;
@@ -5838,7 +6899,7 @@ $(document).ready(function() {
                     </div>`;
                 } else {
                     html += `<div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <p class="text-gray-600">No evaluation questions found for this student.</p>
+                        <p class="text-gray-600">This student has not completed their pre-assessment yet.</p>
                     </div>`;
                 }
             } else {
@@ -6241,71 +7302,243 @@ $(document).ready(function() {
 
     // Initial load for Pre-Assessment tab is now handled by unified evaluation loading
 
-    // --- Review Tab: Populate student list and handle selection ---
-    let allReviewStudents = [];
-    let selectedReviewStudentId = null;
+    // --- Review Tab: Share data with Pre-Assessment tab ---
+    // allReviewStudents and selectedReviewStudentId are already declared above
 
     function loadReviewStudentList() {
-        // Fetch all students eligible for review (same as pre-assessment)
-        $.ajax({
-            url: 'ajaxhandler/studentDashboardAjax.php',
-            type: 'POST',
-            dataType: 'json',
-            data: { action: 'getStudentsForPreassessment' },
-            success: function(response) {
-                if (response.success && Array.isArray(response.students)) {
-                    // Map students to use STUDENT_ID for review selection
-                    allReviewStudents = response.students.map(function(student) {
-                        return {
-                            id: student.STUDENT_ID || student.id, // Use STUDENT_ID if available
-                            name: student.name || (student.SURNAME ? student.SURNAME + ', ' + student.NAME : student.NAME)
-                        };
-                    });
-                    console.log('[DEBUG] Review students mapped:', allReviewStudents.slice(0, 3));
-                    renderReviewStudentList(allReviewStudents);
-                } else {
-                    renderEmptyReviewState('No students found.');
+        console.log('[DEBUG] Loading Review tab with shared Pre-Assessment data');
+        console.log('[DEBUG] allStudents available:', allStudents.length > 0);
+        
+        if (allStudents.length === 0) {
+            // If Pre-Assessment data not loaded yet, load it first
+            console.log('[DEBUG] Pre-Assessment data not available, loading it first...');
+            
+            // Get coordinator ID (same as Pre-Assessment)
+            let cdrid = $("#hiddencdrid").val();
+            
+            if (!cdrid) {
+                console.error('No coordinator ID found for Review tab');
+                renderEmptyReviewState('No coordinator ID found.');
+                return;
+            }
+            
+            // Load Pre-Assessment data first
+            $.ajax({
+                url: 'ajaxhandler/studentDashboardAjax.php',
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'getStudentsForPreassessment', cdrid: cdrid },
+                success: function(response) {
+                    if (response.success && Array.isArray(response.students)) {
+                        allStudents = response.students;
+                        console.log('[DEBUG] Pre-Assessment data loaded for Review:', allStudents.length, 'students');
+                        initializeReviewTab();
+                    } else {
+                        renderEmptyReviewState('No students found.');
+                    }
+                },
+                error: function() {
+                    renderEmptyReviewState('Error loading students.');
                 }
-            },
-            error: function() {
-                renderEmptyReviewState('Error loading students.');
+            });
+        } else {
+            // Pre-Assessment data already available, use it directly
+            initializeReviewTab();
+        }
+    }
+    
+    function initializeReviewTab() {
+        console.log('[DEBUG] Initializing Review tab...');
+        
+        // Use the same student data as Pre-Assessment but for review purposes
+        if (typeof allStudents !== 'undefined' && allStudents.length > 0) {
+            allReviewStudents = allStudents.slice(); // Copy the Pre-Assessment data
+            console.log('[DEBUG] Review tab initialized with', allReviewStudents.length, 'students');
+            console.log('[DEBUG] Sample review students with proper structure:', allReviewStudents.slice(0, 2));
+            
+            displayReviewStudents(allReviewStudents);
+        } else {
+            console.log('[DEBUG] No Pre-Assessment data available yet for Review tab');
+            // Show empty state or load data first
+            allReviewStudents = [];
+            displayReviewStudents(allReviewStudents);
+        }
+    }
+    
+    // Display Review students with session filtering (same logic as Pre-Assessment)
+    function displayReviewStudents(students) {
+        console.log('[DEBUG] displayReviewStudents called with data:', students);
+        
+        // Debug: Check what session data we have
+        console.log('[DEBUG] Sample student data:', students.slice(0, 3));
+        console.log('[DEBUG] All SESSION_NAME values:', students.map(s => s.SESSION_NAME));
+        
+        // Get unique sessions and sort (most recent first) - same logic as Pre-Assessment  
+        const sessions = [...new Set((students || []).map(s => s.SESSION_NAME).filter(Boolean))];
+        sessions.sort((a, b) => b.localeCompare(a));
+        
+        console.log('[DEBUG] Extracted sessions for Review:', sessions);
+        console.log('[DEBUG] Number of unique sessions:', sessions.length);
+        
+        // Filter students by latest session first, then render
+        let initialStudents = students;
+        if (sessions && sessions.length > 0) {
+            const latestSession = sessions[0];
+            initialStudents = students.filter(student => {
+                const studentSession = student.SESSION_NAME || '';
+                return studentSession === latestSession;
+            });
+            console.log('[DEBUG] Filtered students for latest session in Review:', latestSession, '- Count:', initialStudents.length);
+        }
+        
+        // Initial render with filtered students and populate dropdown
+        console.log('[DEBUG] Initial render with', initialStudents.length, 'students');
+        console.log('[DEBUG] Sample initial student:', initialStudents[0]);
+        renderReviewStudentList(initialStudents, sessions);
+        
+        // Session filter change handler
+        $('#reviewSessionFilter').off('change').on('change', function() {
+            console.log('[DEBUG] Review session filter changed to:', $(this).val());
+            applyReviewFilters(allReviewStudents);
+        });
+        
+        // Search handler
+        $('#reviewStudentSearch').off('input').on('input', function() {
+            console.log('[DEBUG] Review search input changed to:', $(this).val());
+            applyReviewFilters(allReviewStudents);
+        });
+        
+        // Pagination click handler using event delegation
+        $(document).off('click', '.review-page-btn').on('click', '.review-page-btn', function(e) {
+            e.preventDefault();
+            console.log('[DEBUG] Review pagination button clicked!');
+            const page = parseInt($(this).data('page'));
+            if (!$(this).prop('disabled') && page > 0) {
+                changeReviewPage(page);
             }
         });
     }
+    
+    // Apply filters for Review tab (session filter + search)
+    function applyReviewFilters(allStudents) {
+        console.log('[DEBUG] applyReviewFilters called with', allStudents.length, 'students');
+        
+        let filtered = allStudents;
+        
+        // Session filter
+        const selectedSession = $('#reviewSessionFilter').val();
+        console.log('[DEBUG] Selected session:', selectedSession);
+        
+        if (selectedSession && selectedSession !== '' && selectedSession !== 'All Sessions') {
+            filtered = filtered.filter(student => {
+                const studentSession = student.SESSION_NAME || '';
+                return studentSession === selectedSession;
+            });
+            console.log('[DEBUG] After session filter:', filtered.length, 'students');
+        }
+        
+        // Search filter
+        const searchTerm = $('#reviewStudentSearch').val().toLowerCase().trim();
+        console.log('[DEBUG] Search term:', searchTerm);
+        
+        if (searchTerm) {
+            filtered = filtered.filter(student => {
+                return (student.FULL_NAME || '').toLowerCase().includes(searchTerm) ||
+                       (student.INTERN_ID || '').toLowerCase().includes(searchTerm);
+            });
+            console.log('[DEBUG] After search filter:', filtered.length, 'students');
+        }
+        
+        // Reset to page 1 and render results
+        currentReviewPage = 1;
+        console.log('[DEBUG] Rendering', filtered.length, 'filtered students');
+        renderReviewStudentList(filtered, null, true);
+    }
+    
+    // Change page for Review tab pagination
+    function changeReviewPage(page) {
+        console.log('[DEBUG] changeReviewPage called with page:', page);
+        currentReviewPage = page;
+        
+        // Reapply filters to get current filtered data and render with new page
+        applyReviewFilters(allReviewStudents);
+    }
 
-    function renderReviewStudentList(students) {
+    function renderReviewStudentList(students, sessions = []) {
         console.log('[DEBUG] renderReviewStudentList called with:', students.length, 'students');
         console.log('[DEBUG] selectedReviewStudentId:', selectedReviewStudentId);
+        console.log('[DEBUG] Sample student structure:', students[0]);
+        
         let sorted = students.slice().sort((a, b) => {
-            let aId = (a.id || '').toString();
-            let bId = (b.id || '').toString();
+            let aId = (a.STUDENT_ID || a.student_id || '').toString();
+            let bId = (b.STUDENT_ID || b.student_id || '').toString();
             return aId.localeCompare(bId);
         });
+        
+        totalReviewStudents = sorted.length;
+        const totalPages = Math.ceil(totalReviewStudents / reviewStudentsPerPage);
+        
+        // Get students for current page
+        const startIndex = (currentReviewPage - 1) * reviewStudentsPerPage;
+        const endIndex = startIndex + reviewStudentsPerPage;
+        const paginatedStudents = sorted.slice(startIndex, endIndex);
+        
         let studentListHtml = '';
-        sorted.forEach(function(student) {
-            let displayName = student.id || 'Unknown ID'; // Show STUDENT_ID instead of name
+        paginatedStudents.forEach(function(student) {
+            let displayId = student.STUDENT_ID || student.student_id || 'Unknown ID';
             let isSelected = student.id === selectedReviewStudentId;
             console.log('[DEBUG] Rendering student:', { 
                 id: student.id, 
-                name: displayName, 
+                STUDENT_ID: student.STUDENT_ID,
+                displayId: displayId,
                 selectedReviewStudentId: selectedReviewStudentId,
                 isSelected: isSelected
             });
+            const studentId = student.id || student.STUDENT_ID || 'unknown';
             studentListHtml += `
-                <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${isSelected ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${student.id}">
+                <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${isSelected ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${studentId}">
                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
                         <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z' /></svg>
                     </span>
-                    <span class="truncate">${displayName}</span>
+                    <span class="truncate">${displayId}</span>
                 </div>
             `;
         });
-        // 20/80 layout for Review tab
-        // On mobile, this will stack vertically with student list on top
+
+        // Generate pagination controls
+        let paginationHtml = '';
+        if (totalPages > 1) {
+            paginationHtml += `<div class='flex flex-col items-center mt-4 px-2'>`;
+            paginationHtml += `<div class='text-sm text-gray-600 mb-2'>Page ${currentReviewPage} of ${totalPages}</div>`;
+            paginationHtml += `<div class='flex gap-1'>`;
+            
+            // First page button
+            const firstDisabled = currentReviewPage <= 1;
+            paginationHtml += `<button class='review-page-btn px-3 py-2 text-sm border rounded ${firstDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='1' ${firstDisabled ? 'disabled' : ''}>&lt;&lt;</button>`;
+            
+            // Previous button
+            const prevDisabled = currentReviewPage <= 1;
+            paginationHtml += `<button class='review-page-btn px-3 py-2 text-sm border rounded ${prevDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${currentReviewPage - 1}' ${prevDisabled ? 'disabled' : ''}>&lt;</button>`;
+            
+            // Next button
+            const nextDisabled = currentReviewPage >= totalPages;
+            paginationHtml += `<button class='review-page-btn px-3 py-2 text-sm border rounded ${nextDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${currentReviewPage + 1}' ${nextDisabled ? 'disabled' : ''}>&gt;</button>`;
+            
+            // Last page button
+            const lastDisabled = currentReviewPage >= totalPages;
+            paginationHtml += `<button class='review-page-btn px-3 py-2 text-sm border rounded ${lastDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${totalPages}' ${lastDisabled ? 'disabled' : ''}>&gt;&gt;</button>`;
+            
+            paginationHtml += `</div>`;
+            paginationHtml += `</div>`;
+        }
+
+        // Build the 20/80 column layout for Review tab
         let html = `<div class='review-main-wrapper flex flex-col md:flex-row w-full'>`;
         html += `<div class='review-student-list-section left-col w-full md:w-1/5 max-w-xs md:pr-4 order-1 mb-4 md:mb-0'>`;
         html += `<div class='mb-4'><input type='text' id='reviewStudentSearch' placeholder='Search student' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'></div>`;
-        html += `<div id='reviewStudentListPanel' class='overflow-y-auto min-h-[500px] max-h-[700px] flex flex-col gap-1'>${studentListHtml}</div>`;
+        html += `<div class='mb-4'><select id='reviewSessionFilter' class='w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200'><option value='all'>All Terms</option></select></div>`;
+        html += `<div id='reviewStudentListPanel' class='overflow-y-auto min-h-[400px] max-h-[500px] flex flex-col gap-1'>${studentListHtml}</div>`;
+        html += `<div id='reviewPaginationContainer'>${paginationHtml}</div>`;
         html += `</div>`;
         html += `<div class='review-content-section right-col w-full md:w-4/5 md:pl-4 order-2'>`;
         if (!selectedReviewStudentId) {
@@ -6334,65 +7567,396 @@ $(document).ready(function() {
         html += `</div>`;
         html += `</div>`;
         $('#reviewTabContent').html(html);
+        
+        // Populate session dropdown with available sessions
+        if (sessions && sessions.length > 0) {
+            let sessionOptions = '<option value="all">All Terms</option>';
+            sessions.forEach(session => {
+                sessionOptions += `<option value="${session}">${session}</option>`;
+            });
+            $('#reviewSessionFilter').html(sessionOptions);
+            
+            // Auto-select the latest session (first in sorted array)
+            if (sessions.length > 0) {
+                $('#reviewSessionFilter').val(sessions[0]);
+            }
+        }
+        
+        console.log('[DEBUG] Review tab HTML replaced. New content loaded.');
     }
 
-    // Search filter for review student list
-    $(document).on('input', '#reviewStudentSearch', function() {
-        const query = $(this).val().trim().toLowerCase();
-        let filtered = allReviewStudents.filter(s => {
-            let displayId = (s.id || '').toString().toLowerCase();
-            return displayId.includes(query);
+    // Apply both session and search filters for Review tab
+    function applyReviewFilters(allStudentsData) {
+        const selectedSession = $('#reviewSessionFilter').val();
+        const searchQuery = $('#reviewStudentSearch').val().trim();
+        
+        console.log('[DEBUG] Applying Review filters - Session:', selectedSession, 'Search:', searchQuery);
+        
+        let filtered = allStudentsData.slice();
+        
+        // Filter by session first
+        if (selectedSession && selectedSession !== 'all') {
+            filtered = filtered.filter(student => {
+                const studentSession = student.SESSION_NAME || '';
+                return studentSession === selectedSession;
+            });
+            console.log('[DEBUG] After session filter:', filtered.length, 'students');
+        }
+        
+        // Then filter by search query
+        if (searchQuery.length > 0) {
+            // Remove any previous invalid message
+            $('#reviewStudentSearchInvalidMsg').remove();
+            
+            filtered = filtered.filter(s => {
+                let idStr = (s.STUDENT_ID || s.student_id || '').toString().toLowerCase();
+                let searchLower = searchQuery.toLowerCase();
+                
+                // Search by STUDENT_ID only
+                return idStr.includes(searchLower);
+            });
+            console.log('[DEBUG] After search filter:', filtered.length, 'students');
+        }
+        
+        // Update display without resetting page number when filtering
+        updateReviewStudentListDisplay(filtered);
+        
+        // Restore search input focus if it was focused
+        const $input = $('#reviewStudentSearch');
+        $input.val(searchQuery);
+        if (document.activeElement === $input[0]) {
+            $input.focus();
+        }
+    }
+    
+    // Update only the Review student list display without rebuilding dropdown or right panel
+    function updateReviewStudentListDisplay(students, resetPage = true) {
+        let sorted = students.slice().sort((a, b) => {
+            let aId = (a.STUDENT_ID || a.student_id || '').toString();
+            let bId = (b.STUDENT_ID || b.student_id || '').toString();
+            return aId.localeCompare(bId);
         });
         
-        // Store current selected student before re-render
-        let currentSelectedId = selectedReviewStudentId;
-        renderReviewStudentList(filtered);
-        // Restore selected student and search input
-        selectedReviewStudentId = currentSelectedId;
-        const $input = $('#reviewStudentSearch');
-        $input.val(query);
-        $input.focus();
-    });
+        totalReviewStudents = sorted.length;
+        const totalPages = Math.ceil(totalReviewStudents / reviewStudentsPerPage);
+        
+        // Reset to page 1 only when filtering, not when changing pages
+        if (resetPage) {
+            currentReviewPage = 1;
+        }
+        
+        // Get students for current page
+        const startIndex = (currentReviewPage - 1) * reviewStudentsPerPage;
+        const endIndex = startIndex + reviewStudentsPerPage;
+        const paginatedStudents = sorted.slice(startIndex, endIndex);
+        
+        let studentListHtml = '';
+        paginatedStudents.forEach(function(student) {
+            let displayId = student.STUDENT_ID || student.student_id || 'Unknown ID';
+            const studentId = student.id || student.STUDENT_ID || 'unknown';
+            studentListHtml += `
+                <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent ${studentId === selectedReviewStudentId ? 'bg-blue-100 border-blue-400 font-semibold text-blue-700' : 'text-gray-800'}" data-studentid="${studentId}">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                        <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 616 0z' /></svg>
+                    </span>
+                    <span class="truncate">${displayId}</span>
+                </div>
+            `;
+        });
+        
+        // Generate pagination controls
+        let paginationHtml = '';
+        if (totalPages > 1) {
+            paginationHtml += `<div class='flex flex-col items-center mt-4 px-2'>`;
+            paginationHtml += `<div class='text-sm text-gray-600 mb-2'>Page ${currentReviewPage} of ${totalPages}</div>`;
+            paginationHtml += `<div class='flex gap-1'>`;
+            
+            // First page button
+            const firstDisabled = currentReviewPage <= 1;
+            paginationHtml += `<button class='review-page-btn px-3 py-2 text-sm border rounded ${firstDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='1' ${firstDisabled ? 'disabled' : ''}>&lt;&lt;</button>`;
+            
+            // Previous button
+            const prevDisabled = currentReviewPage <= 1;
+            paginationHtml += `<button class='review-page-btn px-3 py-2 text-sm border rounded ${prevDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${currentReviewPage - 1}' ${prevDisabled ? 'disabled' : ''}>&lt;</button>`;
+            
+            // Next button
+            const nextDisabled = currentReviewPage >= totalPages;
+            paginationHtml += `<button class='review-page-btn px-3 py-2 text-sm border rounded ${nextDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${currentReviewPage + 1}' ${nextDisabled ? 'disabled' : ''}>&gt;</button>`;
+            
+            // Last page button
+            const lastDisabled = currentReviewPage >= totalPages;
+            paginationHtml += `<button class='review-page-btn px-3 py-2 text-sm border rounded ${lastDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}' data-page='${totalPages}' ${lastDisabled ? 'disabled' : ''}>&gt;&gt;</button>`;
+            
+            paginationHtml += `</div>`;
+            paginationHtml += `</div>`;
+        }
+        
+        // Update student list and pagination containers
+        $('#reviewStudentListPanel').html(studentListHtml);
+        $('#reviewPaginationContainer').html(paginationHtml);
+        
+        // Directly bind click events to pagination buttons after they're created
+        $('.review-page-btn').off('click').on('click', function(e) {
+            e.preventDefault();
+            const page = parseInt($(this).data('page'));
+            if (!$(this).prop('disabled') && page > 0) {
+                changeReviewPage(page);
+            }
+        });
+    }
+    
+    // Function to change page in Review student list
+    function changeReviewPage(page) {
+        console.log('[DEBUG] changeReviewPage called with page:', page);
+        currentReviewPage = page;
+        
+        // Get current filtered students
+        const selectedSession = $('#reviewSessionFilter').val();
+        const searchQuery = $('#reviewStudentSearch').val().trim();
+        
+        let filteredStudents = allReviewStudents.slice();
+        
+        // Apply session filter
+        if (selectedSession && selectedSession !== 'all') {
+            filteredStudents = filteredStudents.filter(student => {
+                const studentSession = student.SESSION_NAME || '';
+                return studentSession === selectedSession;
+            });
+        }
+        
+        // Apply search filter
+        if (searchQuery.length > 0) {
+            filteredStudents = filteredStudents.filter(s => {
+                let idStr = (s.STUDENT_ID || s.student_id || '').toString();
+                return idStr.includes(searchQuery);
+            });
+        }
+        
+        // Update display with current page (don't reset page number)
+        updateReviewStudentListDisplay(filteredStudents, false);
+    }
 
     // Handle student selection in Review tab
     $(document).on('click', '.review-student-item', function() {
-    console.log('[DEBUG] Review student clicked');
-    console.log('[DEBUG] Clicked element:', this);
-    console.log('[DEBUG] Element attributes:', this.attributes);
-    console.log('[DEBUG] data-studentid attribute:', $(this).attr('data-studentid'));
+        console.log('[DEBUG] Review student clicked');
+        selectedReviewStudentId = $(this).data('studentid');
+        console.log('[DEBUG] Raw selectedReviewStudentId:', selectedReviewStudentId);
+        console.log('[DEBUG] allReviewStudents sample:', allReviewStudents.slice(0, 2));
+        
+        // Map INTERNS_ID to STUDENT_ID with debug
+        let selectedStudent = allReviewStudents.find(s => s.id == selectedReviewStudentId);
+        let studentDbId = selectedStudent && selectedStudent.STUDENT_ID ? selectedStudent.STUDENT_ID : selectedReviewStudentId;
+        console.log('[Review] Selected INTERNS_ID:', selectedReviewStudentId, '| Mapped STUDENT_ID:', studentDbId, '| Student object:', selectedStudent);
+        
+        // Just update visual selection without rebuilding HTML
+        $('.review-student-item').removeClass('bg-blue-100 border-blue-400 font-semibold text-blue-700').addClass('text-gray-800');
+        $(this).removeClass('text-gray-800').addClass('bg-blue-100 border-blue-400 font-semibold text-blue-700');
+        
+        // Make sure right panel exists, if not create it
+        if ($('#reviewedEvalList').length === 0) {
+            console.log('[DEBUG] Right panel missing in Review tab, rebuilding HTML structure');
+            
+            // Get current state before rebuilding
+            let currentSession = $('#reviewSessionFilter').val();
+            let currentSearch = $('#reviewStudentSearch').val();
+            let currentPageNum = currentReviewPage;
+            
+            // Get currently filtered students
+            let currentStudents = allReviewStudents.slice();
+            if (currentSession && currentSession !== 'all') {
+                currentStudents = currentStudents.filter(student => {
+                    const studentSession = student.SESSION_NAME || '';
+                    return studentSession === currentSession;
+                });
+            }
+            if (currentSearch && currentSearch.trim().length > 0) {
+                currentStudents = currentStudents.filter(s => {
+                    let idStr = (s.STUDENT_ID || s.student_id || '').toString();
+                    return idStr.includes(currentSearch.trim());
+                });
+            }
+            
+            // Get unique sessions for dropdown
+            const sessions = [...new Set(allReviewStudents.map(s => s.SESSION_NAME).filter(Boolean))];
+            sessions.sort((a, b) => b.localeCompare(a));
+            
+                // Rebuild with current filtered students and proper sessions
+                console.log('[DEBUG] Rebuilding Review HTML with:', currentStudents.length, 'students');
+                console.log('[DEBUG] Sample rebuild student:', currentStudents[0]);
+                console.log('[DEBUG] Available sessions for rebuild:', sessions);
+                renderReviewStudentList(currentStudents, sessions);            // Restore all state
+            $('#reviewSessionFilter').val(currentSession);
+            $('#reviewStudentSearch').val(currentSearch);
+            currentReviewPage = currentPageNum;
+            
+            // Rebind event handlers after HTML rebuild
+            $('#reviewSessionFilter').off('change').on('change', function() {
+                console.log('[DEBUG] Review session filter changed (rebound):', $(this).val());
+                applyReviewFilters(allReviewStudents);
+            });
+            
+            $('#reviewStudentSearch').off('input').on('input', function() {
+                console.log('[DEBUG] Review search input changed (rebound):', $(this).val());
+                applyReviewFilters(allReviewStudents);
+            });
+        }
+        
+        // Show loading in right panel
+        $('#reviewedEvalList').html('<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><div class="mt-2 text-gray-600">Loading reviewed evaluation...</div></div>');
+        
+        // Load the Pre-Assessment data in read-only mode for this student
+        loadStudentReviewData(studentDbId, selectedReviewStudentId);
+    });
     
-    selectedReviewStudentId = $(this).data('studentid');
-    console.log('[DEBUG] Selected review student ID:', selectedReviewStudentId);
-    console.log('[DEBUG] Type of selectedReviewStudentId:', typeof selectedReviewStudentId);
-    console.log('[DEBUG] allReviewStudents length:', allReviewStudents.length);
-    console.log('[DEBUG] allReviewStudents sample:', allReviewStudents.slice(0, 2));
-    
-    // Get current search query to maintain filtering
-    const currentQuery = $('#reviewStudentSearch').val() || '';
-    console.log('[DEBUG] Current search query:', currentQuery);
-    
-    let currentList = allReviewStudents;
-    if (currentQuery.trim()) {
-        currentList = allReviewStudents.filter(s => {
-            let displayId = (s.id || '').toString().toLowerCase();
-            return displayId.includes(currentQuery.trim().toLowerCase());
+    // Load student review data (read-only Pre-Assessment view)
+    function loadStudentReviewData(studentDbId, selectedStudentId) {
+        console.log('[DEBUG] Loading Review data for student:', studentDbId);
+        
+        // Check if data is already cached using existing cache system
+        const cacheKey = `review_${studentDbId}_${selectedStudentId}`;
+        if (isCacheValid('evaluation', cacheKey) && dataCache.evaluationData[cacheKey]) {
+            console.log('[DEBUG] ⚡ Using cached review data for student:', studentDbId);
+            // Render cached data instantly
+            displayReviewEvaluations(dataCache.evaluationData[cacheKey]);
+            return;
+        }
+        
+        console.log('[DEBUG] Fetching fresh review data for student:', cacheKey);
+        
+        // Use the same endpoint as Pre-Assessment but for review purposes
+        $.ajax({
+            url: 'ajaxhandler/coordinatorRateStudentAnswersAjax.php',
+            type: 'POST',
+            dataType: 'json',
+            data: JSON.stringify({ action: 'getReviewedEvaluation', studentId: studentDbId }),
+            contentType: 'application/json',
+            success: function(response) {
+                console.log('[DEBUG] Review evaluation response:', response);
+                
+                if (response.success && response.evaluations && response.evaluations.length > 0) {
+                    // Cache the evaluation data using existing cache system
+                    const cacheKey = `review_${studentDbId}_${selectedStudentId}`;
+                    dataCache.evaluationData[cacheKey] = response.evaluations;
+                    dataCache.lastUpdated.evaluationData[cacheKey] = Date.now();
+                    console.log('[DEBUG] 💾 Cached review data for:', cacheKey);
+                    
+                    displayReviewEvaluations(response.evaluations);
+                } else {
+                    // If no reviewed evaluation found, show message to check Pre-Assessment
+                    $('#reviewedEvalList').html(`
+                        <div class="flex flex-col items-center justify-center py-12">
+                            <div class="bg-yellow-50 rounded-full p-6 mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                            </div>
+                            <div class="text-xl font-semibold text-yellow-700 mb-2">No Evaluation Found</div>
+                            <div class="text-gray-600 text-center">
+                                This student has not been evaluated yet.<br>
+                                <span class="text-blue-600 font-medium">Check the Pre-Assessment tab to rate this student first.</span>
+                            </div>
+                        </div>
+                    `);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('[DEBUG] Review data loading error:', error);
+                $('#reviewedEvalList').html(`
+                    <div class="flex flex-col items-center justify-center py-12">
+                        <div class="bg-red-50 rounded-full p-6 mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="text-xl font-semibold text-red-700 mb-2">Error Loading Data</div>
+                        <div class="text-gray-600">Unable to load evaluation data for this student.</div>
+                    </div>
+                `);
+            }
         });
-        console.log('[DEBUG] Filtered list length:', currentList.length);
     }
     
-    // Re-render the layout to create the #reviewedEvalList container
-    renderReviewStudentList(currentList);
-    
-    // Restore search input value
-    $('#reviewStudentSearch').val(currentQuery);
-    
-    // Show loading in right panel (now that #reviewedEvalList exists)
-    $('#reviewedEvalList').html('<div class="text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><div class="mt-2 text-gray-600">Loading reviewed evaluation...</div></div>');
-    
-    console.log('[DEBUG] About to load reviewed evaluation with ID:', selectedReviewStudentId);
-    loadReviewedEvaluation(selectedReviewStudentId);
-    console.log('[DEBUG] Finished processing review student selection');
-    });
+    // Display review evaluations in read-only format
+    function displayReviewEvaluations(evaluations) {
+        console.log('[DEBUG] Displaying review evaluations:', evaluations);
+        
+        // Group evaluations by category
+        const evalsByCategory = {
+            'Soft Skills': evaluations.filter(ev => ev.category && 
+                (ev.category.toLowerCase().includes('soft') || 
+                 ev.category.toLowerCase().includes('personal') || 
+                 ev.category.toLowerCase().includes('interpersonal'))),
+            'Communication Skills': evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('comm')),
+            'Technical Skills': evaluations.filter(ev => ev.category && ev.category.toLowerCase().includes('technical'))
+        };
+        
+        let evalHtml = `
+            <div class="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                <div class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2 class="text-lg font-semibold text-blue-800">Evaluation Results - Read Only</h2>
+                </div>
+                <p class="text-blue-700 text-sm mt-1">This is a read-only view of the student's evaluated responses.</p>
+            </div>
+        `;
+        
+        // Generate HTML for all categories
+        Object.keys(evalsByCategory).forEach(function(categoryName) {
+            if (evalsByCategory[categoryName].length > 0) {
+                evalHtml += `<div class="mb-8">`;
+                evalHtml += `<div class="bg-gray-100 rounded-lg p-4 mb-4 border-l-4 border-gray-500">`;
+                evalHtml += `<h3 class="text-lg font-semibold text-gray-800">${categoryName}</h3>`;
+                evalHtml += `</div>`;
+                
+                evalsByCategory[categoryName].forEach(function(ev) {
+                    // Generate star display for rating
+                    let starsHtml = '';
+                    for (let i = 1; i <= 5; i++) {
+                        const isActive = ev.rating >= i;
+                        starsHtml += `<span class="text-2xl ${isActive ? 'text-yellow-400' : 'text-gray-300'}">${isActive ? '★' : '☆'}</span>`;
+                    }
+                    
+                    evalHtml += `
+                    <div class="bg-white rounded-lg shadow border border-gray-200 p-6 mb-6">
+                        <div class="font-semibold text-gray-800 text-lg mb-3">${ev.question_text}</div>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-gray-50 rounded-md p-4">
+                                <div class="text-gray-700 text-sm font-medium mb-2">Student's Answer:</div>
+                                <div class="text-gray-900 text-base">${ev.answer}</div>
+                            </div>
+                            <div class="flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-md p-4">
+                                <div class="text-gray-700 text-sm font-medium mb-2">Rating Given:</div>
+                                <div class="flex items-center space-x-1 mb-2">
+                                    ${starsHtml}
+                                </div>
+                                <div class="text-2xl font-bold text-blue-600">${ev.rating}/5</div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                });
+                evalHtml += `</div>`; // Close category
+            }
+        });
+        
+        if (evalHtml.includes('mb-8')) {
+            $('#reviewedEvalList').html(evalHtml);
+        } else {
+            $('#reviewedEvalList').html(`
+                <div class="flex flex-col items-center justify-center py-12">
+                    <div class="bg-gray-50 rounded-full p-6 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <div class="text-xl font-semibold text-gray-700 mb-2">No Evaluations Available</div>
+                    <div class="text-gray-500 text-center">No evaluation categories found for this student.</div>
+                </div>
+            `);
+        }
+    }
 
     // Function to update review student selection highlighting without rebuilding layout
     function updateReviewStudentSelectionHighlight() {

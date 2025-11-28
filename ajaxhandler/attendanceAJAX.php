@@ -168,6 +168,9 @@ function createPDFReport($list, $filename) {
         $cdrid = $_POST['cdrid'];
         $ondate = $_POST['ondate'];
 
+        // Log the incoming parameters for debugging
+        error_log("getStudentList - Received params: sessionid=$sessionid, classid=$classid, cdrid=$cdrid, ondate=$ondate");
+
         $ado = new attendanceDetails();
         $crgo = new BuildingRegistrationDetails();
 
@@ -201,6 +204,10 @@ function createPDFReport($list, $filename) {
             }
             return $surnameCmp;
         });
+
+        // Log the final result for debugging
+        $presentCount = array_filter($allStudents, function($s) { return $s['ispresent'] === 'YES'; });
+        error_log("getStudentList - Returning " . count($allStudents) . " total students, " . count($presentCount) . " with attendance for date $ondate");
 
         echo json_encode($allStudents);
     }

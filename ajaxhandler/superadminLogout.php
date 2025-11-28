@@ -7,8 +7,8 @@ if (isset($_COOKIE[session_name()])) {
 }
 session_destroy();
 
-// Ensure proper redirection
-header("Location: ../index.php");
+// Ensure proper redirection without relying on .htaccess
+header("Location: ../");
 exit();
 ?>
 

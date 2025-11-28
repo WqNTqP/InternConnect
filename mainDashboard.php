@@ -14,7 +14,7 @@ if (isset($_SESSION["current_user"]) && !isset($_SESSION["coordinator_user"])) {
             $cdrid=$_SESSION["current_user"];
         }
     else{
-        header("location:index.php");
+        header("Location: ./");
         die();
     }
 
@@ -102,6 +102,8 @@ function generateStudentFilterOptions($coordinatorId) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php require_once __DIR__ . '/config/path_config.php'; $baseHref = PathConfig::getBaseUrl(); ?>
+    <base href="<?php echo htmlspecialchars($baseHref, ENT_QUOTES); ?>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -225,7 +227,7 @@ function generateStudentFilterOptions($coordinatorId) {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                             </svg>
                         </button>
-                        <div class="ml-4 cursor-pointer" onclick="window.location.href='mainDashboard.php';">
+                        <div class="ml-4 cursor-pointer" onclick="window.location.href='dashboard';">
                             <h2 class="text-lg md:text-xl font-semibold text-gray-800">InternConnect</h2>
                         </div>
                     </div>
@@ -349,7 +351,7 @@ function generateStudentFilterOptions($coordinatorId) {
                             <h2 class="text-2xl font-bold text-gray-800">Approved Weekly Reports</h2>
                             <p class="text-gray-600 mt-1">Attendance Tracker System</p>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                             <div class="space-y-2">
                                 <label for="filterStudent" class="block text-sm font-medium text-gray-700">Student:</label>
                                 <input type="text" id="filterStudent" list="studentFilterList" 
@@ -360,6 +362,12 @@ function generateStudentFilterOptions($coordinatorId) {
                                 <datalist id="studentFilterList">
                                     <option value="">All Students</option>
                                 </datalist>
+                            </div>
+                            <div class="space-y-2">
+                                <label for="reportTermFilter" class="block text-sm font-medium text-gray-700">Term:</label>
+                                <select id="reportTermFilter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="all">All Terms</option>
+                                </select>
                             </div>
                             <div class="space-y-2">
                                 <label for="filterDate" class="block text-sm font-medium text-gray-700">Date:</label>
@@ -434,13 +442,13 @@ function generateStudentFilterOptions($coordinatorId) {
                 class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap">
                 Pre-Assessment
             </button>
-            <button id="postAssessmentTabBtn"
-                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap">
-                Post-Assessment
-            </button>
             <button id="reviewTabBtn"
                 class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap">
                 Review
+            </button>
+            <button id="postAssessmentTabBtn"
+                class="px-4 md:px-6 py-2.5 text-xs md:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap">
+                Post-Assessment
             </button>
         </nav>
     </div>
@@ -593,6 +601,11 @@ function generateStudentFilterOptions($coordinatorId) {
                         <input type="text" id="reviewStudentSearch" placeholder="Search student"
                             class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                     </div>
+                    <div class="mb-4">
+                        <select id="reviewSessionFilter" class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg shadow focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                            <option value="all">All Terms</option>
+                        </select>
+                    </div>
                     <div id="reviewStudentListPanel"
                         class="overflow-y-auto max-h-[420px] flex flex-col gap-1">
                         <!-- Review list dynamically loaded -->
@@ -622,6 +635,10 @@ function generateStudentFilterOptions($coordinatorId) {
             <!-- Prediction Tab Content -->
             <div id="predictionContent" class="hidden">
                 <div class="bg-white rounded-lg shadow-md p-3 md:p-6">
+                    <style>
+                        .prediction-table-scroll { position: relative; max-height: 60vh; overflow-y: auto; }
+                        .prediction-table-scroll thead th { position: sticky; top: 0; z-index: 2; background-color: #eff6ff; }
+                    </style>
                     <!-- Prediction Controls -->
                     <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
@@ -641,6 +658,12 @@ function generateStudentFilterOptions($coordinatorId) {
                     
                     <!-- Filter Controls -->
                     <div class="mb-4 flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <label for="predictionTermFilter" class="text-sm font-medium text-gray-700">Term:</label>
+                            <select id="predictionTermFilter" class="px-3 py-2 text-sm rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                <option value="all">All Terms</option>
+                            </select>
+                        </div>
                         <span class="text-sm font-medium text-gray-700">Filter by Status:</span>
                         <div class="flex gap-2">
                             <button id="filterAll" class="px-4 py-2 text-sm font-medium rounded-md bg-gray-600 text-white shadow-sm transition duration-150 ease-in-out">
@@ -655,6 +678,7 @@ function generateStudentFilterOptions($coordinatorId) {
                         </div>
                     </div>
                         <div class="mt-4 md:mt-6 overflow-x-auto">
+                            <div class="prediction-table-scroll">
                             <table id="predictionTable" class="min-w-full rounded-xl shadow-lg overflow-hidden border border-gray-200">
                                 <thead class="bg-blue-50">
                                     <tr>
@@ -678,6 +702,7 @@ function generateStudentFilterOptions($coordinatorId) {
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                         </div>
                     </div>
             </div>
@@ -686,6 +711,7 @@ function generateStudentFilterOptions($coordinatorId) {
             <!-- Control Tab Content -->
             <div id="controlContent" class="hidden">
                 <div class="bg-white rounded-lg shadow-md p-6">
+
                     <div class="mb-4 md:mb-6">
                         <div class="grid grid-cols-4 md:flex md:flex-wrap gap-2 md:gap-4">
                             <button id="btnViewAllStudents" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="View All Students" title="View All Students">
@@ -700,7 +726,7 @@ function generateStudentFilterOptions($coordinatorId) {
                             <button id="btnAddHTE" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Add HTE" title="Add HTE">
                                 <i class="fas fa-building text-sm"></i>
                             </button>
-                            <button id="btnAddSession" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500" aria-label="Add Session" title="Add Session">
+                            <button id="btnAddSession" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500" aria-label="Add Term" title="Add Term">
                                 <i class="fas fa-calendar-plus text-sm"></i>
                             </button>
                             <button id="btnDeleteStudent" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-red-100 text-red-600 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Delete Student" title="Delete Student">
@@ -709,17 +735,60 @@ function generateStudentFilterOptions($coordinatorId) {
                             <button id="btnDeleteHTE" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500" aria-label="Delete HTE" title="Delete HTE">
                                 <i class="fas fa-building text-sm"></i>
                             </button>
-                            <button id="btnDeleteSession" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-500" aria-label="Delete Session" title="Delete Session">
+                            <button id="btnDeleteSession" class="flex items-center justify-center w-12 h-12 md:w-10 md:h-10 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-500" aria-label="Delete Term" title="Delete Term">
                                 <i class="fas fa-calendar-minus text-sm"></i>
                             </button>
                         </div>
                     </div>
 
+                                        <!-- Control Intro (default view) -->
+                    <div id="controlIntroContainer" class="mb-6">
+                        <div class="rounded-xl border border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+                            <h2 class="text-2xl font-bold text-blue-700 mb-2 flex items-center gap-2">
+                                <i class="fas fa-sliders-h text-blue-600"></i>
+                                Control Center
+                            </h2>
+                            <p class="text-gray-600 mb-4 leading-relaxed">
+                                Manage core operational data for your coordination workflow. Use the action buttons above to view and administer students, companies (HTEs), sessions, and batch maintenance tasks. Data preloads silently for faster access; nothing is shown until you pick a specific action.
+                            </p>
+                            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                                <div class="bg-white border border-blue-100 rounded-lg p-4 shadow-sm">
+                                    <div class="font-semibold text-blue-700 mb-1 flex items-center gap-2"><i class="fas fa-users"></i> Students</div>
+                                    <p class="text-gray-600">View all assigned students, filter by term, and perform batch deletion.</p>
+                                </div>
+                                <div class="bg-white border border-indigo-100 rounded-lg p-4 shadow-sm">
+                                    <div class="font-semibold text-indigo-700 mb-1 flex items-center gap-2"><i class="fas fa-city"></i> Companies (HTE)</div>
+                                    <p class="text-gray-600">Review partner HTEs, update logos and MOA information, and maintain assignments.</p>
+                                </div>
+                                <div class="bg-white border border-purple-100 rounded-lg p-4 shadow-sm">
+                                    <div class="font-semibold text-purple-700 mb-1 flex items-center gap-2"><i class="fas fa-calendar-plus"></i> Terms</div>
+                                    <p class="text-gray-600">Add academic terms and link student or HTE participation context.</p>
+                                </div>
+                                <div class="bg-white border border-green-100 rounded-lg p-4 shadow-sm">
+                                    <div class="font-semibold text-green-700 mb-1 flex items-center gap-2"><i class="fas fa-user-plus"></i> Add Student</div>
+                                    <p class="text-gray-600">Register new students with optional immediate term & HTE assignment.</p>
+                                </div>
+                                <div class="bg-white border border-yellow-100 rounded-lg p-4 shadow-sm">
+                                    <div class="font-semibold text-yellow-700 mb-1 flex items-center gap-2"><i class="fas fa-building"></i> Add / Delete HTE</div>
+                                    <p class="text-gray-600">Maintain host training establishments and clean up unused entries.</p>
+                                </div>
+                                <div class="bg-white border border-red-100 rounded-lg p-4 shadow-sm">
+                                    <div class="font-semibold text-red-700 mb-1 flex items-center gap-2"><i class="fas fa-user-minus"></i> Batch Delete</div>
+                                    <p class="text-gray-600">Safely remove multiple students while preserving data integrity.</p>
+                                </div>
+                            </div>
+                            <div class="mt-5 flex items-start gap-3 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                <div class="text-blue-600 mt-1"><i class="fas fa-lightbulb"></i></div>
+                                <p class="text-gray-600 text-sm">Select any action button above to open its management panel. You can return here by closing all panels or reloading the tab.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mt-6">
                         <div class="space-y-6">
-                            <!-- Add Session Form -->
+                            <!-- Add Term Form -->
                                 <div id="sessionFormContainer" class="form-container" style="display: none;">
-                                <h3 class="text-xl font-bold mb-4">Add New Session</h3>
+                                <h3 class="text-xl font-bold mb-4">Add New Term</h3>
                                 <form id="sessionForm" class="bg-white rounded-lg shadow p-6">
                                     <style>
                                         #sessionFormContainer input[type="number"],
@@ -748,7 +817,7 @@ function generateStudentFilterOptions($coordinatorId) {
                                         </div>
                                     </div>
                                     <div class="mt-6 flex gap-4">
-                                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">Add Session</button>
+                                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">Add Term</button>
                                         <button type="button" id="closeSessionForm" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md transition">Cancel</button>
                                     </div>
                                 </form>
@@ -812,9 +881,9 @@ function generateStudentFilterOptions($coordinatorId) {
                                     </div>
                                     <div class="flex gap-4">
                                         <div class="flex-1">
-                                            <label for="sessionSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to Session:</label>
+                                            <label for="sessionSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to Term:</label>
                                             <select id="sessionSelectStudent" name="sessionId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                                <option value="">Select Session</option>
+                                                <option value="">Select Term</option>
                                             </select>
                                         </div>
                                         <div class="flex-1">
@@ -835,9 +904,9 @@ function generateStudentFilterOptions($coordinatorId) {
                                         <form id="singleStudentForm" class="bg-gray-50 rounded-lg shadow p-6">
                                             <div class="mb-6 flex gap-4">
                                                 <div class="flex-1">
-                                                    <label for="singleSessionSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to Session:</label>
+                                                    <label for="singleSessionSelectStudent" class="block text-sm font-medium text-gray-700 mb-1">Assign to Term:</label>
                                                     <select id="singleSessionSelectStudent" name="sessionId" required="" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                                        <option value="">Select Session</option>
+                                                        <option value="">Select Term</option>
                                                     </select>
                                                 </div>
                                                 <div class="flex-1">
@@ -1023,9 +1092,9 @@ function generateStudentFilterOptions($coordinatorId) {
                                             <input type="text" id="hteContactNumber" name="CONTACT_NUMBER" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter Contact Number">
                                         </div>
                                         <div>
-                                            <label for="sessionSelect" class="block text-sm font-medium text-gray-700 mb-1">Assign to Session</label>
+                                            <label for="sessionSelect" class="block text-sm font-medium text-gray-700 mb-1">Assign to Term</label>
                                             <select id="sessionSelect" name="sessionId" required="" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                                <option value="">Select Session</option>
+                                                <option value="">Select Term</option>
                                             </select>
                                         </div>
                                         <div>
@@ -1107,9 +1176,9 @@ function generateStudentFilterOptions($coordinatorId) {
                                 <form id="deleteStudentForm" class="space-y-6">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
-                                            <label for="deleteStudentSessionSelect" class="block text-sm font-medium text-gray-700 mb-1">Session</label>
+                                            <label for="deleteStudentSessionSelect" class="block text-sm font-medium text-gray-700 mb-1">Term</label>
                                             <select id="deleteStudentSessionSelect" name="sessionId" required="" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
-                                                <option value="">Select Session</option>
+                                                <option value="">Select Term</option>
                                             </select>
                                         </div>
                                         <div>
@@ -1146,25 +1215,25 @@ function generateStudentFilterOptions($coordinatorId) {
                                 </form>
                             </div>
 
-                            <!-- Delete Session Form -->
-                            <!-- Delete Session Form - Modern Design -->
+                            <!-- Delete Term Form -->
+                            <!-- Delete Term Form - Modern Design -->
                             <div id="deleteSessionFormContainer" class="form-container p-8 bg-white rounded-xl shadow-lg border border-gray-200 max-w-md mx-auto" style="display:none;">
                                 <h3 class="text-2xl font-bold text-orange-600 mb-6 flex items-center gap-3">
-                                    <i class="fas fa-calendar-minus"></i> Delete Session
+                                    <i class="fas fa-calendar-minus"></i> Delete Term
                                 </h3>
                                 <form id="deleteSessionFormSubmit" class="space-y-6">
                                     <div>
-                                        <label for="deleteSessionSelect" class="block text-sm font-medium text-gray-700 mb-2">Select Session to Delete</label>
+                                        <label for="deleteSessionSelect" class="block text-sm font-medium text-gray-700 mb-2">Select Term to Delete</label>
                                         <select id="deleteSessionSelect" name="sessionId" required="" class="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-gray-50 text-gray-800">
-                                            <option value="">Select Session</option>
+                                            <option value="">Select Term</option>
                                         </select>
                                     </div>
                                     <div class="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg text-orange-700 text-sm">
-                                        <strong>Warning:</strong> This will delete the session and all associated students, HTEs, and attendance records.
+                                        <strong>Warning:</strong> This will delete the term and all associated students, HTEs, and attendance records.
                                     </div>
                                     <div class="flex gap-4 justify-end">
                                         <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out flex items-center gap-2">
-                                            <i class="fas fa-trash"></i> Delete Session
+                                            <i class="fas fa-trash"></i> Delete Term
                                         </button>
                                         <button type="button" id="closeDeleteSessionForm" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out flex items-center gap-2">
                                             <i class="fas fa-times"></i> Cancel
@@ -1425,23 +1494,31 @@ function generateStudentFilterOptions($coordinatorId) {
                     <div class="flex flex-col lg:flex-row w-full min-h-[500px]">
                         <!-- Left Column: Student List/Search -->
                         <div class="w-full lg:w-1/4 lg:min-w-[220px] lg:max-w-xs bg-white lg:border-r border-gray-200 p-3 md:p-6 flex flex-col">
-                            <div class="mb-4 md:mb-6">
+                            <div class="mb-3 md:mb-4">
                                 <input type="text" id="postAnalysisStudentSearch" placeholder="Search student" class="w-full px-3 md:px-4 py-2 text-sm md:text-base rounded-lg border border-gray-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-200 text-gray-900 font-medium shadow-sm transition">
                             </div>
-                            <div id="postAnalysisStudentListPanel" class="flex-1 overflow-y-auto postanalysis-student-list max-h-64 lg:max-h-none">
+                            <div class="mb-3 md:mb-4">
+                                <label for="postAnalysisTermFilter" class="block text-sm font-medium text-gray-700 mb-1">Term</label>
+                                <select id="postAnalysisTermFilter" class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="all">All Terms</option>
+                                </select>
+                            </div>
+                            <div id="postAnalysisStudentListPanel" class="flex-1 overflow-y-auto postanalysis-student-list">
                                 <!-- Student items will be dynamically rendered here -->
                             </div>
                             <style>
                             #postAnalysisStudentListPanel {
                                 margin-top: 0.5rem;
+                                max-height: 60vh; /* keep page static; list scrolls */
+                                overflow-y: auto;
                             }
                             .postanalysis-student-item {
                                 display: block;
-                                padding: 0.65rem 1rem;
+                                padding: 0.5rem 0.75rem;
                                 margin-bottom: 0.25rem;
                                 border-radius: 8px;
-                                font-size: 1.08rem;
-                                font-weight: 500;
+                                font-size: 0.95rem; /* smaller to prevent wrap */
+                                font-weight: 400; /* lighter for compactness */
                                 color: #222;
                                 cursor: pointer;
                                 transition: background 0.18s, color 0.18s;
@@ -1578,7 +1655,8 @@ function generateStudentFilterOptions($coordinatorId) {
             
             // Load coordinator-specific data when tabs are activated
             // This ensures data is loaded dynamically based on the logged-in coordinator
-            let dataLoaded = {
+            // Make dataLoaded global to avoid scope issues in later scripts
+            window.dataLoaded = window.dataLoaded || {
                 companies: false,
                 students: false,
                 predictions: false,
@@ -1605,9 +1683,10 @@ function generateStudentFilterOptions($coordinatorId) {
                         loadPreassessmentStudentList();
                     }
                     // Load students for Review tab using old system
-                    if (typeof loadReviewStudents === 'function') {
-                        loadReviewStudents();
-                    }
+                    // DISABLED: Now handled by new JavaScript system in mainDashboard.js
+                    // if (typeof loadReviewStudents === 'function') {
+                    //     loadReviewStudents();
+                    // }
                     // Keep loading evaluation questions (for the questions tab)
                     // Note: Categories and questions are loaded by loadQuestionCategories()
                     // Load categories for the dropdown
@@ -1626,69 +1705,32 @@ function generateStudentFilterOptions($coordinatorId) {
                 }, 50);
             });
             
-            // Load all students when control tab is shown
+            // Preload students silently when control tab is first opened
             $(document).on('click', '[data-tab="control"]', function() {
                 if (!dataLoaded.control) {
-                    // Show students container first, then load data
                     $('.form-container').hide();
-                    $('#allStudentsContainer').show();
-                    
-                    // Load all students data automatically
+                    $('#controlIntroContainer').show();
                     if (typeof loadAllStudentsData === 'function') {
-                        loadAllStudentsData();
+                        loadAllStudentsData(false); // silent preload
                     }
                     dataLoaded.control = true;
                 } else {
-                    // Restore default view when returning to control tab
                     restoreControlTabDefaultView();
                 }
             });
             
             // Function to restore default view when returning to control tab
             function restoreControlTabDefaultView() {
-                // Check which container was last active or show a default one
-                let hasVisibleContainer = false;
-                
-                // Check if any main containers are currently visible
-                const mainContainers = [
-                    '#allStudentsContainer',
-                    '#allCompaniesContainer', 
-                    '#studentFormContainer',
-                    '#addHTEFormContainer',
-                    '#sessionFormContainer',
-                    '#deleteStudentFormContainer',
-                    '#deleteHTEFormContainer',
-                    '#deleteSessionFormContainer'
-                ];
-                
-                mainContainers.forEach(function(containerSelector) {
-                    if ($(containerSelector).is(':visible')) {
-                        hasVisibleContainer = true;
-                    }
-                });
-                
-                // If no container is visible, show the students container as default and reload data
-                if (!hasVisibleContainer) {
-                    // Hide all form containers first
-                    $('.form-container').hide();
-                    // Show the students container
-                    $('#allStudentsContainer').show();
-                    
-                    // Reload the student data if the function is available
-                    if (typeof loadAllStudentsData === 'function') {
-                        console.log('Restoring student data in control tab');
-                        loadAllStudentsData();
-                    }
-                } else if ($('#allStudentsContainer').is(':visible')) {
-                    // If students container is visible but might be empty, reload data
-                    const tableBody = $('#allStudentsTableBody');
-                    if (tableBody.length && tableBody.children().length === 0) {
-                        if (typeof loadAllStudentsData === 'function') {
-                            console.log('Reloading student data - table appears empty');
-                            loadAllStudentsData();
-                        }
-                    }
-                }
+                // Always restore to intro view; do not auto open students list
+                $('#allStudentsContainer').hide();
+                $('#allCompaniesContainer').hide();
+                $('#studentFormContainer').hide();
+                $('#addHTEFormContainer').hide();
+                $('#sessionFormContainer').hide();
+                $('#deleteStudentFormContainer').hide();
+                $('#deleteHTEFormContainer').hide();
+                $('#deleteSessionFormContainer').hide();
+                $('#controlIntroContainer').show();
             }
             
             // Function to restore HTE selection state when returning to attendance tab
@@ -1772,21 +1814,22 @@ function generateStudentFilterOptions($coordinatorId) {
                         if (response && response.success && response.students && response.students.length > 0) {
                             let reviewHTML = '';
                             
-                            response.students.forEach(function(student) {
-                                // Generate HTML for review tab students only
-                                reviewHTML += `
-                                    <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="${student.id}">
-                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 616 0z"></path>
-                                            </svg>
-                                        </span>
-                                        <span class="truncate">${student.STUDENT_ID}</span>
-                                    </div>
-                                `;
-                            });
-                            
-                            // Update only review list (Pre-Assessment handled by new JS system)
+                    // Store all students for filtering
+                    window.allReviewStudents = response.students;
+                    
+                    response.students.forEach(function(student) {
+                        // Generate HTML for review tab students only
+                        reviewHTML += `
+                            <div class="review-student-item flex items-center gap-3 px-4 py-3 mb-2 rounded-lg cursor-pointer transition-all duration-150 bg-white shadow-sm hover:bg-blue-50 border border-transparent text-gray-800" data-studentid="${student.id}" data-sessionname="${student.SESSION_NAME || ''}">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-700 font-bold text-lg mr-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 616 0z"></path>
+                                    </svg>
+                                </span>
+                                <span class="truncate">${student.STUDENT_ID}</span>
+                            </div>
+                        `;
+                    });                            // Update only review list (Pre-Assessment handled by new JS system)
                             $('#reviewStudentListPanel').html(reviewHTML);
                             console.log('Loaded', response.students.length, 'students for review tab');
                         } else {
@@ -2196,9 +2239,10 @@ function generateStudentFilterOptions($coordinatorId) {
                     loadPreassessmentStudentList();
                 }
                 // Load students for Review tab
-                if (typeof loadReviewStudents === 'function') {
-                    loadReviewStudents();
-                }
+                // DISABLED: Now handled by new JavaScript system in mainDashboard.js  
+                // if (typeof loadReviewStudents === 'function') {
+                //     loadReviewStudents();
+                // }
                 // Note: Categories already loaded in previous call
                 
                 // Ensure All Questions sub-tab is properly activated
@@ -2451,7 +2495,7 @@ function generateStudentFilterOptions($coordinatorId) {
                     data: {action: "getSession"},
                     success: function(response) {
                         if (response && response.length > 0) {
-                            let options = '<option value="">Select Session</option>';
+                            let options = '<option value="">Select Term</option>';
                             response.forEach(function(session) {
                                 const sessionId = session.ID;
                                 const sessionName = session.DISPLAY_NAME || ('S.Y. ' + session.YEAR + '-' + (parseInt(session.YEAR) + 1));
@@ -2648,7 +2692,7 @@ function generateStudentFilterOptions($coordinatorId) {
                     success: function(response) {
                         console.log("Session response:", response);
                         if (response && response.length > 0) {
-                            let options = '<option value="">Select Session</option>';
+                            let options = '<option value="">Select Term</option>';
                             response.forEach(function(session) {
                                 const sessionId = session.ID;
                                 const sessionName = session.DISPLAY_NAME || ('S.Y. ' + session.YEAR + '-' + (parseInt(session.YEAR) + 1));
@@ -2779,7 +2823,7 @@ function generateStudentFilterOptions($coordinatorId) {
                     data: {action: "getSession"},
                     success: function(response) {
                         if (response && response.length > 0) {
-                            let options = '<option value="">Select Session</option>';
+                            let options = '<option value="">Select Term</option>';
                             response.forEach(function(session) {
                                 const sessionId = session.ID;
                                 const sessionName = session.DISPLAY_NAME || ('S.Y. ' + session.YEAR + '-' + (parseInt(session.YEAR) + 1));
@@ -2992,7 +3036,7 @@ function generateStudentFilterOptions($coordinatorId) {
                     success: function(response) {
                         console.log("Session response for delete:", response);
                         if (response && response.length > 0) {
-                            let options = '<option value="">Select Session</option>';
+                            let options = '<option value="">Select Term</option>';
                             response.forEach(function(session) {
                                 const sessionId = session.ID;
                                 const sessionName = session.DISPLAY_NAME || ('S.Y. ' + session.YEAR + '-' + (parseInt(session.YEAR) + 1));

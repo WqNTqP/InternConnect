@@ -7,7 +7,8 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../config/path_config.php';
 require_once PathConfig::getDatabasePath();
 require_once PathConfig::getProjectPath('/database/coordinator.php');
-$action=$_REQUEST["action"];
+
+$action = isset($_REQUEST["action"]) ? $_REQUEST["action"] : "";
 if(!empty($action))
 {
     if($action=="verifyUser")
@@ -36,59 +37,11 @@ if(!empty($action))
         }
 
         // Return the response as JSON
+        header('Content-Type: application/json');
         echo json_encode($rv);
+        exit(); // Prevent any additional output
     }
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// $path=$_SERVER['DOCUMENT_ROOT'];
-// require_once $path."/database/database.php";
-// require_once $path."/database/coordinator.php";
-// $action=$_REQUEST["action"];
-// if(!empty($action))
-// {
-//     if($action=="verifyUser")
-//     {
-//         //kuhaon kung unsa tong gi type
-//         $un=$_POST["user_name"];
-//         $pw=$_POST["password"];
-//         //$rv=["un"=>$un,"pw"=>$pw];
-//         //echo json_encode($rv);
-//         //awon ug naa ba sa database
-//         $dbo=new Database();
-//         $fdo=new coordinator();
-//         $rv=$fdo->verifyUser($dbo, $un, $pw);
-//         if($rv['status']=="ALL OK")
-//         {
-//             session_start();
-//             $_SESSION['current_user']=$rv['id'];
-            
-//         }
-
-        // for($i=0;$i<100000;$i++)
-        //   {
-        //     for($j=0;$j<2000;$j++)
-        //     {
-              
-        //     }
-        //   }
-//         // kani mao ni ang response kung unsa ang status
-//         echo json_encode($rv);
-
-//     }
-// }
 ?>

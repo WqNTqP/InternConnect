@@ -66,8 +66,8 @@
                     <span class="text-2xl font-bold text-slate-800">InternConnect</span>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="student_login.php" class="text-slate-700 hover:text-slate-900 font-medium">Student Login</a>
-                    <a href="admin.php" class="text-slate-700 hover:text-slate-900 font-medium">Admin Login</a>
+                    <a href="student" class="text-slate-700 hover:text-slate-900 font-medium">Student Login</a>
+                    <a href="supervisor" class="text-slate-700 hover:text-slate-900 font-medium">Supervisor Login</a>
                 </div>
             </div>
         </nav>
@@ -184,9 +184,9 @@
                     <div id="loginLinks" class="hidden mt-6 text-center space-y-2">
                         <p class="text-gray-600">Password reset successfully!</p>
                         <div class="flex justify-center space-x-4">
-                            <a href="student_login.php" class="text-blue-600 hover:text-blue-700 font-medium">Student Login</a>
+                            <a href="student" class="text-blue-600 hover:text-blue-700 font-medium">Student Login</a>
                             <span class="text-gray-400">•</span>
-                            <a href="admin.php" class="text-blue-600 hover:text-blue-700 font-medium">Admin Login</a>
+                            <a href="supervisor" class="text-blue-600 hover:text-blue-700 font-medium">Supervisor Login</a>
                         </div>
                     </div>
                 </div>
@@ -200,7 +200,7 @@
                     </div>
                     <h1 class="text-xl font-bold text-gray-900 mb-2">Invalid Reset Link</h1>
                     <p id="errorCardMessage" class="text-gray-600 mb-6">This password reset link is invalid or has expired. Please request a new one.</p>
-                    <a href="forgot_password.php" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-150 ease-in-out">
+                    <a href="forgot-password" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-150 ease-in-out">
                         Request New Reset Link
                     </a>
                 </div>

@@ -507,7 +507,7 @@ $(function () {
                 $("#btnlogout").prop("disabled", false);
             },
             success: function (response) {
-                document.location.replace("admin.php");
+                document.location.replace("supervisor");
             },
             error: handleAjaxError,
         });

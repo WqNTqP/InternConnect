@@ -166,10 +166,10 @@
                     <button class="flex-1 bg-blue-100 text-blue-600 px-3 py-2 rounded-lg text-sm font-medium border border-blue-200" disabled>
                         <i class="fas fa-user-tie mr-1"></i> Coordinator
                     </button>
-                    <a href="admin.php" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
+                    <a href="supervisor" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
                         <i class="fas fa-user-shield mr-1"></i> Supervisor
                     </a>
-                    <a href="student_login.php" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
+                    <a href="student" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium text-center border border-gray-200 transition-colors">
                         <i class="fas fa-user-graduate mr-1"></i> Student
                     </a>
                 </div>
@@ -210,7 +210,7 @@
 
             <!-- Forgot Password Link -->
             <div class="text-center">
-                <a href="forgot_password.php" class="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors duration-200 font-medium">
+                <a href="forgot-password" class="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors duration-200 font-medium">
                     <i class="fas fa-key mr-1"></i>
                     Forgot your password?
                 </a>

@@ -8,6 +8,7 @@
 
 class PathConfig {
     private static $basePath = null;
+    private static $cachedBaseUrl = null;
     
     /**
      * Get the base path for the project
@@ -69,6 +70,44 @@ class PathConfig {
             return $basePath . '/' . ltrim($relativePath, '/');
         }
         return $basePath;
+    }
+
+    /**
+     * Get the base URL (absolute) for linking assets and routes.
+     * Example (localhost subdir): http://localhost/InternConnect/
+     * Example (live at root):     https://example.com/
+     */
+    public static function getBaseUrl(): string {
+        if (self::$cachedBaseUrl !== null) {
+            return self::$cachedBaseUrl;
+        }
+        $scheme = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $docRoot = isset($_SERVER['DOCUMENT_ROOT']) ? str_replace('\\', '/', rtrim($_SERVER['DOCUMENT_ROOT'], '/\\')) : '';
+        $projRoot = str_replace('\\', '/', rtrim(self::getBasePath(), '/\\'));
+        $pathPart = '/';
+        if ($docRoot && strpos($projRoot, $docRoot) === 0) {
+            $rel = substr($projRoot, strlen($docRoot));
+            $rel = trim($rel, '/');
+            $pathPart = '/' . ($rel !== '' ? $rel . '/' : '');
+        }
+        self::$cachedBaseUrl = $scheme . '://' . $host . $pathPart;
+        return self::$cachedBaseUrl;
+    }
+
+    /**
+     * Get only the path part of base URL, starting and ending with '/'.
+     * Example (localhost subdir): /InternConnect/
+     * Example (live at root): /
+     */
+    public static function getBaseUrlPath(): string {
+        $abs = self::getBaseUrl();
+        // Extract path from absolute URL
+        $p = parse_url($abs, PHP_URL_PATH) ?? '/';
+        if ($p === '') { $p = '/'; }
+        // Ensure trailing slash
+        if (substr($p, -1) !== '/') { $p .= '/'; }
+        return $p;
     }
     
     /**

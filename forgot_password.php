@@ -70,8 +70,8 @@
                     </span>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="student_login.php" class="text-slate-700 hover:text-slate-900 font-medium">Student Login</a>
-                    <a href="admin.php" class="text-slate-700 hover:text-slate-900 font-medium">Admin Login</a>
+                    <a href="student" class="text-slate-700 hover:text-slate-900 font-medium">Student Login</a>
+                    <a href="admin" class="text-slate-700 hover:text-slate-900 font-medium">Admin Login</a>
                 </div>
             </div>
         </nav>
@@ -225,9 +225,9 @@
                 e.preventDefault();
                 const userType = $('input[name="userType"]:checked').val();
                 if (userType === 'student') {
-                    window.location.href = 'student_login.php';
+                    window.location.href = 'student';
                 } else {
-                    window.location.href = 'admin.php';
+                    window.location.href = 'supervisor';
                 }
             });
 

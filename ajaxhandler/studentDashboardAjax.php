@@ -104,13 +104,46 @@ switch ($action) {
         exit;
     case "getStudentsForPreassessment":
         try {
+            // Get coordinator ID from POST data (same as Control tab)
+            $coordinator_id = $_POST['cdrid'] ?? null;
+            
+            if (!$coordinator_id) {
+                echo json_encode(array('success' => false, 'students' => [], 'message' => 'Coordinator ID not provided'));
+                exit;
+            }
+            
+            error_log("Pre-assessment called for coordinator ID: " . $coordinator_id);
+            
             // Show all students with their eligibility status
+            // First, let's check what data we have
+            $debugStmt = $dbo->conn->prepare("
+                SELECT COUNT(*) as total_students FROM interns_details
+            ");
+            $debugStmt->execute();
+            $totalStudents = $debugStmt->fetch(PDO::FETCH_ASSOC)['total_students'];
+            error_log("Total students in interns_details: " . $totalStudents);
+            
+            $debugStmt2 = $dbo->conn->prepare("
+                SELECT COUNT(*) as students_with_sessions 
+                FROM interns_details id
+                JOIN intern_details itd ON id.INTERNS_ID = itd.INTERNS_ID
+                JOIN internship_needs ins ON itd.HTE_ID = ins.HTE_ID
+                JOIN session_details s ON itd.SESSION_ID = s.ID
+                WHERE ins.COORDINATOR_ID = :coordinator_id
+            ");
+            $debugStmt2->execute([':coordinator_id' => $coordinator_id]);
+            $studentsWithSessions = $debugStmt2->fetch(PDO::FETCH_ASSOC)['students_with_sessions'];
+            error_log("Students with session assignments: " . $studentsWithSessions);
+            
             $stmt = $dbo->conn->prepare("
                 SELECT DISTINCT 
                     id.INTERNS_ID as id, 
                     id.STUDENT_ID, 
                     id.NAME, 
                     id.SURNAME,
+                    s.YEAR,
+                    s.ID as SESSION_ID,
+                    CONCAT('S.Y. ', s.YEAR, '-', s.YEAR + 1) AS SESSION_NAME,
                     (
                         SELECT COUNT(*) FROM student_questions sq 
                         WHERE sq.student_id = id.INTERNS_ID AND sq.approval_status = 'approved'
@@ -128,10 +161,32 @@ switch ($action) {
                         WHERE se.STUDENT_ID = id.STUDENT_ID
                     ) as submitted_evaluation_count
                 FROM interns_details id
-                ORDER BY id.NAME, id.SURNAME
+                JOIN intern_details itd ON id.INTERNS_ID = itd.INTERNS_ID
+                JOIN internship_needs ins ON itd.HTE_ID = ins.HTE_ID
+                JOIN session_details s ON itd.SESSION_ID = s.ID
+                WHERE ins.COORDINATOR_ID = :coordinator_id
+                ORDER BY s.YEAR DESC, id.NAME, id.SURNAME
             ");
-            $stmt->execute();
+            
+            $stmt->execute([':coordinator_id' => $coordinator_id]);
             $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Debug: Log session data
+            error_log("Pre-assessment students query returned " . count($students) . " students");
+            if (count($students) > 0) {
+                error_log("Sample student session data: " . json_encode([
+                    'YEAR' => $students[0]['YEAR'],
+                    'SESSION_ID' => $students[0]['SESSION_ID'], 
+                    'SESSION_NAME' => $students[0]['SESSION_NAME']
+                ]));
+                
+                // Check all unique SESSION_NAME values
+                $sessionNames = array_unique(array_column($students, 'SESSION_NAME'));
+                error_log("All unique SESSION_NAME values: " . json_encode($sessionNames));
+            } else {
+                error_log("No students returned - check if coordinator has students assigned");
+            }
+            
             $result = array();
             foreach ($students as $student) {
                 // Determine eligibility
@@ -142,6 +197,7 @@ switch ($action) {
                     'id' => $student['id'],
                     'STUDENT_ID' => $student['STUDENT_ID'],
                     'name' => $student['NAME'] . ' ' . $student['SURNAME'],
+                    'SESSION_NAME' => $student['SESSION_NAME'],
                     'total_questions' => $student['total_questions_count'],
                     'approved_questions' => $student['approved_questions_count'],
                     'pending_questions' => $student['pending_questions_count'],
@@ -227,12 +283,14 @@ switch ($action) {
             $stmt->execute([$studentId, $weekStart, $weekEnd]);
             $presentDays = $stmt->fetch(PDO::FETCH_ASSOC)['presentDays'] ?? 0;
 
-            // Get total hours
+            // Get total hours (minute-precision, robust for TIME-only columns)
             $stmt = $dbo->conn->prepare("
-                SELECT SUM(ABS(TIMESTAMPDIFF(HOUR, TIMEIN, TIMEOUT))) as totalHours 
-                FROM interns_attendance 
-                WHERE INTERNS_ID = ? 
-                AND TIMEIN IS NOT NULL 
+                SELECT ROUND(SUM(GREATEST(0,
+                    TIMESTAMPDIFF(MINUTE, CONCAT(ON_DATE, ' ', TIMEIN), CONCAT(ON_DATE, ' ', TIMEOUT))
+                )) / 60, 1) AS totalHours
+                FROM interns_attendance
+                WHERE INTERNS_ID = ?
+                AND TIMEIN IS NOT NULL
                 AND TIMEOUT IS NOT NULL
             ");
             $stmt->execute([$studentId]);

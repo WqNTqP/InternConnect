@@ -165,7 +165,7 @@ if(isset($_SESSION["admin_user"])) {
     }
 } else {
     // Not logged in
-    header("location: admin.php"); // Redirect to the login page
+    header("Location: ../supervisor"); // Redirect to the login page
     die();
 }
 ?>

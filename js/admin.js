@@ -24,7 +24,7 @@ function tryLogin() {
                     
                     if (rv.data.role === 'ADMIN') {
                         setTimeout(() => {
-                            document.location.replace("admindashboard.php");
+                            document.location.replace("supervisor/dashboard");
                         }, 1000);
                     } 
                 } else {
