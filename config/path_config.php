@@ -81,7 +81,22 @@ class PathConfig {
         if (self::$cachedBaseUrl !== null) {
             return self::$cachedBaseUrl;
         }
-        $scheme = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') ? 'https' : 'http';
+        // Determine scheme with awareness of reverse proxies (Render, etc.)
+        $scheme = 'http';
+        // Prefer X-Forwarded-Proto when present
+        $xfProto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '';
+        if ($xfProto) {
+            // In case of comma-separated list, take the first value
+            $proto = strtolower(trim(explode(',', $xfProto)[0]));
+            if ($proto === 'https') {
+                $scheme = 'https';
+            }
+        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') {
+            $scheme = 'https';
+        } elseif (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') {
+            $scheme = 'https';
+        }
+
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $docRoot = isset($_SERVER['DOCUMENT_ROOT']) ? str_replace('\\', '/', rtrim($_SERVER['DOCUMENT_ROOT'], '/\\')) : '';
         $projRoot = str_replace('\\', '/', rtrim(self::getBasePath(), '/\\'));
