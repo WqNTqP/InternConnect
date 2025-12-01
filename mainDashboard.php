@@ -256,6 +256,10 @@ function generateStudentFilterOptions($coordinatorId) {
         /* Coordinator Help button style (match admin boxed look) */
         .c-help-btn{padding:6px 10px;border-radius:6px;background:#eef2ff;color:#1d4ed8;border:1px solid #c7d2fe;cursor:pointer;margin-right:10px}
         .c-help-btn:hover{background:#e0e7ff}
+        /* Onboard footer text sizing to prevent multi-line wrapping */
+        #onboardFooter label { font-size: 12px; line-height: 1.2; white-space: nowrap; }
+        #onboardFooter label .fa-circle-question { font-size: 12px; }
+        #onboardFooter label span { font-size: 11px; line-height: 1.2; white-space: nowrap; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -1678,7 +1682,7 @@ function generateStudentFilterOptions($coordinatorId) {
                 </div>
             </div>
 
-            <div id="onboardFooter" class="mt-4 grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
+            <div id="onboardFooter" class="mt-4 grid grid-cols-1 sm:[grid-template-columns:2fr_auto_1fr] items-center gap-3">
                 <label class="flex items-center gap-2 text-sm text-gray-700 justify-self-start">
                     <input id="onboardDontShow" type="checkbox" class="rounded border-gray-300"> Don't show again
                     <span class="text-xs text-gray-500 inline-flex items-center gap-1">Tip: reopen this guide anytime via the Help button in the top bar. <i class="fas fa-circle-question text-blue-600"></i></span>
@@ -2015,8 +2019,22 @@ function generateStudentFilterOptions($coordinatorId) {
                 }
                 if(openManualBtn){
                     openManualBtn.addEventListener('click', ()=>{
-                        setSlide(idx);
-                        modal.classList.remove('hidden');
+                        // Reset to first available tab and first slide for a clean reopen
+                        const firstTab = availableTabs.length ? availableTabs[0] : null;
+                        if (firstTab) {
+                            currentTab = firstTab;
+                            slides = COORDINATOR_MANUAL[currentTab] || [];
+                            renderTabs();
+                            setSlide(0);
+                        } else {
+                            // No images available; clear src to avoid broken state
+                            slides = [];
+                            setSlide(0);
+                        }
+                        // Open via show() to keep consistent behavior and force recalculation
+                        show();
+                        // Extra guard: recalc height after opening in case fonts/layout changed
+                        setTimeout(recalcOnboardMaxHeight, 50);
                     });
                 }
 

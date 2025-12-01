@@ -518,14 +518,15 @@ if ($coordinatorHteId && count($allStudents) > 0) {
         .hte-onboard-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}
         .hte-onboard-tab{padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;font-size:13px;cursor:pointer}
         .hte-onboard-tab.active{background:#2563eb;border-color:#2563eb;color:#fff}
-        .hte-onboard-footer{margin-top:12px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+        .hte-onboard-footer{margin-top:12px;display:grid;grid-template-columns:2fr auto 1fr;align-items:center;gap:8px}
         @media (max-width:640px){.hte-onboard-footer{grid-template-columns:1fr;gap:10px}}
         .hte-onboard-btn{padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#374151;cursor:pointer}
         .hte-onboard-btn:disabled{opacity:.5;cursor:not-allowed}
         .hte-onboard-counter{font-weight:600;color:#374151;font-size:13px}
         .hte-help-btn{padding:6px 10px;border-radius:6px;background:#eef2ff;color:#1d4ed8;border:1px solid #c7d2fe;cursor:pointer;margin-right:10px}
         .hte-help-btn:hover{background:#e0e7ff}
-        .hte-tip{font-size:12px;color:#6b7280}
+        .hte-tip{font-size:11px;line-height:1.2;color:#6b7280;white-space:nowrap}
+        .hte-onboard-footer label{font-size:12px;line-height:1.2;white-space:nowrap}
     </style>
 </head>
 <body>
@@ -1481,10 +1482,12 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                 return;
             }
             
-            // On desktop, sidebar should be open by default
+            // Desktop: start collapsed (icons-only). Mobile: closed.
             if (window.innerWidth > 768) {
                 sidebar.classList.add('sidebar-open');
+                sidebar.classList.add('collapsed');
                 contentArea.classList.add('sidebar-open');
+                contentArea.classList.add('sidebar-collapsed');
                 document.body.classList.add('sidebar-open');
             } else {
                 sidebar.classList.remove('sidebar-open');
@@ -1785,8 +1788,8 @@ if ($coordinatorHteId && count($allStudents) > 0) {
             });
 
             // Sidebar collapse functionality and user dropdown
-            let sidebarOpen = $(window).width() >= 769; // Desktop starts open, mobile starts closed
-            let sidebarCollapsed = false;
+            let sidebarOpen = $(window).width() >= 769; // Desktop container open, mobile closed
+            let sidebarCollapsed = true; // Desktop starts collapsed (icons-only)
             
             // Initialize sidebar state on page load
             function initializeSidebar() {
@@ -1794,13 +1797,12 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                 const contentArea = $('.content-area');
                 
                 if ($(window).width() >= 769) {
-                    // Desktop - sidebar always visible, content always offset
+                    // Desktop - visible but collapsed (icons-only)
                     sidebarOpen = true;
-                    sidebarCollapsed = false;
+                    sidebarCollapsed = true;
                     sidebar.addClass('sidebar-open');
-                    sidebar.removeClass('collapsed');
-                    // Content area is always offset on desktop, just remove collapsed class
-                    contentArea.removeClass('sidebar-collapsed');
+                    sidebar.addClass('collapsed');
+                    contentArea.addClass('sidebar-collapsed');
                 } else {
                     // Mobile - sidebar hidden, content full width
                     sidebarOpen = false;
@@ -1993,7 +1995,9 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                 // Force initial state based on screen size
                 if (window.innerWidth > 768) {
                     sidebar.classList.add('sidebar-open');
+                    sidebar.classList.add('collapsed');
                     contentArea.classList.add('sidebar-open');
+                    contentArea.classList.add('sidebar-collapsed');
                     document.body.classList.add('sidebar-open');
                 } else {
                     sidebar.classList.remove('sidebar-open');

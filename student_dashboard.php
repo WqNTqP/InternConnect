@@ -416,7 +416,7 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
             .s-onboard-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}
             .s-onboard-tab{padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;font-size:13px;cursor:pointer;}
             .s-onboard-tab.active{background:#2563eb;border-color:#2563eb;color:#fff;}
-            .s-onboard-footer{margin-top:12px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+            .s-onboard-footer{margin-top:12px;display:grid;grid-template-columns:2fr auto 1fr;align-items:center;gap:8px}
             @media (max-width:640px){.s-onboard-footer{grid-template-columns:1fr;gap:10px}}
             .s-onboard-btn{padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#374151;cursor:pointer}
             .s-onboard-btn:disabled{opacity:.5;cursor:not-allowed}
@@ -424,7 +424,9 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
             /* Student Help button style (match admin boxed look) */
             .s-help-btn{padding:6px 10px;border-radius:6px;background:#eef2ff;color:#1d4ed8;border:1px solid #c7d2fe;cursor:pointer}
             .s-help-btn:hover{background:#e0e7ff}
-            .s-tip{font-size:12px;color:#6b7280;display:inline-flex;gap:6px;align-items:center}
+            .s-tip{font-size:11px;line-height:1.2;color:#6b7280;display:inline-flex;gap:6px;align-items:center}
+            .s-onboard-footer label{font-size:12px;line-height:1.2;white-space:nowrap}
+            .s-onboard-footer .s-tip{white-space:nowrap}
         </style>
 </head>
 <body>
@@ -1457,12 +1459,12 @@ $('.sidebar-item').click(function() {
                 console.log('Initializing sidebar for screen width:', $(window).width());
                 
                 if ($(window).width() >= 769) {
-                    // Desktop: sidebar is always open, start in expanded state
-                    sidebarOpen = true;
-                    sidebarCollapsed = false;
-                    sidebar.addClass('sidebar-open').removeClass('collapsed');
-                    body.addClass('sidebar-open').removeClass('sidebar-collapsed');
-                    console.log('Desktop: Sidebar initialized as open/expanded');
+                    // Desktop: start in collapsed (icons-only) state
+                    sidebarOpen = true; // open container but collapsed visually
+                    sidebarCollapsed = true;
+                    sidebar.addClass('sidebar-open').addClass('collapsed');
+                    body.addClass('sidebar-open').addClass('sidebar-collapsed');
+                    console.log('Desktop: Sidebar initialized as collapsed (icons-only)');
                 } else {
                     // Mobile: can be closed completely
                     sidebarOpen = false;
@@ -1503,13 +1505,13 @@ $('.sidebar-item').click(function() {
                     // Desktop behavior - TWO STATES ONLY: expanded <-> collapsed
                     // Sidebar is ALWAYS open on desktop, just toggles between expanded and collapsed
                     if (!sidebarCollapsed) {
-                        // State 1: Open (expanded) -> Open (collapsed/icons only)
+                        // Expanded -> Collapsed
                         sidebarCollapsed = true;
                         sidebar.addClass('collapsed');
                         body.addClass('sidebar-collapsed');
                         console.log('Desktop: Expanded -> Collapsed (icons only)');
                     } else {
-                        // State 2: Open (collapsed/icons only) -> Open (expanded)
+                        // Collapsed -> Expanded
                         sidebarCollapsed = false;
                         sidebar.removeClass('collapsed');
                         body.removeClass('sidebar-collapsed');
