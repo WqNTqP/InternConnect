@@ -7556,8 +7556,7 @@ $(document).ready(function() {
             html += `<div class="mb-4">
                 <label for="reviewCategoryDropdown" class="block text-sm font-medium text-gray-700 mb-2">Filter by Category:</label>
                 <select id="reviewCategoryDropdown" class="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    <option value="all">All Categories</option>
-                    <option value="soft">Soft Skills</option>
+                    <option value="soft" selected>Soft Skills</option>
                     <option value="comm">Communication Skills</option>
                     <option value="tech">Technical Skills</option>
                 </select>
@@ -7902,14 +7901,17 @@ $(document).ready(function() {
             </div>
         `;
         
-        // Generate HTML for all categories
+        // Generate HTML for all categories with filterable containers
         Object.keys(evalsByCategory).forEach(function(categoryName) {
             if (evalsByCategory[categoryName].length > 0) {
-                evalHtml += `<div class="mb-8">`;
+                const categoryId = categoryName.toLowerCase().includes('soft') ? 'soft' :
+                                   categoryName.toLowerCase().includes('comm') ? 'comm' : 'tech';
+
+                evalHtml += `<div class="review-category-container" data-category="${categoryId}">`;
                 evalHtml += `<div class="bg-gray-100 rounded-lg p-4 mb-4 border-l-4 border-gray-500">`;
                 evalHtml += `<h3 class="text-lg font-semibold text-gray-800">${categoryName}</h3>`;
                 evalHtml += `</div>`;
-                
+
                 evalsByCategory[categoryName].forEach(function(ev) {
                     // Generate star display for rating
                     let starsHtml = '';
@@ -7917,7 +7919,7 @@ $(document).ready(function() {
                         const isActive = ev.rating >= i;
                         starsHtml += `<span class="text-2xl ${isActive ? 'text-yellow-400' : 'text-gray-300'}">${isActive ? '★' : '☆'}</span>`;
                     }
-                    
+
                     evalHtml += `
                     <div class="bg-white rounded-lg shadow border border-gray-200 p-6 mb-6">
                         <div class="font-semibold text-gray-800 text-lg mb-3">${ev.question_text}</div>
@@ -7937,12 +7939,19 @@ $(document).ready(function() {
                     </div>
                     `;
                 });
-                evalHtml += `</div>`; // Close category
+                evalHtml += `</div>`; // Close category container
             }
         });
         
-        if (evalHtml.includes('mb-8')) {
+        const hasAny = Object.values(evalsByCategory).some(arr => Array.isArray(arr) && arr.length > 0);
+        if (hasAny) {
             $('#reviewedEvalList').html(evalHtml);
+            // Apply current dropdown filter if not 'all'
+            const sel = $('#reviewCategoryDropdown').val();
+            if (sel && sel !== 'all') {
+                $('.review-category-container').hide();
+                $(`.review-category-container[data-category="${sel}"]`).show();
+            }
         } else {
             $('#reviewedEvalList').html(`
                 <div class="flex flex-col items-center justify-center py-12">

@@ -201,15 +201,19 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                 'REPORT' => 'Report',
                 'EVALUATION' => 'Evaluation',
                 'CONTROL' => 'Control',
-                'QUESTION APPROVALS' => 'Question Approvals'
+                // Support both old and new folder names
+                'QUESTION APPROVALS' => 'Discipline/Task Approvals',
+                'DISCIPLINE - TASKS APPROVALS' => 'Discipline/Task Approvals',
             ];
 
             $dir = new DirectoryIterator($base);
             foreach ($dir as $fileinfo) {
                 if ($fileinfo->isDot() || !$fileinfo->isDir()) continue;
                 $folderName = $fileinfo->getFilename();
-                // Strip numeric prefixes like "1. "
+                // Strip numeric prefixes like "1. ", normalize whitespace and hyphen spacing
                 $normalized = preg_replace('/^\s*\d+\.?\s*/', '', strtoupper($folderName));
+                $normalized = preg_replace('/\s+/', ' ', $normalized); // collapse multiple spaces
+                $normalized = preg_replace('/\s*-\s*/', ' - ', $normalized); // normalize hyphen spacing
                 foreach ($targets as $key => $label) {
                     if (strtoupper($key) === $normalized) {
                         $tabPath = $fileinfo->getPathname();
@@ -605,7 +609,7 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                 <li class="sidebar-item" id="historyTab"><i class="fas fa-history"></i> <span>History</span></li>
                 <li class="sidebar-item" id="reportsTab"><i class="fas fa-file-alt"></i> <span>Reports</span></li>
                 <li class="sidebar-item" id="evaluationTab"><i class="fas fa-star"></i> <span>Evaluation</span></li>
-                <li class="sidebar-item" id="questionApprovalsTab"><i class="fas fa-clipboard-check"></i> <span>Question Approvals</span></li>
+                <li class="sidebar-item" id="questionApprovalsTab"><i class="fas fa-clipboard-check"></i> <span>Discipline/Task Approvals</span></li>
                 <li class="sidebar-item" id="contralTab"><i class="fas fa-cogs"></i> <span>Control</span></li>
             </ul>
         </div>
@@ -1327,15 +1331,15 @@ if ($coordinatorHteId && count($allStudents) > 0) {
             </div>
     
 
-        <!-- Question Approvals Tab Content -->
+        <!-- Question Approvals Tab Content (labels use Discipline/Task terminology) -->
         <div id="questionApprovalsTabContent" class="tab-content" style="display: none;">
             <div class="question-approvals-container">
                 <!-- Header -->
                 <div style="background: white; padding: 1.5rem; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <h2 style="margin: 0 0 0.5rem 0; color: #374151; font-size: 1.5rem;"><i class="fas fa-clipboard-check" style="margin-right: 0.5rem; color: #6b7280;"></i> Question Approvals</h2>
-                            <p style="margin: 0; color: #6b7280; font-size: 0.875rem;">Review and manage student-submitted questions for post-assessments</p>
+                            <h2 style="margin: 0 0 0.5rem 0; color: #374151; font-size: 1.5rem;"><i class="fas fa-clipboard-check" style="margin-right: 0.5rem; color: #6b7280;"></i> Discipline/Task Approvals</h2>
+                            <p style="margin: 0; color: #6b7280; font-size: 0.875rem;">Review and manage student-submitted discipline/tasks for post-assessments</p>
                         </div>
                         <div>
                             <button id="refresh-questions" style="background: #f3f4f6; color: #374151; padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; transition: background-color 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
@@ -1352,7 +1356,7 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                     <div>
                         <label style="display: block; margin-bottom: 0.5rem; color: #6b7280; font-size: 0.875rem;">Choose Student:</label>
                         <select id="student-selector" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; background: white; font-size: 0.875rem; color: #374151;">
-                            <option value="">Select a student to review their questions...</option>
+                            <option value="">Select a student to review their discipline/tasks...</option>
                         </select>
                     </div>
                 </div>
@@ -1361,7 +1365,7 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                 <div id="bulk-actions" style="margin-bottom: 1.5rem; display: none;">
                     <div style="background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                         <h4 style="margin: 0 0 1rem 0; color: #374151; font-size: 0.875rem; font-weight: 500;"><i class="fas fa-tasks" style="margin-right: 0.5rem; color: #6b7280;"></i> Bulk Actions</h4>
-                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
                             <button id="bulk-approve-btn" style="background: #059669; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem;">
                                 <i class="fas fa-check-double"></i>
                                 <span>Approve Selected</span>
@@ -1370,14 +1374,18 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                                 <i class="fas fa-redo"></i>
                                 <span>Request Redo</span>
                             </button>
+                            <label for="select-all-questions" style="display: inline-flex; align-items: center; gap: 0.5rem; background: #f3f4f6; color: #374151; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; cursor: pointer; margin-left: auto;">
+                                <input type="checkbox" id="select-all-questions" style="cursor: pointer;">
+                                <span>Select All</span>
+                            </label>
                         </div>
                     </div>
                 </div>
 
-                <!-- Questions List -->
+                <!-- Discipline/Tasks List -->
                 <div id="questions-list-container" class="questions-list-container" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; display: none;">
                     <div style="padding: 1rem 1.5rem; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
-                        <h3 style="margin: 0; color: #374151; font-size: 1rem; font-weight: 500;" id="questionsListTitle">Student Questions</h3>
+                        <h3 style="margin: 0; color: #374151; font-size: 1rem; font-weight: 500;" id="questionsListTitle">Student Discipline/Tasks</h3>
                     </div>
                     <div id="questions-list" style="min-height: 400px;">
                         <!-- Questions will be loaded here -->
@@ -1385,7 +1393,7 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                             <div style="text-align: center;">
                                 <i class="fas fa-user-graduate" style="font-size: 3rem; margin-bottom: 1rem; color: #d1d5db;"></i>
                                 <h4 style="margin: 0 0 0.5rem 0; color: #374151;">Choose a Student Above</h4>
-                                <p style="margin: 0;">Select a student from the dropdown to review their submitted questions</p>
+                                <p style="margin: 0;">Select a student from the dropdown to review their submitted discipline/tasks</p>
                             </div>
                         </div>
                     </div>
@@ -2042,11 +2050,11 @@ if ($coordinatorHteId && count($allStudents) > 0) {
             $(document).on('click', '#bulk-approve-btn', function() {
                 const selectedQuestions = getSelectedQuestionIds();
                 if (selectedQuestions.length === 0) {
-                    alert('Please select at least one question to approve.');
+                    alert('Please select at least one discipline/task to approve.');
                     return;
                 }
                 
-                if (confirm(`Are you sure you want to approve ${selectedQuestions.length} selected question(s)?`)) {
+                if (confirm(`Are you sure you want to approve ${selectedQuestions.length} selected discipline/task(s)?`)) {
                     bulkApproveQuestions(selectedQuestions);
                 }
             });
@@ -2055,11 +2063,11 @@ if ($coordinatorHteId && count($allStudents) > 0) {
             $(document).on('click', '#bulk-redo-btn', function() {
                 const selectedQuestions = getSelectedQuestionIds();
                 if (selectedQuestions.length === 0) {
-                    alert('Please select at least one question to request redo.');
+                    alert('Please select at least one discipline/task to request redo.');
                     return;
                 }
                 
-                const reason = prompt('Please provide feedback for why these questions need to be redone:');
+                const reason = prompt('Please provide feedback for why these discipline/tasks need to be redone:');
                 if (reason && reason.trim()) {
                     bulkRedoQuestions(selectedQuestions, reason.trim());
                 } else if (reason !== null) {
@@ -2074,10 +2082,10 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                     if (data.success) {
                         const selector = $('#student-selector');
                         selector.empty();
-                        selector.append('<option value="">Select a student to review their questions...</option>');
+                        selector.append('<option value="">Select a student to review their discipline/tasks...</option>');
                         
                         data.students.forEach(student => {
-                            const stats = `${student.total_questions} questions (${student.pending_count} pending, ${student.approved_count} approved, ${student.rejected_count} rejected)`;
+                            const stats = `${student.total_questions} discipline/tasks (${student.pending_count} pending, ${student.approved_count} approved, ${student.rejected_count} rejected)`;
                             selector.append(`<option value="${student.student_id}">${student.student_name} - ${stats}</option>`);
                         });
                     } else {
@@ -2095,8 +2103,8 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                     <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #6b7280;">
                         <div style="text-align: center;">
                             <div style="width: 50px; height: 50px; border: 4px solid #e5e7eb; border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem auto;"></div>
-                            <h4 style="margin: 0 0 0.5rem 0; color: #374151;">Loading Questions...</h4>
-                            <p style="margin: 0; font-size: 0.875rem;">Please wait while we fetch the student's questions</p>
+                            <h4 style="margin: 0 0 0.5rem 0; color: #374151;">Loading Discipline/Tasks...</h4>
+                            <p style="margin: 0; font-size: 0.875rem;">Please wait while we fetch the student's discipline/tasks</p>
                         </div>
                     </div>
                 `);
@@ -2109,12 +2117,13 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                     if (data.success) {
                         displayQuestions(data.questions);
                         $('#bulk-actions').show();
+                        updateSelectAllState();
                     } else {
                         $('#questions-list').html(`
                             <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #dc2626;">
                                 <div style="text-align: center;">
                                     <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
-                                    <h4 style="margin: 0 0 0.5rem 0;">Error loading questions</h4>
+                                    <h4 style="margin: 0 0 0.5rem 0;">Error loading discipline/tasks</h4>
                                     <p style="margin: 0;">${data.error}</p>
                                 </div>
                             </div>
@@ -2126,7 +2135,7 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                             <div style="text-align: center;">
                                 <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
                                 <h4 style="margin: 0 0 0.5rem 0;">Connection Error</h4>
-                                <p style="margin: 0;">Failed to load questions. Please try again.</p>
+                                <p style="margin: 0;">Failed to load discipline/tasks. Please try again.</p>
                             </div>
                         </div>
                     `);
@@ -2139,8 +2148,8 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                         <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #6b7280;">
                             <div style="text-align: center;">
                                 <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; color: #d1d5db;"></i>
-                                <h4 style="margin: 0 0 0.5rem 0; color: #374151;">No Questions Found</h4>
-                                <p style="margin: 0;">This student hasn't submitted any questions yet</p>
+                                <h4 style="margin: 0 0 0.5rem 0; color: #374151;">No Discipline/Tasks Found</h4>
+                                <p style="margin: 0;">This student hasn't submitted any discipline/tasks yet</p>
                             </div>
                         </div>
                     `);
@@ -2158,7 +2167,7 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
                                 <div style="flex: 1;">
                                     <h5 style="margin: 0 0 0.25rem 0; color: #374151; font-size: 0.875rem; font-weight: 600;">
-                                        ${question.category} - Question ${question.question_number}
+                                        ${question.category} - Discipline/Task ${question.question_number}
                                     </h5>
                                     <p style="margin: 0; color: #6b7280; font-size: 0.75rem;">
                                         <i class="fas fa-calendar" style="margin-right: 0.25rem;"></i>
@@ -2189,11 +2198,14 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                 });
                 html += '</div>';
                 $('#questions-list').html(html);
+                updateSelectAllState();
             }
 
             function hideQuestionsSection() {
                 $('#questions-list-container').hide();
                 $('#bulk-actions').hide();
+                const sa = document.getElementById('select-all-questions');
+                if (sa) { sa.checked = false; sa.indeterminate = false; sa.disabled = true; }
             }
 
             function getSelectedQuestionIds() {
@@ -2205,6 +2217,27 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                 return selected;
             }
 
+            function updateSelectAllState() {
+                const sa = document.getElementById('select-all-questions');
+                if (!sa) return;
+                const boxes = $('#questions-list .question-checkbox');
+                const total = boxes.length;
+                const checked = boxes.filter(':checked').length;
+                sa.disabled = total === 0;
+                sa.indeterminate = checked > 0 && checked < total;
+                sa.checked = total > 0 && checked === total;
+            }
+
+            $(document).on('change', '#select-all-questions', function() {
+                const isChecked = this.checked;
+                $('#questions-list .question-checkbox').prop('checked', isChecked);
+                this.indeterminate = false;
+            });
+
+            $(document).on('change', '#questions-list .question-checkbox', function() {
+                updateSelectAllState();
+            });
+
             function bulkApproveQuestions(questionIds) {
                 // Show loading state
                 $('#bulk-approve-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Approving...');
@@ -2214,17 +2247,17 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                     question_ids: questionIds
                 }, function(data) {
                     if (data.success) {
-                        alert(`Successfully approved ${questionIds.length} question(s).`);
+                        alert(`Successfully approved ${questionIds.length} discipline/task(s).`);
                         // Reload the current student's questions
                         const currentStudentId = $('#student-selector').val();
                         if (currentStudentId) {
                             loadStudentQuestions(currentStudentId);
                         }
                     } else {
-                        alert('Error approving questions: ' + data.error);
+                        alert('Error approving discipline/tasks: ' + data.error);
                     }
                 }, 'json').fail(function() {
-                    alert('Failed to approve questions. Please try again.');
+                    alert('Failed to approve discipline/tasks. Please try again.');
                 }).always(function() {
                     $('#bulk-approve-btn').prop('disabled', false).html('<i class="fas fa-check-double"></i> <span>Approve Selected</span>');
                 });
@@ -2240,7 +2273,7 @@ if ($coordinatorHteId && count($allStudents) > 0) {
                     rejection_reason: reason
                 }, function(data) {
                     if (data.success) {
-                        alert(`Successfully requested redo for ${questionIds.length} question(s). Students will be notified.`);
+                        alert(`Successfully requested redo for ${questionIds.length} discipline/task(s). Students will be notified.`);
                         // Reload the current student's questions
                         const currentStudentId = $('#student-selector').val();
                         if (currentStudentId) {
@@ -2318,7 +2351,7 @@ if ($coordinatorHteId && count($allStudents) > 0) {
             const counterEl = document.getElementById('hteOnboardCounter');
             const titleEl = document.getElementById('hteOnboardTabTitle');
 
-            const order = ['Dashboard','Attendance','History','Report','Evaluation','Control','Question Approvals'];
+            const order = ['Dashboard','Attendance','History','Report','Evaluation','Discipline/Task Approvals','Control'];
             const availableTabs = order.filter(l => (HTE_MANUAL[l] || []).length > 0);
             let currentTab = availableTabs.length ? availableTabs[0] : null;
             let slides = currentTab ? (HTE_MANUAL[currentTab] || []) : [];
