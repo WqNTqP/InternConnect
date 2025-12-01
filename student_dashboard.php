@@ -58,6 +58,50 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
     <link rel="icon" type="image/svg+xml" href="icon/graduation-cap-favicon.svg">
     <link rel="alternate icon" href="icon/graduation-cap-favicon.svg">
     <title>Student Dashboard - Attendance Tracker</title>
+    <?php
+        // Discover student manual images dynamically under icon/STUDENT
+        function ic_list_student_manual_images() {
+            $base = __DIR__ . '/icon/STUDENT';
+            $result = [];
+            if (!is_dir($base)) return $result;
+
+            // Expected tabs for student
+            $targets = [
+                'DASHBOARD' => 'Dashboard',
+                'ATTENDANCE' => 'Attendance',
+                'EVALUATION' => 'Evaluation',
+                'HISTORY' => 'History',
+                'REPORT' => 'Report'
+            ];
+
+            $dir = new DirectoryIterator($base);
+            foreach ($dir as $fileinfo) {
+                if ($fileinfo->isDot() || !$fileinfo->isDir()) continue;
+                $folderName = $fileinfo->getFilename();
+                $normalized = preg_replace('/^\s*\d+\.?\s*/', '', strtoupper($folderName));
+                foreach ($targets as $key => $label) {
+                    if (strtoupper($key) === $normalized) {
+                        $tabPath = $fileinfo->getPathname();
+                        $images = [];
+                        $tabIt = new DirectoryIterator($tabPath);
+                        foreach ($tabIt as $img) {
+                            if ($img->isFile()) {
+                                $ext = strtolower($img->getExtension());
+                                if (in_array($ext, ['png','jpg','jpeg','gif'])) {
+                                    $rel = 'icon/STUDENT/' . $folderName . '/' . $img->getFilename();
+                                    $images[] = $rel;
+                                }
+                            }
+                        }
+                        natsort($images);
+                        $result[$label] = array_values($images);
+                    }
+                }
+            }
+            return $result;
+        }
+        $IC_STUDENT_MANUAL = ic_list_student_manual_images();
+    ?>
         <style>
             /* Enhanced Post-Assessment Styles */
             .eval-table input[type="radio"] {
@@ -358,6 +402,30 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
                 }
             }
         </style>
+        <style>
+            /* Student Onboarding Modal */
+            /* Position modal content below header but block clicks on header */
+            #studentOnboardModal{position:fixed;left:0;right:0;bottom:0;top:56px;z-index:2147483647;}
+            .s-onboard-backdrop{position:fixed;left:0;right:0;bottom:0;top:56px;background:rgba(0,0,0,.6);z-index:1;}
+            .s-onboard-shield{position:fixed;left:0;right:0;top:0;height:56px;background:transparent;z-index:2147483647;}
+            .s-onboard-panel{position:relative;margin:24px auto;background:#fff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.2);max-width:1000px;width:auto;max-height:80vh;overflow:hidden;padding:16px 20px;z-index:2;}
+            @media (max-width:640px){.s-onboard-panel{max-width:calc(100% - 24px)}}
+            .s-onboard-header{margin-bottom:8px;}
+            .s-onboard-imgwrap{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:10px;display:flex;align-items:center;justify-content:center;}
+            .s-onboard-img{display:block;width:100%;height:100%;border-radius:12px;background:#fff;object-fit:contain;max-height:100%;transition:max-height .16s ease,width .16s ease;}
+            .s-onboard-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}
+            .s-onboard-tab{padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;font-size:13px;cursor:pointer;}
+            .s-onboard-tab.active{background:#2563eb;border-color:#2563eb;color:#fff;}
+            .s-onboard-footer{margin-top:12px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+            @media (max-width:640px){.s-onboard-footer{grid-template-columns:1fr;gap:10px}}
+            .s-onboard-btn{padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#374151;cursor:pointer}
+            .s-onboard-btn:disabled{opacity:.5;cursor:not-allowed}
+            .s-onboard-counter{font-weight:600;color:#374151;font-size:13px}
+            /* Student Help button style (match admin boxed look) */
+            .s-help-btn{padding:6px 10px;border-radius:6px;background:#eef2ff;color:#1d4ed8;border:1px solid #c7d2fe;cursor:pointer}
+            .s-help-btn:hover{background:#e0e7ff}
+            .s-tip{font-size:12px;color:#6b7280;display:inline-flex;gap:6px;align-items:center}
+        </style>
 </head>
 <body>
     <input type="hidden" id="hiddenStudentId" value="<?php echo htmlspecialchars($student_id); ?>">
@@ -374,6 +442,7 @@ error_log("Profile Picture: " . ($studentDetails['profile_picture'] ?? 'Not Foun
             </div>
         </div>
         <div class="user-profile" id="userProfile">
+            <button id="openStudentManual" class="s-help-btn" title="Open Student Manual" style="margin-right:8px;"><i class="fas fa-circle-question"></i></button>
             <div class="relative">
                 <button id="userDropdownToggle" class="modern-user-dropdown">
                     <div class="user-avatar">
@@ -1548,6 +1617,140 @@ $('.sidebar-item').click(function() {
                 e.stopPropagation();
             });
         });
+    </script>
+
+    <!-- Student Onboarding Slideshow Modal -->
+    <div id="studentOnboardModal" class="" style="display:none;">
+        <div class="s-onboard-shield" aria-hidden="true"></div>
+        <div class="s-onboard-backdrop"></div>
+        <div id="sOnboardPanel" class="s-onboard-panel">
+            <div id="sOnboardHeader" class="s-onboard-header">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <h3 style="margin:0;color:#1d4ed8;font-weight:800;font-size:20px;">Student Quick Guide</h3>
+                    <button id="sOnboardCloseX" class="s-onboard-btn" aria-label="Close">×</button>
+                </div>
+                <p style="color:#4b5563;font-size:13px;margin:6px 0 10px;">Swipe or use Back/Next to navigate. These images explain the key tabs.</p>
+                <div id="sOnboardTabs" class="s-onboard-tabs"></div>
+                <div id="sOnboardTabTitle" style="font-weight:600;color:#374151;font-size:13px;margin-bottom:6px;"></div>
+            </div>
+            <div id="sOnboardImgWrap" class="s-onboard-imgwrap">
+                <img id="sOnboardMainImg" src="" alt="Student guide" class="s-onboard-img" />
+            </div>
+            <div id="sOnboardFooter" class="s-onboard-footer">
+                <label style="justify-self:start;display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;">
+                    <input id="sOnboardDontShow" type="checkbox"> Don't show again
+                    <span class="s-tip">Tip: reopen this guide via the Help button in the top bar. <i class="fas fa-circle-question" style="color:#2563eb"></i></span>
+                </label>
+                <div style="justify-self:center;">
+                    <div style="display:inline-flex;align-items:center;gap:10px;">
+                        <button id="sOnboardPrev" class="s-onboard-btn">Back</button>
+                        <span id="sOnboardCounter" class="s-onboard-counter">0/0</span>
+                        <button id="sOnboardNext" class="s-onboard-btn">Next</button>
+                    </div>
+                </div>
+                <div style="justify-self:end;display:flex;gap:8px;">
+                    <button id="sOnboardCloseBtn" class="s-onboard-btn">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Student manual data from server
+        const STUDENT_MANUAL = <?php echo json_encode($IC_STUDENT_MANUAL, JSON_UNESCAPED_SLASHES); ?>;
+        (function initStudentOnboard(){
+            const LS_KEY = 'student_onboard_dont_show';
+            const modal = document.getElementById('studentOnboardModal');
+            const panel = document.getElementById('sOnboardPanel');
+            const headerWrap = document.getElementById('sOnboardHeader');
+            const footerWrap = document.getElementById('sOnboardFooter');
+            const imgWrap = document.getElementById('sOnboardImgWrap');
+            const img = document.getElementById('sOnboardMainImg');
+            const prev = document.getElementById('sOnboardPrev');
+            const next = document.getElementById('sOnboardNext');
+            const tabsEl = document.getElementById('sOnboardTabs');
+            const dontShow = document.getElementById('sOnboardDontShow');
+            const closeX = document.getElementById('sOnboardCloseX');
+            const closeBtn = document.getElementById('sOnboardCloseBtn');
+            const openManualBtn = document.getElementById('openStudentManual');
+            const counterEl = document.getElementById('sOnboardCounter');
+            const titleEl = document.getElementById('sOnboardTabTitle');
+
+            const order = ['Dashboard','Attendance','Evaluation','History','Report'];
+            const availableTabs = order.filter(l => (STUDENT_MANUAL[l] || []).length > 0);
+            let currentTab = availableTabs.length ? availableTabs[0] : null;
+            let slides = currentTab ? (STUDENT_MANUAL[currentTab] || []) : [];
+            let idx = 0;
+
+            function recalcMaxHeight(){
+                if (!panel || !img) return;
+                const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+                const shield = document.querySelector('.s-onboard-shield');
+                const topOffset = shield ? shield.offsetHeight : 56;
+                const panelMax = Math.floor((vh - topOffset) * 0.80);
+                const headerH = headerWrap ? headerWrap.offsetHeight : 0;
+                const footerH = footerWrap ? footerWrap.offsetHeight : 0;
+                const paddingApprox = 24;
+                const available = Math.max(160, panelMax - headerH - footerH - paddingApprox);
+                if (imgWrap) imgWrap.style.height = available + 'px';
+                img.style.maxHeight = '100%';
+            }
+
+            function updateNav(){
+                const atStart = idx <= 0;
+                const atEnd = !slides || idx >= slides.length - 1;
+                prev.disabled = atStart; next.disabled = atEnd;
+            }
+            function updateCounter(){
+                const total = slides ? slides.length : 0;
+                counterEl.textContent = `${total ? (idx+1) : 0}/${total}`;
+            }
+            function setSlide(i){
+                if (!slides || slides.length === 0) {
+                    img.src=''; updateNav(); updateCounter(); recalcMaxHeight(); return;
+                }
+                idx = Math.max(0, Math.min(i, slides.length-1));
+                img.src = slides[idx];
+                img.alt = (currentTab || 'Student') + ' guide';
+                updateNav(); updateCounter(); recalcMaxHeight();
+            }
+            function renderTabs(){
+                tabsEl.innerHTML = '';
+                availableTabs.forEach(label => {
+                    const b = document.createElement('button');
+                    b.className = 's-onboard-tab' + (label===currentTab?' active':'');
+                    b.textContent = label;
+                    b.addEventListener('click', ()=>{
+                        currentTab = label; slides = STUDENT_MANUAL[currentTab] || []; setSlide(0); renderTabs();
+                    });
+                    tabsEl.appendChild(b);
+                });
+                if (titleEl) titleEl.textContent = currentTab||'';
+                recalcMaxHeight();
+            }
+            function show(){ modal.style.display='block'; recalcMaxHeight(); }
+            function hide(){ modal.style.display='none'; if(dontShow.checked){localStorage.setItem(LS_KEY,'1');} else {localStorage.removeItem(LS_KEY);} }
+
+            img.addEventListener('error', ()=>{ img.src = 'icon/graduation-cap-favicon.svg'; });
+            prev.addEventListener('click', ()=> setSlide(idx-1));
+            next.addEventListener('click', ()=> setSlide(idx+1));
+            closeX.addEventListener('click', hide);
+            closeBtn.addEventListener('click', hide);
+            if(openManualBtn){ openManualBtn.addEventListener('click', ()=>{ setSlide(idx); show(); }); }
+
+            // Restore checkbox state
+            dontShow.checked = localStorage.getItem(LS_KEY) === '1';
+
+            // Start
+            if (currentTab){ renderTabs(); setSlide(0); if(!dontShow.checked){ show(); } }
+
+            // Keyboard and touch
+            document.addEventListener('keydown', (e)=>{ if(modal.style.display==='none') return; if(e.key==='ArrowLeft') setSlide(idx-1); else if(e.key==='ArrowRight') setSlide(idx+1); else if(e.key==='Escape') hide(); });
+            let sx=0, ex=0; img.addEventListener('touchstart', e=>{ sx=e.changedTouches[0].screenX; }); img.addEventListener('touchend', e=>{ ex=e.changedTouches[0].screenX; const d=ex-sx; if(Math.abs(d)>40){ if(d<0) setSlide(idx+1); else setSlide(idx-1);} });
+
+            // Resize
+            let t; window.addEventListener('resize', ()=>{ clearTimeout(t); t=setTimeout(recalcMaxHeight,120); }); window.addEventListener('orientationchange', ()=> setTimeout(recalcMaxHeight,120));
+        })();
     </script>
 </body>
 </html>

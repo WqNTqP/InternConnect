@@ -144,6 +144,55 @@ function generateStudentFilterOptions($coordinatorId) {
     <link rel="alternate icon" href="icon/graduation-cap-favicon.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <title>InternConnect - Dashboard</title>
+    <?php
+        // Server-side: discover coordinator manual images dynamically
+        function ic_list_coordinator_manual_images() {
+            $base = __DIR__ . '/icon/COORDINATOR';
+            $result = [];
+            if (!is_dir($base)) return $result;
+
+            // Map of folder labels we care about (prefix allows "1. ATTENDANCE" etc.)
+            $targets = [
+                'ATTENDANCE' => 'Attendance',
+                'EVALUATION' => 'Evaluation',
+                'CONTROL' => 'Control',
+                'REPORT' => 'Report',
+                'PREDICTION' => 'Prediction',
+                'POST ANALYSIS' => 'Post Analysis'
+            ];
+
+            // Scan subdirectories and gather images
+            $dir = new DirectoryIterator($base);
+            foreach ($dir as $fileinfo) {
+                if ($fileinfo->isDot() || !$fileinfo->isDir()) continue;
+                $folderName = $fileinfo->getFilename();
+                // Normalize: strip numeric prefix "1. ", "2. " etc.
+                $normalized = preg_replace('/^\s*\d+\.?\s*/', '', strtoupper($folderName));
+                foreach ($targets as $key => $label) {
+                    if (strtoupper($key) === $normalized) {
+                        $tabPath = $fileinfo->getPathname();
+                        $images = [];
+                        // Collect image files (png/jpg/jpeg)
+                        $tabIt = new DirectoryIterator($tabPath);
+                        foreach ($tabIt as $img) {
+                            if ($img->isFile()) {
+                                $ext = strtolower($img->getExtension());
+                                if (in_array($ext, ['png','jpg','jpeg','gif'])) {
+                                    $rel = 'icon/COORDINATOR/' . $folderName . '/' . $img->getFilename();
+                                    $images[] = $rel;
+                                }
+                            }
+                        }
+                        // Natural sort by name (so 1.png < 2.png ...)
+                        natsort($images);
+                        $result[$label] = array_values($images);
+                    }
+                }
+            }
+            return $result;
+        }
+        $IC_COORDINATOR_MANUAL = ic_list_coordinator_manual_images();
+    ?>
     <style>
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -197,6 +246,16 @@ function generateStudentFilterOptions($coordinatorId) {
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
+        /* Coordinator Onboarding Modal */
+        .onboard-backdrop { background: rgba(0,0,0,0.6); }
+        /* Align with student modal sizing; image fills wrapper height */
+        .onboard-img { height: 100%; max-height: 100%; object-fit: contain; transition: max-height 160ms ease-in-out, width 160ms ease-in-out; }
+        .onboard-thumb { height: 40px; width: 60px; object-fit: cover; }
+        .onboard-clickshield { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: transparent; z-index: 61; }
+        /* Coordinator Help button style (match admin boxed look) */
+        .c-help-btn{padding:6px 10px;border-radius:6px;background:#eef2ff;color:#1d4ed8;border:1px solid #c7d2fe;cursor:pointer;margin-right:10px}
+        .c-help-btn:hover{background:#e0e7ff}
     </style>
 </head>
 <body class="bg-gray-100">
@@ -232,6 +291,10 @@ function generateStudentFilterOptions($coordinatorId) {
                         </div>
                     </div>
                     <div class="flex items-center">
+                        <!-- Help: open onboarding/manual anytime -->
+                        <button id="openCoordinatorManual" class="c-help-btn hidden md:inline" title="Open Coordinator Manual">
+                            <i class="fas fa-circle-question"></i>
+                        </button>
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none">
                                 <span class="text-xs md:text-sm font-medium hidden sm:inline"><?php echo htmlspecialchars($displayName); ?></span>
@@ -1592,6 +1655,48 @@ function generateStudentFilterOptions($coordinatorId) {
     </div>
 <!-- End Main Content Wrapper -->
 
+    <!-- Coordinator Onboarding Slideshow Modal -->
+    <div id="coordinatorOnboardModal" class="fixed inset-x-0 bottom-0 hidden z-[60]" style="top:56px;">
+        <div class="onboard-clickshield" aria-hidden="true"></div>
+        <div class="absolute inset-0 onboard-backdrop"></div>
+        <div id="coordinatorOnboardPanel" class="relative mx-auto max-h-[80vh] overflow-hidden bg-white rounded-2xl shadow-2xl mt-6 p-4 md:pt-6 md:pl-6 md:pr-6 pb-10" style="max-width:1000px;width:auto;">
+            <div id="onboardHeader" class="onboard-header">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-lg md:text-2xl font-bold text-blue-700">Coordinator Quick Guide</h3>
+                    <button id="coordinatorOnboardClose" class="text-gray-500 hover:text-gray-700 text-xl font-bold">×</button>
+                </div>
+                <p class="text-gray-600 text-sm mb-4">Swipe or use Back/Next to navigate. These images explain the key tabs.</p>
+                <!-- Tab buttons for sections -->
+                <div id="onboardTabs" class="flex flex-wrap gap-2 mb-2"></div>
+                <div id="onboardTabTitle" class="text-sm font-semibold text-gray-700 mb-2"></div>
+            </div>
+
+            <!-- Slideshow -->
+            <div class="relative bg-gray-50 rounded-xl border p-2 md:p-4">
+                <div id="onboardImgWrap" class="bg-slate-50 border border-gray-200 rounded-xl p-2">
+                    <img id="onboardMainImg" src="" alt="Coordinator guide" class="w-full onboard-img rounded-lg bg-white" />
+                </div>
+            </div>
+
+            <div id="onboardFooter" class="mt-4 grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
+                <label class="flex items-center gap-2 text-sm text-gray-700 justify-self-start">
+                    <input id="onboardDontShow" type="checkbox" class="rounded border-gray-300"> Don't show again
+                    <span class="text-xs text-gray-500 inline-flex items-center gap-1">Tip: reopen this guide anytime via the Help button in the top bar. <i class="fas fa-circle-question text-blue-600"></i></span>
+                </label>
+                <div class="justify-self-center">
+                    <div class="inline-flex items-center gap-3">
+                        <button id="onboardPrev" class="px-3 py-1 rounded-md border text-gray-700 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" title="Previous">Back</button>
+                        <span id="onboardCounter" class="text-sm font-semibold text-gray-700">0/0</span>
+                        <button id="onboardNext" class="px-3 py-1 rounded-md border text-gray-700 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" title="Next">Next</button>
+                    </div>
+                </div>
+                <div class="flex gap-2 justify-self-end">
+                    <button id="onboardCloseBtn" class="px-3 py-2 rounded-md bg-gray-200 text-gray-800 text-sm">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Profile Modal -->
         <div id="profileModal" class="modal" style="display: none;">
             <div class="modal-content">
@@ -1615,6 +1720,8 @@ function generateStudentFilterOptions($coordinatorId) {
     <script>
         // Global coordinator ID for AJAX requests
         const COORDINATOR_ID = <?php echo isset($_SESSION["current_user"]) ? $_SESSION["current_user"] : 'null'; ?>;
+        // Coordinator manual discovered server-side
+        const COORDINATOR_MANUAL = <?php echo json_encode($IC_COORDINATOR_MANUAL, JSON_UNESCAPED_SLASHES); ?>;
         
         // Clear hardcoded data and load dynamic content based on coordinator
         $(document).ready(function() {
@@ -1800,6 +1907,186 @@ function generateStudentFilterOptions($coordinatorId) {
             }
             
             // Note: Prediction tab loading is handled by js/mainDashboard.js
+
+            // Coordinator onboarding slideshow
+            (function initCoordinatorOnboard(){
+                const LS_KEY = 'coordinator_onboard_dont_show';
+                const modal = document.getElementById('coordinatorOnboardModal');
+                const panel = document.getElementById('coordinatorOnboardPanel');
+                const headerWrap = document.getElementById('onboardHeader');
+                const footerWrap = document.getElementById('onboardFooter');
+                const img = document.getElementById('onboardMainImg');
+                const imgWrap = document.getElementById('onboardImgWrap');
+                const prev = document.getElementById('onboardPrev');
+                const next = document.getElementById('onboardNext');
+                const tabsEl = document.getElementById('onboardTabs');
+                const dontShow = document.getElementById('onboardDontShow');
+                const closeX = document.getElementById('coordinatorOnboardClose');
+                const closeBtn = document.getElementById('onboardCloseBtn');
+                const openAttendance = document.getElementById('onboardOpenAttendance');
+                const openManualBtn = document.getElementById('openCoordinatorManual');
+                const counterEl = document.getElementById('onboardCounter');
+
+                // Prepare grouped slides by tab using server-provided map
+                const order = ['Attendance','Evaluation','Control','Report','Prediction','Post Analysis'];
+                const availableTabs = order.filter(l => (COORDINATOR_MANUAL[l] || []).length > 0);
+                let currentTab = availableTabs.length ? availableTabs[0] : null;
+                let slides = currentTab ? (COORDINATOR_MANUAL[currentTab] || []) : [];
+
+                // Fallback: filter out missing files if needed (image load error handler)
+                let idx = 0;
+                function setSlide(i){
+                    if (!slides || slides.length === 0) {
+                        img.src='';
+                        updateNavState();
+                        updateCounter();
+                        recalcOnboardMaxHeight();
+                        return;
+                    }
+                    // Clamp (no looping)
+                    idx = Math.max(0, Math.min(i, slides.length - 1));
+                    img.src = slides[idx];
+                    img.alt = currentTab + ' guide';
+                    updateNavState();
+                    updateCounter();
+                    recalcOnboardMaxHeight();
+                }
+
+                function updateNavState(){
+                    const atStart = idx <= 0;
+                    const atEnd = !slides || idx >= slides.length - 1;
+                    prev.disabled = atStart;
+                    next.disabled = atEnd;
+                    prev.classList.toggle('opacity-50', atStart);
+                    prev.classList.toggle('cursor-not-allowed', atStart);
+                    next.classList.toggle('opacity-50', atEnd);
+                    next.classList.toggle('cursor-not-allowed', atEnd);
+                }
+
+                function updateCounter(){
+                    if(!counterEl) return;
+                    const total = slides ? slides.length : 0;
+                    const current = total ? (idx + 1) : 0;
+                    counterEl.textContent = `${current}/${total}`;
+                }
+
+                function renderTabs(){
+                    tabsEl.innerHTML = '';
+                    availableTabs.forEach(label => {
+                        const btn = document.createElement('button');
+                        btn.className = 'px-3 py-1 rounded-md text-sm border transition-colors';
+                        btn.textContent = label;
+                        if(label === currentTab){
+                            btn.classList.add('bg-blue-600','text-white','border-blue-600','hover:bg-blue-700');
+                        } else {
+                            btn.classList.add('bg-white','text-gray-700','border-gray-300','hover:bg-gray-100');
+                        }
+                        btn.addEventListener('click', ()=>{
+                            currentTab = label;
+                            slides = COORDINATOR_MANUAL[currentTab] || [];
+                            renderTabs();
+                            setSlide(0);
+                            recalcOnboardMaxHeight();
+                        });
+                        tabsEl.appendChild(btn);
+                    });
+                    const titleEl = document.getElementById('onboardTabTitle');
+                    if (titleEl) { titleEl.textContent = currentTab ? currentTab : ''; }
+                    recalcOnboardMaxHeight();
+                }
+                function start(){
+                    if(!currentTab){ modal.classList.add('hidden'); return; }
+                    renderTabs();
+                    setSlide(0);
+                    if(!dontShow.checked){ show(); }
+                    recalcOnboardMaxHeight();
+                }
+
+                prev.addEventListener('click', ()=> setSlide(idx-1));
+                next.addEventListener('click', ()=> setSlide(idx+1));
+                closeX.addEventListener('click', hide);
+                closeBtn.addEventListener('click', hide);
+                if (openAttendance) {
+                    openAttendance.addEventListener('click', ()=>{
+                        hide();
+                        const att = document.getElementById('attendanceTab');
+                        if (att) att.click();
+                    });
+                }
+                if(openManualBtn){
+                    openManualBtn.addEventListener('click', ()=>{
+                        setSlide(idx);
+                        modal.classList.remove('hidden');
+                    });
+                }
+
+                // Avoid infinite loops: if current image fails, show a simple placeholder and stop auto-advance
+                img.addEventListener('error', ()=>{
+                    img.src = 'icon/graduation-cap-favicon.svg';
+                });
+
+                function show(){ modal.classList.remove('hidden'); }
+                function hide(){ 
+                    modal.classList.add('hidden'); 
+                    if(dontShow.checked){ 
+                        localStorage.setItem(LS_KEY,'1'); 
+                    } else {
+                        localStorage.removeItem(LS_KEY);
+                    }
+                }
+
+                // Restore checkbox state
+                dontShow.checked = localStorage.getItem(LS_KEY) === '1';
+
+                // Initial show based on discovered images
+                start();
+
+                // Keyboard navigation and accessibility
+                document.addEventListener('keydown', (e)=>{
+                    if(modal.classList.contains('hidden')) return;
+                    if(e.key === 'ArrowLeft'){ setSlide(idx-1); }
+                    else if(e.key === 'ArrowRight'){ setSlide(idx+1); }
+                    else if(e.key === 'Escape'){ hide(); }
+                });
+
+                // Touch swipe support
+                let touchStartX = 0;
+                let touchEndX = 0;
+                img.addEventListener('touchstart', (e)=>{ touchStartX = e.changedTouches[0].screenX; });
+                img.addEventListener('touchend', (e)=>{
+                    touchEndX = e.changedTouches[0].screenX;
+                    const diff = touchEndX - touchStartX;
+                    if(Math.abs(diff) > 40){
+                        if(diff < 0) setSlide(idx+1); else setSlide(idx-1);
+                    }
+                });
+
+                // Resize handling to avoid snapping on viewport changes
+                let resizeTimer;
+                function recalcOnboardMaxHeight(){
+                    if (!panel || !img) return;
+                    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+                    const shield = document.querySelector('.onboard-clickshield');
+                    const topOffset = shield ? shield.offsetHeight : 56;
+                    // panel uses max-h 92vh relative to the visible area below header
+                    const panelMax = Math.floor((vh - topOffset) * 0.80);
+                    const headerH = headerWrap ? headerWrap.offsetHeight : 0;
+                    const footerH = footerWrap ? footerWrap.offsetHeight : 0;
+                    const paddingApprox = 48; // increased to leave extra bottom room
+                    const available = Math.max(160, panelMax - headerH - footerH - paddingApprox);
+                    if (imgWrap) imgWrap.style.height = available + 'px';
+                    img.style.maxHeight = '100%';
+                }
+                window.addEventListener('resize', ()=>{
+                    window.clearTimeout(resizeTimer);
+                    resizeTimer = window.setTimeout(()=>{
+                        recalcOnboardMaxHeight();
+                    }, 120);
+                });
+                window.addEventListener('orientationchange', ()=>{
+                    setTimeout(recalcOnboardMaxHeight, 120);
+                });
+            })();
             
             // Function to load students for Review tab only (Pre-Assessment now uses new JavaScript system)
             function loadReviewStudents() {
